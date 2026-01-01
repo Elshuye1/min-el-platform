@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller POS | Min-el Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .pos-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .pos-grid { grid-template-columns: 1fr; } }
+        .receipt-item { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <nav class="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-4">
+            <span class="bg-green-600 text-white p-2 rounded-lg font-bold">POS</span>
+            <h1 class="text-xl font-bold text-gray-800">Seller Terminal: <span class="text-green-600">Main Branch</span></h1>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="text-right hidden md:block">
+                <p id="live-clock" class="text-sm font-bold"></p>
+                <p class="text-xs text-gray-500">Seller: Authorized Staff</p>
+            </div>
+            <a href="index.html" class="text-red-500 hover:underline text-sm font-bold">Exit POS</a>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6 pos-grid">
+        
+        <div class="space-y-6">
+            <div class="bg-white p-8 rounded-2xl shadow-sm border">
+                <h2 class="text-lg font-bold mb-4">New Sale / Order</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Search Live Inventory</label>
+                        <input list="inventory-datalist" type="text" id="goodsSearch" placeholder="Start typing item name..." 
+                               class="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-green-500 outline-none transition">
+                        <datalist id="inventory-datalist"></datalist>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Price</label>
+                        <input type="text" id="autoPrice" readonly placeholder="$0.00" 
+                               class="w-full bg-gray-50 border-2 border-transparent rounded-xl p-3 font-bold text-green-600">
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Quantity (Stock: <span id="stock-hint">0</span>)</label>
+                        <input type="number" id="qty" value="1" min="1" class="w-full border rounded-xl p-3">
+                    </div>
+                    <div class="flex-1 flex items-end">
+                        <button onclick="addToCart()" id="add-btn" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition">
+                            <i class="fa fa-plus mr-2"></i> Add to Order
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-orange-50 p-6 rounded-2xl border border-orange-100">
+                    <h3 class="font-bold text-orange-800 mb-2"><i class="fa fa-trash-can mr-2"></i> Report Wastage</h3>
+                    <p class="text-xs text-orange-600 mb-4">Record broken or expired items.</p>
+                    <button class="bg-orange-600 text-white text-sm px-4 py-2 rounded-lg">Register Waste</button>
+                </div>
+                <div class="bg-red-50 p-6 rounded-2xl border border-red-100">
+                    <h3 class="font-bold text-red-800 mb-2"><i class="fa fa-hand-holding-dollar mr-2"></i> Register Debt</h3>
+                    <p class="text-xs text-red-600 mb-4">Track items taken on credit.</p>
+                    <button class="bg-red-600 text-white text-sm px-4 py-2 rounded-lg">Add Debt Record</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg border flex flex-col h-fit sticky top-6">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="font-bold text-xl">Current Receipt</h3>
+                <button onclick="clearCart()" class="text-xs text-gray-400 hover:text-red-500">Clear All</button>
+            </div>
+            
+            <div id="cartItems" class="p-6 space-y-4 max-h-[400px] overflow-y-auto min-h-[150px]">
+                <p id="empty-msg" class="text-gray-400 text-center italic py-10">No items added yet</p>
+            </div>
+
+            <div class="p-6 bg-gray-50 border-t rounded-b-2xl">
+                <div class="flex justify-between mb-6 text-2xl font-black text-gray-900">
+                    <span>Total:</span>
+                    <span id="totalDisplay">$0.00</span>
+                </div>
+                <button onclick="completeSale()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-200 transition active:scale-95">
+                    Complete Sale & Sync
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
+            authDomain: "min-eli.firebaseapp.com",
+            projectId: "min-eli",
+            storageBucket: "min-eli.firebasestorage.app",
+            messagingSenderId: "61590314630",
+            appId: "1:61590314630:web:f75dcd8296954d8c107b07",
+            measurementId: "G-Q8QSR94W7L"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let inventory = [];
+        let cart = [];
+        let selectedItem = null;
+
+        // 1. FETCH LIVE INVENTORY FOR SEARCH
+        onSnapshot(collection(db, "inventory"), (snapshot) => {
+            const datalist = document.getElementById('inventory-datalist');
+            datalist.innerHTML = '';
+            inventory = [];
+            
+            snapshot.forEach(docSnap => {
+                const item = docSnap.data();
+                item.id = docSnap.id;
+                inventory.push(item);
+                
+                const option = document.createElement('option');
+                option.value = item.name;
+                datalist.appendChild(option);
+            });
+        });
+
+        // 2. SEARCH & AUTO-PRICE LOGIC
+        document.getElementById('goodsSearch').addEventListener('input', (e) => {
+            const val = e.target.value;
+            selectedItem = inventory.find(i => i.name === val);
+            
+            if(selectedItem) {
+                document.getElementById('autoPrice').value = "$" + selectedItem.sell;
+                document.getElementById('stock-hint').innerText = selectedItem.stock;
+                if(selectedItem.stock <= 0) {
+                    document.getElementById('add-btn').disabled = true;
+                    document.getElementById('add-btn').classList.add('opacity-50');
+                } else {
+                    document.getElementById('add-btn').disabled = false;
+                    document.getElementById('add-btn').classList.remove('opacity-50');
+                }
+            } else {
+                document.getElementById('autoPrice').value = "";
+                document.getElementById('stock-hint').innerText = "0";
+            }
+        });
+
+        // 3. ADD TO CART
+        window.addToCart = () => {
+            const qty = parseInt(document.getElementById('qty').value);
+            if(!selectedItem || qty <= 0) return;
+            if(qty > selectedItem.stock) {
+                alert("Not enough stock!");
+                return;
+            }
+
+            const cartItem = {
+                ...selectedItem,
+                buyQty: qty,
+                subtotal: selectedItem.sell * qty
+            };
+
+            cart.push(cartItem);
+            renderCart();
+            // Reset search
+            document.getElementById('goodsSearch').value = "";
+            document.getElementById('autoPrice').value = "";
+            selectedItem = null;
+        };
+
+        // 4. RENDER RECEIPT
+        function renderCart() {
+            const container = document.getElementById('cartItems');
+            const totalDisplay = document.getElementById('totalDisplay');
+            const emptyMsg = document.getElementById('empty-msg');
+            
+            container.innerHTML = "";
+            let total = 0;
+
+            if(cart.length === 0) {
+                container.appendChild(emptyMsg);
+                totalDisplay.innerText = "$0.00";
+                return;
+            }
+
+            cart.forEach((item, index) => {
+                total += item.subtotal;
+                container.innerHTML += `
+                    <div class="receipt-item flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <div>
+                            <p class="font-bold text-sm">${item.name}</p>
+                            <p class="text-xs text-gray-500">${item.buyQty} x $${item.sell}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-blue-600">$${item.subtotal}</p>
+                            <button onclick="removeItem(${index})" class="text-[10px] text-red-400">Remove</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            totalDisplay.innerText = "$" + total.toLocaleString();
+        }
+
+        window.removeItem = (index) => {
+            cart.splice(index, 1);
+            renderCart();
+        };
+
+        window.clearCart = () => {
+            cart = [];
+            renderCart();
+        };
+
+        // 5. COMPLETE SALE (Update Firebase)
+        window.completeSale = async () => {
+            if(cart.length === 0) return;
+
+            try {
+                for (const item of cart) {
+                    // Update stock in Inventory
+                    const itemRef = doc(db, "inventory", item.id);
+                    await updateDoc(itemRef, {
+                        stock: item.stock - item.buyQty
+                    });
+
+                    // Log as a Sale for the owner to see
+                    await addDoc(collection(db, "sales"), {
+                        itemName: item.name,
+                        qty: item.buyQty,
+                        totalPrice: item.subtotal,
+                        date: serverTimestamp()
+                    });
+                }
+
+                alert("Sale Completed! Stock updated.");
+                cart = [];
+                renderCart();
+
+            } catch (err) {
+                console.error(err);
+                alert("Error completing sale: " + err.message);
+            }
+        };
+
+        // CLOCK
+        setInterval(() => {
+            document.getElementById('live-clock').innerText = new Date().toLocaleString();
+        }, 1000);
+    </script>
+</body>
+</html>

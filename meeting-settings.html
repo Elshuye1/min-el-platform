@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Min-el | Meeting & Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .dark-mode { background-color: #0f172a; color: white; }
+        .dark-mode .card { background-color: #1e293b; border-color: #334155; }
+        .video-placeholder {
+            background: linear-gradient(45deg, #1e293b, #334155);
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1rem;
+            position: relative;
+        }
+    </style>
+</head>
+<body id="body" class="bg-gray-50 transition-colors duration-300">
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-10">
+            <a href="index.html" class="text-blue-600 font-bold"><i class="fa fa-arrow-left mr-2"></i> Back to Home</a>
+            <div class="flex gap-4">
+                <button onclick="toggleTheme()" class="p-2 rounded-full border hover:bg-gray-200 transition" title="Toggle Theme">
+                    <i class="fa fa-moon" id="theme-icon"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2">
+                <div class="card bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Online Meeting Room</h2>
+                        <span class="bg-red-500 text-white text-xs px-3 py-1 rounded-full animate-pulse">LIVE</span>
+                    </div>
+
+                    <div class="video-placeholder mb-6">
+                        <div class="text-center">
+                            <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                <i class="fa fa-video text-white text-3xl"></i>
+                            </div>
+                            <p class="text-gray-300">Camera is off. Click "Start" to begin meeting with Seller.</p>
+                        </div>
+                        
+                        <div class="absolute bottom-4 right-4 w-32 h-20 bg-gray-800 rounded-lg border-2 border-blue-500 flex items-center justify-center overflow-hidden">
+                            <span class="text-[10px] text-gray-400">Seller Preview</span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center gap-4">
+                        <button class="bg-gray-800 text-white p-4 rounded-full hover:bg-gray-700"><i class="fa fa-microphone"></i></button>
+                        <button class="bg-blue-600 text-white px-8 py-3 rounded-full font-bold hover:bg-blue-700">Start Meeting</button>
+                        <button class="bg-red-600 text-white p-4 rounded-full hover:bg-red-700"><i class="fa fa-phone-slash"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="card bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold mb-4 flex items-center gap-2">
+                        <i class="fa fa-language text-blue-600"></i> Platform Language
+                    </h3>
+                    <div class="space-y-2">
+                        <button onclick="changeLang('English')" class="w-full text-left p-3 rounded-lg border hover:border-blue-500 hover:bg-blue-50 transition">English</button>
+                        <button onclick="changeLang('Amharic')" class="w-full text-left p-3 rounded-lg border hover:border-blue-500 hover:bg-blue-50 transition font-medium">አማርኛ (Amharic)</button>
+                        <button onclick="changeLang('Arabic')" class="w-full text-left p-3 rounded-lg border hover:border-blue-500 hover:bg-blue-50 transition">العربية (Arabic)</button>
+                        <button onclick="changeLang('Spanish')" class="w-full text-left p-3 rounded-lg border hover:border-blue-500 hover:bg-blue-50 transition">Español</button>
+                    </div>
+                </div>
+
+                <div class="card bg-blue-600 text-white p-6 rounded-2xl shadow-lg">
+                    <h3 class="font-bold mb-2">Invite Seller</h3>
+                    <p class="text-sm opacity-80 mb-4">Send a direct link to your staff to start the video conference.</p>
+                    <input type="text" readonly value="min-el.com/meet/room-882" class="w-full bg-blue-700 border-none rounded-lg p-2 text-sm mb-3">
+                    <button class="w-full bg-white text-blue-600 font-bold py-2 rounded-lg text-sm">Copy Invite Link</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle Logic
+        function toggleTheme() {
+            const body = document.getElementById('body');
+            const icon = document.getElementById('theme-icon');
+            body.classList.toggle('dark-mode');
+            
+            if(body.classList.contains('dark-mode')) {
+                icon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                icon.classList.replace('fa-sun', 'fa-moon');
+            }
+        }
+
+        // Language Alert logic
+        function changeLang(lang) {
+            alert("Platform language changing to " + lang + ". This will refresh all menus in your selected language.");
+        }
+    </script>
+</body>
+</html>

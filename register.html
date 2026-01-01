@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Min-el | Secure Registration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .auth-bg { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); min-h: screen; }
+        .role-card:hover { border-color: #2563eb; background-color: #eff6ff; }
+        .role-card.active { border-color: #2563eb; background-color: #eff6ff; ring: 2px; }
+    </style>
+</head>
+<body class="auth-bg flex items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+        <div class="bg-blue-600 md:w-5/12 p-10 text-white flex flex-col justify-between">
+            <div>
+                <h1 class="text-3xl font-bold mb-4">Min-el</h1>
+                <p class="text-blue-100 italic">"Securely bridging the gap between motivation and management."</p>
+            </div>
+            <div class="space-y-4 text-sm">
+                <div class="flex items-center gap-3"><i class="fa fa-check-circle"></i> Multi-tenant Security</div>
+                <div class="flex items-center gap-3"><i class="fa fa-check-circle"></i> Multilingual Support</div>
+                <div class="flex items-center gap-3"><i class="fa fa-check-circle"></i> 10% Charity Tracking</div>
+            </div>
+        </div>
+
+        <div class="md:w-7/12 p-10">
+            <h2 class="text-2xl font-bold mb-2">Create Account</h2>
+            <p class="text-gray-500 mb-8">Choose your role to get started</p>
+
+            <form action="#" class="space-y-5">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="role" value="owner" class="hidden peer" checked>
+                        <div class="role-card border-2 rounded-xl p-4 text-center transition peer-checked:border-blue-600 peer-checked:bg-blue-50">
+                            <i class="fa fa-briefcase text-xl mb-2 text-blue-600"></i>
+                            <p class="font-bold text-sm">Owner</p>
+                            <p class="text-[10px] text-gray-400">Create Company</p>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="role" value="seller" class="hidden peer">
+                        <div class="role-card border-2 rounded-xl p-4 text-center transition peer-checked:border-blue-600 peer-checked:bg-blue-50">
+                            <i class="fa fa-tag text-xl mb-2 text-green-600"></i>
+                            <p class="font-bold text-sm">Seller</p>
+                            <p class="text-[10px] text-gray-400">Join Branch</p>
+                        </div>
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Username</label>
+                    <input type="text" placeholder="Choose a unique name" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Email Address</label>
+                    <input type="email" placeholder="email@company.com" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Password</label>
+                    <input type="password" placeholder="••••••••" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <p class="text-[10px] text-gray-400 mt-1">Must include 8+ characters and symbols.</p>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-100">
+                    Register & Create Workspace
+                </button>
+
+                <p class="text-center text-sm text-gray-500 mt-4">
+                    Already have an account? <a href="login.html" class="text-blue-600 font-bold">Log In</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
