@@ -24,6 +24,16 @@
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* --- Mobile Nav Styles --- */
+        .mobile-bottom-nav {
+            display: flex;
+        }
+        @media (min-width: 768px) {
+            .mobile-bottom-nav {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body class="pb-24 md:pb-0"> 
@@ -107,6 +117,21 @@
         </section>
     </main>
 
+    <div class="mobile-bottom-nav fixed bottom-0 left-0 right-0 h-20 glass border-t border-white/10 z-[100] items-center justify-around px-6">
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="flex flex-col items-center gap-1 text-blue-500">
+            <i class="fa fa-house text-xl"></i>
+            <span class="text-[10px] font-bold">Home</span>
+        </button>
+        <button onclick="openModal('login')" class="flex flex-col items-center gap-1 text-slate-400">
+            <i class="fa fa-right-to-bracket text-xl"></i>
+            <span class="text-[10px] font-bold">Login</span>
+        </button>
+        <button onclick="openModal('register')" class="flex flex-col items-center gap-1 text-slate-400">
+            <i class="fa fa-user-plus text-xl"></i>
+            <span class="text-[10px] font-bold">Join</span>
+        </button>
+    </div>
+
     <div id="auth-modal" class="hidden fixed inset-0 z-[200] flex items-end md:items-center justify-center">
         <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" onclick="closeModal()"></div>
         <div class="glass w-full md:max-w-md rounded-t-[3rem] md:rounded-[3rem] p-8 relative animate-slide-up h-[85vh] md:h-auto overflow-y-auto">
@@ -165,7 +190,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- NEW: LIVE INVENTORY LISTENER ---
         function loadInventory() {
             const colRef = collection(db, "inventory");
             onSnapshot(colRef, (snapshot) => {
@@ -174,7 +198,6 @@
                 snapshot.docs.forEach((doc) => {
                     items.push({ ...doc.data(), id: doc.id });
                 });
-                // This logs your database items to the browser console (F12)
                 console.log("Current Inventory in index.html:", items);
             });
         }
@@ -254,9 +277,7 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // START LISTENING TO INVENTORY UPON LOGIN
                 loadInventory();
-
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     const role = userDoc.data().role;
