@@ -3,246 +3,283 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Min-el | Business & Social Hub</title>
+    <title>Min-el | Business Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; scroll-behavior: smooth; top: 0 !important; }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .hero-mesh { background: radial-gradient(circle at 50% -20%, #1e40af 0%, #0f172a 70%); }
-        .card-hover { transition: all 0.4s ease; border: 1px solid rgba(255, 255, 255, 0.05); }
-        .card-hover:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.07); border-color: rgba(59, 130, 246, 0.5); }
-        .locked-card { filter: grayscale(1) blur(4px); opacity: 0.3; pointer-events: none; }
-        
-        .goog-te-banner-frame.skiptranslate, .goog-te-gadget { display: none !important; }
-        .goog-text-highlight { background-color: transparent !important; box-shadow: none !important; }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #0f172a; 
+            color: white; 
+            -webkit-tap-highlight-color: transparent;
+        }
 
-        /* Smooth Section Transitions */
-        .section-animate { animation: slideUp 0.6s ease-out; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Pulse Animation for Contact */
-        .pulse-blue { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); } 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .locked-card { filter: grayscale(1) blur(3px); opacity: 0.4; pointer-events: none; }
+
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-up { animation: slideUp 0.4s ease-out; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="hero-mesh min-h-screen pb-20"> 
-
-    <nav class="sticky top-0 z-[100] glass px-4 py-3 border-b border-white/5">
+<body class="pb-24 md:pb-0"> 
+    
+    <nav class="sticky top-0 z-50 glass px-4 py-3 md:px-8">
         <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="showSection('home')">
-                <div class="bg-blue-600 w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-500/40 text-white">M</div>
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-600 w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-500/30">M</div>
                 <h1 class="text-xl font-extrabold tracking-tighter">Min-el</h1>
             </div>
-
-            <button onclick="toggleLangMenu()" class="flex items-center gap-2 glass px-4 py-2 rounded-xl text-xs font-bold border-white/10 hover:bg-white/10 transition">
-                <i class="fa fa-globe text-blue-400"></i>
-                <span>Language / ቋንቋ</span>
-            </button>
-
-            <div class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">
-                <button onclick="showSection('home')" class="hover:text-blue-400 transition">Home</button>
-                <button onclick="showSection('social')" class="hover:text-blue-400 transition">Community</button>
-                <button onclick="showSection('academy')" class="hover:text-blue-400 transition">Academy</button>
-                <button onclick="showSection('help')" class="hover:text-blue-400 transition text-emerald-400">Help Center</button>
-                <button onclick="showSection('about')" class="hover:text-blue-400 transition">About</button>
-            </div>
             
-            <div class="flex items-center gap-4">
-                <button onclick="openModal('login')" class="hidden md:block text-sm font-bold px-4 py-2">Log In</button>
-                <button onclick="openModal('register')" class="bg-blue-600 px-5 py-2 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20">Get Started</button>
+            <div class="hidden md:flex items-center gap-6">
+                <button onclick="openModal('login')" class="font-bold text-sm hover:text-blue-400">Login</button>
+                <button onclick="openModal('register')" class="bg-blue-600 px-6 py-2 rounded-full font-bold text-sm hover:bg-blue-500 transition">Get Started</button>
+            </div>
+
+            <div id="logged-in-status" class="md:hidden">
+                <i class="fa fa-circle-user text-2xl text-blue-500"></i>
             </div>
         </div>
     </nav>
 
-    <div id="lang-modal" class="hidden fixed inset-0 z-[300] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-md" onclick="toggleLangMenu()"></div>
-        <div class="glass w-full max-w-sm rounded-[2.5rem] p-8 relative">
-            <h3 class="text-xl font-bold mb-6 text-center">Select Language</h3>
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="changeLang('en')" class="p-3 rounded-xl bg-white/5 hover:bg-blue-600 transition text-sm">English</button>
-                <button onclick="changeLang('am')" class="p-3 rounded-xl bg-white/5 hover:bg-blue-600 transition text-sm">አማርኛ (Amharic)</button>
-                <button onclick="changeLang('es')" class="p-3 rounded-xl bg-white/5 hover:bg-blue-600 transition text-sm">Español</button>
-                <button onclick="changeLang('fr')" class="p-3 rounded-xl bg-white/5 hover:bg-blue-600 transition text-sm">Français</button>
-                <button onclick="changeLang('ar')" class="p-3 rounded-xl bg-white/5 hover:bg-blue-600 transition text-sm">العربية</button>
-                <button onclick="changeLang('zh-CN')" class="p-3 rounded-xl bg-white/5 hover:bg-blue-600 transition text-sm">中文</button>
-            </div>
-        </div>
-    </div>
+    <main class="container mx-auto px-4 py-6 md:py-12 lg:max-w-6xl">
+        <section class="mb-10">
+            <h2 class="text-3xl md:text-5xl font-black mb-2">Hello, <span class="text-blue-500">Entrepreneur</span></h2>
+            <p class="text-slate-400 text-sm md:text-lg">Manage your business and grow your soul.</p>
+        </section>
 
-    <div id="google_translate_element" style="display:none"></div>
-
-    <main class="container mx-auto px-4 py-8 max-w-6xl">
-        
-        <div class="w-full h-24 glass mb-10 rounded-2xl flex items-center justify-center text-slate-600 text-xs tracking-widest uppercase">
-            Google Ads Slot
-        </div>
-
-        <div id="section-home" class="section section-animate space-y-12">
-            <div class="text-center md:text-left">
-                <h2 class="text-5xl md:text-7xl font-black mb-4">Grow your <span class="text-blue-500">Wealth.</span></h2>
-                <p class="text-slate-400 text-lg max-w-2xl">Manage your business terminals and learn from the best entrepreneurs in one unified ecosystem.</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div id="owner-card" class="dashboard-item locked-card glass p-8 rounded-[2.5rem] card-hover">
-                    <i class="fa fa-crown text-3xl text-blue-400 mb-6 block"></i>
-                    <h4 class="font-bold text-xl mb-2">Owner Dashboard</h4>
-                    <p class="text-slate-500 text-sm mb-6">Inventory, Tithe, and Profit Analytics.</p>
-                    <a href="#" class="block w-full py-3 bg-blue-600 rounded-xl text-center text-sm font-bold">Open Portal</a>
-                </div>
-                <div id="seller-card" class="dashboard-item locked-card glass p-8 rounded-[2.5rem] card-hover">
-                    <i class="fa fa-cash-register text-3xl text-emerald-400 mb-6 block"></i>
-                    <h4 class="font-bold text-xl mb-2">Seller POS</h4>
-                    <p class="text-slate-500 text-sm mb-6">Sales entry and wastage tracking.</p>
-                    <a href="#" class="block w-full py-3 bg-emerald-600 rounded-xl text-center text-sm font-bold">Launch POS</a>
-                </div>
-                <div class="glass p-8 rounded-[2.5rem] flex flex-col items-center justify-center border-dashed border-white/10">
-                    <span class="text-[10px] text-slate-500 mb-2 uppercase">Google Ads</span>
-                    <div class="w-full h-32 bg-white/5 rounded-xl flex items-center justify-center text-slate-700">Ad Space</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="section-about" class="section hidden section-animate max-w-4xl mx-auto space-y-16 py-10">
-            <div class="text-center">
-                <span class="text-blue-500 font-bold tracking-[0.3em] text-xs uppercase">The Vision</span>
-                <h2 class="text-4xl md:text-6xl font-black mt-4 mb-6 leading-tight">Empowering Global <br><span class="text-blue-500">Business Synergy.</span></h2>
-                <p class="text-slate-400 leading-relaxed text-lg italic">"Bridging the gap between local enterprise and digital excellence."</p>
-            </div>
-
-            <div class="grid md:grid-cols-2 gap-10 items-center">
-                <div class="space-y-6">
-                    <h3 class="text-2xl font-bold border-l-4 border-blue-600 pl-4">Who is Min-el?</h3>
-                    <p class="text-slate-300 text-sm leading-relaxed">Min-el is a cutting-edge <strong>Business Operating System (BOS)</strong> designed to streamline retail operations, financial management, and community-driven learning. Our platform provides specialized dashboards for Business Owners and Branch Sellers, ensuring complete transparency in inventory and profit scaling.</p>
-                    <p class="text-slate-300 text-sm leading-relaxed">We believe that technology should be accessible. By integrating multi-language support and military-grade encryption, we help entrepreneurs from Ethiopia to the global stage manage their wealth with precision.</p>
-                </div>
-                <div class="glass p-8 rounded-[3rem] border-blue-500/20">
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-4"><i class="fa fa-check-circle text-blue-500"></i><span class="text-sm font-semibold">Real-time Profit Analytics</span></div>
-                        <div class="flex items-center gap-4"><i class="fa fa-check-circle text-blue-500"></i><span class="text-sm font-semibold">Secure Cloud Database</span></div>
-                        <div class="flex items-center gap-4"><i class="fa fa-check-circle text-blue-500"></i><span class="text-sm font-semibold">Professional Academy Access</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="text-center space-y-8 pt-10">
-                <h3 class="text-2xl font-bold">Have a Partnership Idea?</h3>
-                <div class="flex flex-wrap justify-center gap-6">
-                    <a href="mailto:mintedevhana@gmail.com" class="pulse-blue bg-blue-600 px-8 py-4 rounded-2xl font-black flex items-center gap-3 hover:scale-105 transition">
-                        <i class="fa fa-envelope"></i> Contact via Email
-                    </a>
-                    <button onclick="showSection('contact')" class="glass border-white/20 px-8 py-4 rounded-2xl font-black hover:bg-white/10 transition">
-                        Direct Contact Info
-                    </button>
-                </div>
-            </div>
-
-            <hr class="border-white/5">
-
-            <div class="space-y-8 pb-20">
-                <h3 class="text-3xl font-black text-center">Privacy & Policy Framework</h3>
-                <div class="grid gap-6">
-                    <div class="glass p-6 rounded-2xl">
-                        <h4 class="font-bold text-blue-400 mb-2 underline uppercase tracking-widest text-xs">01. Data Integrity</h4>
-                        <p class="text-xs text-slate-400 leading-relaxed">Min-el employs end-to-end encryption for all business metrics. Your inventory, financial logs, and tithe records are processed via Firebase Firestore with strictly limited access protocols. We never view or share your private sales data.</p>
-                    </div>
-                    <div class="glass p-6 rounded-2xl">
-                        <h4 class="font-bold text-blue-400 mb-2 underline uppercase tracking-widest text-xs">02. Third-Party Protocols</h4>
-                        <p class="text-xs text-slate-400 leading-relaxed">Our platform integrates Google AdSense and Google Translate. These services may use cookies to optimize user experience. By using Min-el, you consent to our use of these essential third-party scripts to keep our services free and global.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="section-contact" class="section hidden section-animate max-w-xl mx-auto py-10">
-            <div class="glass p-10 rounded-[3.5rem] border-blue-600/30 text-center space-y-8 relative overflow-hidden">
-                <div class="absolute -top-10 -left-10 w-40 h-40 bg-blue-600/10 blur-[50px] rounded-full"></div>
-                <h2 class="text-3xl font-black">Get in Touch</h2>
-                <p class="text-slate-400 text-sm">Available for support, business inquiries, and development requests.</p>
+        <section class="mb-12">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Quick Terminals</h3>
+            <div class="flex overflow-x-auto gap-4 no-scrollbar pb-4 -mx-4 px-4 md:grid md:grid-cols-3 md:mx-0 md:px-0">
                 
-                <div class="space-y-4">
-                    <a href="mailto:mintedevhana@gmail.com" class="block glass p-5 rounded-2xl hover:bg-white/5 transition border-white/10">
-                        <i class="fa fa-at text-blue-500 mb-2 block text-xl"></i>
-                        <span class="text-xs text-slate-500 block mb-1">Email Address</span>
-                        <span class="font-bold">mintedevhana@gmail.com</span>
-                    </a>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <a href="tel:+251938652391" class="glass p-5 rounded-2xl hover:bg-white/5 transition border-white/10">
-                            <i class="fa fa-phone text-emerald-500 mb-2 block"></i>
-                            <span class="font-bold">+251 9 38 65 23 91</span>
-                        </a>
-                        <a href="tel:+251916528989" class="glass p-5 rounded-2xl hover:bg-white/5 transition border-white/10">
-                            <i class="fa fa-phone text-emerald-500 mb-2 block"></i>
-                            <span class="font-bold">+251 9 16 52 89 89</span>
-                        </a>
+                <div id="owner-card" class="dashboard-item locked-card glass p-6 rounded-[2rem] min-w-[280px] md:min-w-0">
+                    <div class="flex justify-between items-start mb-4">
+                        <i class="fa fa-crown text-2xl text-blue-500"></i>
+                        <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded-md">ADMIN</span>
                     </div>
+                    <h4 class="font-black text-lg">Owner Dashboard</h4>
+                    <p class="text-slate-500 text-xs mb-6">Analyze 10% Tithe & Inventory.</p>
+                    <a href="owner-dashboard.html" class="block w-full py-3 bg-blue-600 rounded-xl text-center text-sm font-bold">Open</a>
                 </div>
 
-                <button onclick="showSection('home')" class="text-xs font-bold text-slate-500 hover:text-white transition underline tracking-widest">BACK TO HOME</button>
+                <div id="seller-card" class="dashboard-item locked-card glass p-6 rounded-[2rem] min-w-[280px] md:min-w-0">
+                    <div class="flex justify-between items-start mb-4">
+                        <i class="fa fa-cash-register text-2xl text-green-500"></i>
+                        <span class="text-[10px] bg-green-500/20 text-green-400 px-2 py-1 rounded-md">SALES</span>
+                    </div>
+                    <h4 class="font-black text-lg">Seller POS</h4>
+                    <p class="text-slate-500 text-xs mb-6">Record sales and wastage.</p>
+                    <a href="seller-dashboard.html" class="block w-full py-3 bg-green-600 rounded-xl text-center text-sm font-bold">Open</a>
+                </div>
+
+                <div id="meet-card" class="dashboard-item locked-card glass p-6 rounded-[2rem] min-w-[280px] md:min-w-0">
+                    <div class="flex justify-between items-start mb-4">
+                        <i class="fa fa-video text-2xl text-red-500"></i>
+                        <span class="text-[10px] bg-red-500/20 text-red-400 px-2 py-1 rounded-md">LIVE</span>
+                    </div>
+                    <h4 class="font-black text-lg">Video Meet</h4>
+                    <p class="text-slate-500 text-xs mb-6">Staff strategy & calls.</p>
+                    <a href="meeting-settings.html" class="block w-full py-3 bg-white/10 rounded-xl text-center text-sm font-bold">Join</a>
+                </div>
             </div>
-        </div>
+        </section>
 
-        <div id="section-help" class="section hidden section-animate max-w-3xl mx-auto space-y-8">
-            <h2 class="text-4xl font-black text-center">Help Center</h2>
-            <div class="glass p-8 rounded-[2.5rem]"><h4 class="font-bold mb-4">Submit a Question</h4><input type="text" placeholder="Your Question" class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-6 mb-4 outline-none"><button onclick="alert('Sent!')" class="w-full bg-blue-600 py-4 rounded-xl font-bold">Submit</button></div>
-        </div>
-
-        <div id="section-social" class="section hidden section-animate max-w-2xl mx-auto space-y-6">
-            <div class="glass p-6 rounded-[2rem]">
-                <textarea id="post-input" placeholder="Share your win..." class="bg-transparent w-full outline-none resize-none py-2 text-sm" rows="2"></textarea>
-                <button onclick="sharePost()" class="bg-blue-600 px-6 py-2 rounded-full text-sm font-bold float-right mt-2">Post</button>
-                <div class="clear-both"></div>
+        <section class="mb-12">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Community Share</h3>
+            <div class="glass rounded-[2rem] p-4 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <img src="https://ui-avatars.com/api/?name=Me&background=random" class="w-10 h-10 rounded-full border-2 border-blue-600">
+                    <textarea id="post-input" placeholder="What's happening in your business?" class="bg-transparent flex-1 resize-none outline-none text-sm py-2" rows="2"></textarea>
+                </div>
+                <div class="flex justify-between items-center border-t border-white/10 pt-4">
+                    <div class="flex gap-4 text-slate-400">
+                        <button class="hover:text-blue-500"><i class="fa fa-camera"></i></button>
+                        <button class="hover:text-blue-500"><i class="fa fa-location-dot"></i></button>
+                    </div>
+                    <button onclick="sharePost()" class="bg-blue-600 px-6 py-2 rounded-full font-bold text-sm">Post</button>
+                </div>
             </div>
             <div id="feed-container" class="space-y-4"></div>
-        </div>
+        </section>
+    </main>
 
-        <div id="section-academy" class="section hidden section-animate space-y-8">
-            <h2 class="text-3xl font-black">Min-el Academy</h2>
-            <div class="grid md:grid-cols-2 gap-6">
-                <div class="glass p-6 rounded-[2.5rem]">
-                    <h4 class="text-xl font-bold">Business 101</h4>
-                    <button class="w-full py-3 bg-white/5 border border-white/10 rounded-xl mt-6">Start</button>
+    <div id="auth-modal" class="hidden fixed inset-0 z-[200] flex items-end md:items-center justify-center">
+        <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="glass w-full md:max-w-md rounded-t-[3rem] md:rounded-[3rem] p-8 relative animate-slide-up h-[85vh] md:h-auto overflow-y-auto">
+            <h2 id="modal-title" class="text-3xl font-black mb-2 text-center text-white">Join Min-el</h2>
+            <p id="modal-subtitle" class="text-center text-slate-500 text-sm mb-8">Secure Access for Owners & Sellers</p>
+
+            <form id="auth-form" class="space-y-4">
+                <div class="relative">
+                    <i class="fa fa-envelope absolute left-4 top-4 text-slate-500"></i>
+                    <input type="email" id="auth-email" placeholder="Gmail Address" required class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-600 text-sm text-white">
+                </div>
+
+                <div class="relative">
+                    <i class="fa fa-lock absolute left-4 top-4 text-slate-500"></i>
+                    <input type="password" id="pass1" placeholder="Password" required class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-12 outline-none focus:ring-2 focus:ring-blue-600 text-sm text-white">
+                    <button type="button" onclick="togglePass('pass1')" class="absolute right-4 top-4 text-slate-500"><i class="fa fa-eye"></i></button>
+                </div>
+
+                <div id="role-container">
+                    <p class="text-[10px] font-bold text-slate-500 mb-2 ml-2">SELECT YOUR ROLE</p>
+                    <select id="user-role" class="w-full bg-slate-900 border border-white/10 rounded-2xl py-4 px-4 font-bold text-blue-400 text-sm">
+                        <option value="Owner">Business Owner</option>
+                        <option value="Seller">Branch Seller</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black shadow-xl shadow-blue-500/20 active:scale-95 transition text-white">Verify & Enter</button>
+            </form>
+
+            <div class="mt-8">
+                <p class="text-center text-xs font-bold text-slate-500 uppercase mb-4">Social Login</p>
+                <div class="flex justify-center gap-4">
+                    <button onclick="socialLogin('Google')" class="w-14 h-14 rounded-2xl glass flex items-center justify-center text-xl hover:text-red-500"><i class="fa-brands fa-google"></i></button>
+                    <button onclick="socialLogin('Facebook')" class="w-14 h-14 rounded-2xl glass flex items-center justify-center text-xl hover:text-blue-500"><i class="fa-brands fa-facebook"></i></button>
                 </div>
             </div>
         </div>
-
-    </main>
-
-    <div id="auth-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-md" onclick="closeModal()"></div>
-        <div class="glass w-full max-w-md rounded-[3rem] p-10 relative"><h2 id="modal-title" class="text-3xl font-black mb-8 text-center">Join Min-el</h2><form id="auth-form" class="space-y-4"><input type="email" id="auth-email" placeholder="Gmail Address" required class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none"><input type="password" id="pass1" placeholder="Password" required class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none"><div id="role-container"><select id="user-role" class="w-full bg-slate-900 border border-white/10 rounded-2xl py-4 px-4 font-bold text-blue-400"><option value="Owner">Business Owner</option><option value="Seller">Branch Seller</option></select></div><button type="submit" class="w-full bg-blue-600 py-4 rounded-2xl font-black">Enter</button></form></div>
     </div>
 
-    <div class="md:hidden fixed bottom-0 left-0 right-0 h-20 glass border-t border-white/10 z-[100] flex items-center justify-around px-6">
-        <button onclick="showSection('home')" class="flex flex-col items-center gap-1 text-slate-400"><i class="fa fa-house text-lg"></i></button>
-        <button onclick="showSection('social')" class="flex flex-col items-center gap-1 text-slate-400"><i class="fa fa-users text-lg"></i></button>
-        <button onclick="showSection('about')" class="flex flex-col items-center gap-1 text-slate-400"><i class="fa fa-info-circle text-lg"></i></button>
-        <button onclick="showSection('contact')" class="flex flex-col items-center gap-1 text-blue-500"><i class="fa fa-paper-plane text-lg"></i></button>
-    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
+            authDomain: "min-eli.firebaseapp.com",
+            projectId: "min-eli",
+            storageBucket: "min-eli.firebasestorage.app",
+            messagingSenderId: "61590314630",
+            appId: "1:61590314630:web:f75dcd8296954d8c107b07",
+            measurementId: "G-Q8QSR94W7L"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- NEW: LIVE INVENTORY LISTENER ---
+        function loadInventory() {
+            const colRef = collection(db, "inventory");
+            onSnapshot(colRef, (snapshot) => {
+                console.log("🔔 DATABASE UPDATED!");
+                let items = [];
+                snapshot.docs.forEach((doc) => {
+                    items.push({ ...doc.data(), id: doc.id });
+                });
+                // This logs your database items to the browser console (F12)
+                console.log("Current Inventory in index.html:", items);
+            });
+        }
+
+        window.currentMode = 'register';
+        window.openModal = function(type) {
+            window.currentMode = type;
+            document.getElementById('auth-modal').classList.remove('hidden');
+            const title = document.getElementById('modal-title');
+            const roleContainer = document.getElementById('role-container');
+            
+            if(type === 'login') {
+                title.innerText = "Welcome Back";
+                roleContainer.classList.add('hidden');
+            } else {
+                title.innerText = "Join Min-el";
+                roleContainer.classList.remove('hidden');
+            }
+        };
+
+        window.closeModal = function() { document.getElementById('auth-modal').classList.add('hidden'); };
+
+        window.togglePass = function(id) {
+            const el = document.getElementById(id);
+            el.type = el.type === 'password' ? 'text' : 'password';
+        };
+
+        document.getElementById('auth-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('pass1').value;
+            const role = document.getElementById('user-role').value;
+            const btn = document.getElementById('auth-submit-btn');
+
+            btn.innerText = "Processing...";
+
+            try {
+                if (window.currentMode === 'register') {
+                    const res = await createUserWithEmailAndPassword(auth, email, password);
+                    await setDoc(doc(db, "users", res.user.uid), {
+                        email: email,
+                        role: role,
+                        createdAt: new Date()
+                    });
+                    alert("Account Created! You are now logged in.");
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+                closeModal();
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.innerText = "Verify & Enter";
+            }
+        };
+
+        window.socialLogin = async function(providerName) {
+            const provider = providerName === 'Google' ? new GoogleAuthProvider() : new FacebookAuthProvider();
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                
+                if (!userDoc.exists()) {
+                    const role = prompt("First time here! Are you an Owner or Seller?", "Seller");
+                    await setDoc(doc(db, "users", user.uid), {
+                        email: user.email,
+                        role: role,
+                        username: user.displayName
+                    });
+                }
+                closeModal();
+            } catch (err) {
+                alert(err.message);
+            }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // START LISTENING TO INVENTORY UPON LOGIN
+                loadInventory();
+
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const role = userDoc.data().role;
+                    document.querySelectorAll('.dashboard-item').forEach(i => i.classList.add('locked-card'));
+                    
+                    if(role === 'Owner') {
+                        document.getElementById('owner-card').classList.remove('locked-card');
+                        document.getElementById('meet-card').classList.remove('locked-card');
+                    } else {
+                        document.getElementById('seller-card').classList.remove('locked-card');
+                    }
+                }
+            }
+        });
+    </script>
 
     <script>
-        // GOOGLE TRANSLATE CORE
-        function googleTranslateElementInit() { new google.translate.TranslateElement({pageLanguage: 'en', autoDisplay: false}, 'google_translate_element'); }
-        function toggleLangMenu() { document.getElementById('lang-modal').classList.toggle('hidden'); }
-        function changeLang(code) { const select = document.querySelector('.goog-te-combo'); if (select) { select.value = code; select.dispatchEvent(new Event('change')); } toggleLangMenu(); }
-
-        // NAVIGATION
-        window.showSection = (id) => {
-            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
-            document.getElementById('section-' + id).classList.remove('hidden');
-            window.scrollTo(0,0);
-        };
-        window.openModal = () => { document.getElementById('auth-modal').classList.remove('hidden'); };
-        window.closeModal = () => { document.getElementById('auth-modal').classList.add('hidden'); };
-
         function sharePost() {
             const val = document.getElementById('post-input').value;
             if(!val) return;
-            const card = `<div class="glass p-6 rounded-[2rem] border-white/10"><p class="text-sm text-slate-300">${val}</p></div>`;
+            const card = `<div class="glass p-5 rounded-[2rem] border-white/5 animate-slide-up">
+                            <p class="text-sm text-slate-300">${val}</p>
+                          </div>`;
             document.getElementById('feed-container').insertAdjacentHTML('afterbegin', card);
             document.getElementById('post-input').value = '';
         }
