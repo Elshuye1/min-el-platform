@@ -9,199 +9,221 @@
     <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; scroll-behavior: smooth; top: 0 !important; overflow-x: hidden; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; scroll-behavior: smooth; top: 0 !important; }
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
         .hero-mesh { background: radial-gradient(circle at 50% -20%, #1e40af 0%, #0f172a 70%); }
         .card-hover { transition: all 0.4s ease; border: 1px solid rgba(255, 255, 255, 0.05); }
+        .card-hover:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.07); border-color: rgba(59, 130, 246, 0.5); }
         .locked-card { filter: grayscale(1) blur(4px); opacity: 0.3; pointer-events: none; }
         .goog-te-banner-frame.skiptranslate, .goog-te-gadget { display: none !important; }
-        
-        /* Mobile Specific Fixes */
-        @media (max-width: 640px) {
-            .section-animate { padding-bottom: 80px; } /* Space for mobile nav */
-            h2 { font-size: 2.5rem !important; line-height: 1.1; }
-        }
-
         .section-animate { animation: slideUp 0.5s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="hero-mesh min-h-screen"> 
+<body class="hero-mesh min-h-screen pb-20"> 
 
     <nav class="sticky top-0 z-[100] glass px-4 py-3 border-b border-white/5">
         <div class="container mx-auto flex justify-between items-center">
             <div class="flex items-center gap-2 cursor-pointer" onclick="showSection('home')">
-                <div class="bg-blue-600 w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-500/40 text-white">M</div>
-                <h1 class="text-lg md:text-xl font-extrabold tracking-tighter">Min-el</h1>
+                <div class="bg-blue-600 w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-500/40 text-white">M</div>
+                <h1 class="text-xl font-extrabold tracking-tighter">Min-el</h1>
             </div>
 
-            <div class="flex items-center gap-2 md:gap-4">
-                <button onclick="toggleLangMenu()" class="flex items-center gap-2 glass px-3 py-2 rounded-xl text-[10px] font-bold border-white/10">
-                    <i class="fa fa-globe text-blue-400"></i> <span class="hidden xs:inline">Lang</span>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleLangMenu()" class="hidden sm:flex items-center gap-2 glass px-3 py-2 rounded-xl text-[10px] font-bold border-white/10">
+                    <i class="fa fa-globe text-blue-400"></i> Language
                 </button>
                 
-                <div id="auth-controls" class="flex items-center gap-2">
-                    <button id="btn-login" onclick="openModal('login')" class="text-xs md:text-sm font-bold px-3 py-2">Log In</button>
-                    <button id="btn-getstarted" onclick="openModal('register')" class="bg-blue-600 px-4 py-2 rounded-xl font-bold text-xs md:text-sm shadow-lg">Join</button>
-                    <button id="btn-logout" onclick="handleLogout()" class="hidden bg-red-500/10 text-red-400 border border-red-500/20 px-4 py-2 rounded-xl font-bold text-xs">Log Out</button>
+                <div id="auth-controls" class="flex items-center gap-3">
+                    <button id="btn-login" onclick="openModal('login')" class="text-sm font-bold px-4 py-2">Log In</button>
+                    <button id="btn-getstarted" onclick="openModal('register')" class="bg-blue-600 px-5 py-2 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20">Get Started</button>
+                    <button id="btn-logout" onclick="handleLogout()" class="hidden bg-red-500/10 text-red-400 border border-red-500/20 px-4 py-2 rounded-xl font-bold text-sm hover:bg-red-500 hover:text-white transition">Log Out</button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <div class="md:hidden fixed bottom-4 left-4 right-4 h-16 glass rounded-2xl border border-white/10 z-[200] flex items-center justify-around px-2 shadow-2xl">
-        <button onclick="showSection('home')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
-            <i class="fa fa-house text-lg"></i>
-            <span class="text-[9px] font-bold">HOME</span>
-        </button>
-        <button onclick="showSection('social')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
-            <i class="fa fa-users text-lg"></i>
-            <span class="text-[9px] font-bold">FEED</span>
-        </button>
-        <button onclick="showSection('about')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
-            <i class="fa fa-info-circle text-lg"></i>
-            <span class="text-[9px] font-bold">ABOUT</span>
-        </button>
-        <button onclick="showSection('contact')" class="flex flex-col items-center gap-1 text-blue-400">
-            <i class="fa fa-paper-plane text-lg"></i>
-            <span class="text-[9px] font-bold">CONTACT</span>
-        </button>
-    </div>
-
     <div id="auth-modal" class="hidden fixed inset-0 z-[300] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-950/95 backdrop-blur-md" onclick="closeModal()"></div>
-        <div class="glass w-full max-w-md rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 relative section-animate overflow-y-auto max-h-[90vh]">
-            <div class="text-center mb-6">
-                <h2 id="modal-title" class="text-2xl md:text-3xl font-black text-white">Welcome</h2>
-                <p id="modal-subtitle" class="text-slate-400 text-xs mt-2">Enter your details to continue</p>
+        <div class="glass w-full max-w-md rounded-[2.5rem] p-8 md:p-10 relative section-animate">
+            <div class="text-center mb-8">
+                <h2 id="modal-title" class="text-3xl font-black text-white">Welcome</h2>
+                <p id="modal-subtitle" class="text-slate-400 text-sm mt-2">Enter your details to continue</p>
             </div>
             
             <form id="auth-form" class="space-y-4">
                 <div id="reg-fields" class="space-y-4 hidden">
                     <div class="relative">
-                        <i class="fa fa-building absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                        <input type="text" id="comp-name" placeholder="Company Name" class="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-6 outline-none focus:border-blue-500 text-sm">
+                        <i class="fa fa-building absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                        <input type="text" id="comp-name" placeholder="Company Name" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-blue-500 transition">
                     </div>
                 </div>
+
                 <div class="relative">
-                    <i class="fa fa-envelope absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                    <input type="email" id="auth-email" placeholder="Gmail Address" required class="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-6 outline-none text-sm">
+                    <i class="fa fa-envelope absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                    <input type="email" id="auth-email" placeholder="Gmail Address" required class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-blue-500 transition">
                 </div>
+
                 <div class="relative">
-                    <i class="fa fa-lock absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                    <input type="password" id="pass1" placeholder="Password" required class="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-12 outline-none text-sm">
-                    <button type="button" onclick="togglePass('pass1')" class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500"><i class="fa fa-eye"></i></button>
+                    <i class="fa fa-lock absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                    <input type="password" id="pass1" placeholder="Password" required class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-12 outline-none focus:border-blue-500 transition">
+                    <button type="button" onclick="togglePass('pass1')" class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"><i class="fa fa-eye"></i></button>
                 </div>
+
                 <div id="confirm-pass-container" class="relative hidden">
-                    <i class="fa fa-shield-check absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                    <input type="password" id="pass2" placeholder="Confirm Password" class="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-12 outline-none text-sm">
-                    <button type="button" onclick="togglePass('pass2')" class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500"><i class="fa fa-eye"></i></button>
+                    <i class="fa fa-shield-check absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                    <input type="password" id="pass2" placeholder="Confirm Password" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-12 outline-none focus:border-blue-500 transition">
+                    <button type="button" onclick="togglePass('pass2')" class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"><i class="fa fa-eye"></i></button>
                 </div>
-                <div id="role-container" class="hidden">
-                    <select id="user-role" class="w-full bg-slate-900 border border-white/10 rounded-xl py-4 px-4 font-bold text-blue-400 text-sm">
+
+                <div id="role-container">
+                    <label class="text-[10px] text-slate-500 font-bold uppercase ml-2 mb-1 block">Account Type</label>
+                    <select id="user-role" class="w-full bg-slate-900 border border-white/10 rounded-2xl py-4 px-4 font-bold text-blue-400 outline-none">
                         <option value="Owner">Business Owner</option>
                         <option value="Seller">Branch Seller</option>
                     </select>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 py-4 rounded-xl font-black shadow-xl shadow-blue-600/30">Continue</button>
+
+                <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black shadow-xl shadow-blue-600/30 hover:scale-[1.02] transition">
+                    Continue
+                </button>
             </form>
-            <p id="modal-footer" class="text-center text-[10px] text-slate-500 mt-6"></p>
+            
+            <p id="modal-footer" class="text-center text-xs text-slate-500 mt-6"></p>
         </div>
     </div>
 
-    <main class="container mx-auto px-4 py-6 md:py-10 max-w-6xl">
-        
-        <div id="section-home" class="section section-animate space-y-8 md:space-y-12">
-            <div class="text-center md:text-left">
-                <h2 class="text-4xl md:text-7xl font-black mb-4">Grow your <br class="md:hidden"> <span class="text-blue-500">Wealth.</span></h2>
-                <div id="user-welcome" class="hidden glass p-3 rounded-xl border-blue-500/30 inline-block">
-                    <span class="text-xs md:text-sm font-bold">Welcome, <span id="display-company" class="text-blue-400">...</span>!</span>
-                </div>
+    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        <div id="section-home" class="section section-animate space-y-12">
+            <h2 class="text-5xl md:text-7xl font-black mb-4">Grow your <span class="text-blue-500">Wealth.</span></h2>
+            <div id="user-welcome" class="hidden glass p-4 rounded-xl border-blue-500/30 inline-block">
+                <span class="text-sm font-bold">Welcome back, <span id="display-company" class="text-blue-400">Owner</span>!</span>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                <div id="owner-card" class="dashboard-item locked-card glass p-6 md:p-8 rounded-[2rem] card-hover">
-                    <i class="fa fa-crown text-2xl text-blue-400 mb-4 block"></i>
-                    <h4 class="font-bold text-lg mb-2">Owner Dashboard</h4>
-                    <p class="text-slate-500 text-xs mb-6">Manage all terminals.</p>
-                    <button class="w-full py-3 bg-blue-600 rounded-xl text-xs font-bold">Open Portal</button>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div id="owner-card" class="dashboard-item locked-card glass p-8 rounded-[2.5rem] card-hover">
+                    <i class="fa fa-crown text-3xl text-blue-400 mb-6 block"></i>
+                    <h4 class="font-bold text-xl mb-2">Owner Dashboard</h4>
+                    <a href="#" class="block w-full py-3 bg-blue-600 rounded-xl text-center text-sm font-bold mt-4">Open Portal</a>
                 </div>
-                <div id="seller-card" class="dashboard-item locked-card glass p-6 md:p-8 rounded-[2rem] card-hover">
-                    <i class="fa fa-cash-register text-2xl text-emerald-400 mb-4 block"></i>
-                    <h4 class="font-bold text-lg mb-2">Seller POS</h4>
-                    <p class="text-slate-500 text-xs mb-6">Track daily sales.</p>
-                    <button class="w-full py-3 bg-emerald-600 rounded-xl text-xs font-bold">Launch POS</button>
+                <div id="seller-card" class="dashboard-item locked-card glass p-8 rounded-[2.5rem] card-hover">
+                    <i class="fa fa-cash-register text-3xl text-emerald-400 mb-6 block"></i>
+                    <h4 class="font-bold text-xl mb-2">Seller POS</h4>
+                    <a href="#" class="block w-full py-3 bg-emerald-600 rounded-xl text-center text-sm font-bold mt-4">Launch POS</a>
                 </div>
+                <div class="glass p-8 rounded-[2.5rem] border-dashed border-white/10 flex items-center justify-center text-slate-700">Ad Space</div>
             </div>
         </div>
-
-        <div id="section-contact" class="section hidden section-animate max-w-xl mx-auto py-4">
-            <div class="glass p-8 rounded-[2.5rem] text-center space-y-6">
-                <h2 class="text-2xl font-bold">Contact Developer</h2>
-                <div class="space-y-3">
-                    <a href="mailto:mintedevhana@gmail.com" class="block glass p-4 rounded-xl border-white/5 text-sm font-bold truncate">
-                        <i class="fa fa-envelope text-blue-400 mr-2"></i> mintedevhana@gmail.com
-                    </a>
-                    <a href="tel:+251938652391" class="block glass p-4 rounded-xl border-white/5 text-sm font-bold">
-                        <i class="fa fa-phone text-emerald-400 mr-2"></i> +251 9 38 65 23 91
-                    </a>
-                    <a href="tel:+251916528989" class="block glass p-4 rounded-xl border-white/5 text-sm font-bold">
-                        <i class="fa fa-phone text-emerald-400 mr-2"></i> +251 9 16 52 89 89
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div id="section-about" class="section hidden section-animate max-w-4xl mx-auto py-4">
-             <div class="glass p-6 md:p-10 rounded-[2.5rem] space-y-6">
-                <h2 class="text-2xl font-black text-blue-500 underline">About Min-el</h2>
-                <p class="text-sm text-slate-300 leading-relaxed">Min-el is a professional Business Operating System designed for the modern age. We provide secure, cloud-based tools for inventory tracking, profit analysis, and team management.</p>
-                <div class="pt-4 border-t border-white/10">
-                    <h3 class="font-bold text-sm mb-2 uppercase text-slate-500 tracking-widest">Privacy Policy</h3>
-                    <p class="text-[11px] text-slate-400">All data is encrypted. We use Gmail for authentication and Firebase for secure database management. We do not sell user data to third parties.</p>
-                </div>
-             </div>
-        </div>
-
     </main>
 
-    <script>
-        function showSection(id) {
-            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
-            document.getElementById('section-' + id).classList.remove('hidden');
-            window.scrollTo({top: 0, behavior: 'smooth'});
-        }
-
-        function togglePass(id) {
-            const el = document.getElementById(id);
-            el.type = el.type === 'password' ? 'text' : 'password';
-        }
-
-        function toggleLangMenu() {
-            const modal = document.getElementById('lang-modal');
-            modal.classList.toggle('hidden');
-        }
-
-        // Firebase Auth Mockup (Replace with your actual script block)
-        window.openModal = (mode) => {
-            document.getElementById('auth-modal').classList.remove('hidden');
-            const isReg = mode === 'register';
-            document.getElementById('reg-fields').classList.toggle('hidden', !isReg);
-            document.getElementById('confirm-pass-container').classList.toggle('hidden', !isReg);
-            document.getElementById('role-container').classList.toggle('hidden', !isReg);
-        };
-        window.closeModal = () => document.getElementById('auth-modal').classList.add('hidden');
-    </script>
-
-    <div id="lang-modal" class="hidden fixed inset-0 z-[500] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/80" onclick="toggleLangMenu()"></div>
-        <div class="glass p-8 rounded-3xl relative w-full max-w-xs text-center">
-            <h3 class="font-bold mb-4">Select Language</h3>
-            <button onclick="changeLang('am')" class="w-full py-3 mb-2 bg-blue-600 rounded-xl font-bold">አማርኛ</button>
-            <button onclick="changeLang('en')" class="w-full py-3 bg-white/10 rounded-xl font-bold">English</button>
+    <div id="lang-modal" class="hidden fixed inset-0 z-[400] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-md" onclick="toggleLangMenu()"></div>
+        <div class="glass w-full max-w-sm rounded-[2.5rem] p-8 relative">
+            <h3 class="text-xl font-bold mb-6 text-center text-white">Select Language</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="changeLang('en')" class="p-3 rounded-xl bg-white/5 hover:bg-blue-600 transition text-xs">English</button>
+                <button onclick="changeLang('am')" class="p-3 rounded-xl bg-white/5 hover:bg-blue-600 transition text-xs">አማርኛ</button>
+            </div>
         </div>
     </div>
     <div id="google_translate_element" style="display:none"></div>
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
+            authDomain: "min-eli.firebaseapp.com",
+            projectId: "min-eli",
+            storageBucket: "min-eli.firebasestorage.app",
+            messagingSenderId: "61590314630",
+            appId: "1:61590314630:web:f75dcd8296954d8c107b07",
+            measurementId: "G-Q8QSR94W7L"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- AUTH LOGIC ---
+        window.openModal = (type) => {
+            window.currentMode = type;
+            document.getElementById('auth-modal').classList.remove('hidden');
+            const isReg = type === 'register';
+            document.getElementById('modal-title').innerText = isReg ? 'Create Profile' : 'Welcome Back';
+            document.getElementById('reg-fields').classList.toggle('hidden', !isReg);
+            document.getElementById('confirm-pass-container').classList.toggle('hidden', !isReg);
+            document.getElementById('role-container').classList.toggle('hidden', !isReg);
+            document.getElementById('modal-footer').innerHTML = isReg ? 
+                `Already have an account? <button onclick="openModal('login')" class="text-blue-400 font-bold">Log In</button>` : 
+                `New user? <button onclick="openModal('register')" class="text-blue-400 font-bold">Register</button>`;
+        };
+
+        window.closeModal = () => document.getElementById('auth-modal').classList.add('hidden');
+
+        window.togglePass = (id) => {
+            const input = document.getElementById(id);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        };
+
+        document.getElementById('auth-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('pass1').value;
+            const passConfirm = document.getElementById('pass2').value;
+            const company = document.getElementById('comp-name').value;
+            const role = document.getElementById('user-role').value;
+
+            try {
+                if(window.currentMode === 'register') {
+                    if(pass !== passConfirm) throw new Error("Passwords do not match!");
+                    if(!company) throw new Error("Company name is required!");
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    await setDoc(doc(db, "users", res.user.uid), { email, role, company, createdAt: new Date() });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                }
+                closeModal();
+            } catch (err) { alert(err.message); }
+        };
+
+        window.handleLogout = () => signOut(auth).then(() => location.reload());
+
+        // --- AUTH OBSERVER ---
+        onAuthStateChanged(auth, async (user) => {
+            const controls = document.getElementById('auth-controls');
+            if (user) {
+                document.getElementById('btn-login').classList.add('hidden');
+                document.getElementById('btn-getstarted').classList.add('hidden');
+                document.getElementById('btn-logout').classList.remove('hidden');
+                
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    document.getElementById('user-welcome').classList.remove('hidden');
+                    document.getElementById('display-company').innerText = data.company || "Entrepreneur";
+                    
+                    document.getElementById('owner-card').classList.toggle('locked-card', data.role !== 'Owner');
+                    document.getElementById('seller-card').classList.toggle('locked-card', data.role !== 'Seller');
+                }
+            } else {
+                document.getElementById('btn-login').classList.remove('hidden');
+                document.getElementById('btn-getstarted').classList.remove('hidden');
+                document.getElementById('btn-logout').classList.add('hidden');
+                document.getElementById('user-welcome').classList.add('hidden');
+            }
+        });
+    </script>
+
+    <script>
+        function googleTranslateElementInit() { new google.translate.TranslateElement({pageLanguage: 'en', autoDisplay: false}, 'google_translate_element'); }
+        function toggleLangMenu() { document.getElementById('lang-modal').classList.toggle('hidden'); }
+        function changeLang(code) { const select = document.querySelector('.goog-te-combo'); if(select) { select.value = code; select.dispatchEvent(new Event('change')); } toggleLangMenu(); }
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            document.getElementById('section-' + id).classList.remove('hidden');
+        }
+    </script>
 </body>
 </html>
