@@ -24,18 +24,23 @@
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body class="pb-24 md:pb-0"> 
     
     <nav class="sticky top-0 z-50 glass px-4 py-3 md:px-8">
         <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="switchTab('home')">
                 <div class="bg-blue-600 w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-500/30">M</div>
                 <h1 class="text-xl font-extrabold tracking-tighter">Min-el</h1>
             </div>
             
             <div class="hidden md:flex items-center gap-6">
+                <button onclick="switchTab('home')" class="font-bold text-sm hover:text-blue-400">Home</button>
+                <button onclick="switchTab('policy')" class="font-bold text-sm hover:text-blue-400">Privacy</button>
                 <button onclick="openModal('login')" class="font-bold text-sm hover:text-blue-400">Login</button>
                 <button onclick="openModal('register')" class="bg-blue-600 px-6 py-2 rounded-full font-bold text-sm hover:bg-blue-500 transition">Get Started</button>
             </div>
@@ -46,7 +51,7 @@
         </div>
     </nav>
 
-    <main class="container mx-auto px-4 py-6 md:py-12 lg:max-w-6xl">
+    <main id="home-tab" class="tab-content active container mx-auto px-4 py-6 md:py-12 lg:max-w-6xl">
         <section class="mb-10">
             <h2 class="text-3xl md:text-5xl font-black mb-2">Hello, <span class="text-blue-500">Entrepreneur</span></h2>
             <p class="text-slate-400 text-sm md:text-lg">Manage your business and grow your soul.</p>
@@ -96,16 +101,66 @@
                     <textarea id="post-input" placeholder="What's happening in your business?" class="bg-transparent flex-1 resize-none outline-none text-sm py-2" rows="2"></textarea>
                 </div>
                 <div class="flex justify-between items-center border-t border-white/10 pt-4">
-                    <div class="flex gap-4 text-slate-400">
-                        <button class="hover:text-blue-500"><i class="fa fa-camera"></i></button>
-                        <button class="hover:text-blue-500"><i class="fa fa-location-dot"></i></button>
+                    <div class="flex gap-4 text-slate-400 text-lg">
+                        <button class="hover:text-red-500"><i class="fa-brands fa-youtube"></i></button>
+                        <button class="hover:text-blue-500"><i class="fa-brands fa-facebook"></i></button>
+                        <button class="hover:text-pink-500"><i class="fa-brands fa-instagram"></i></button>
                     </div>
                     <button onclick="sharePost()" class="bg-blue-600 px-6 py-2 rounded-full font-bold text-sm">Post</button>
                 </div>
             </div>
-            <div id="feed-container" class="space-y-4"></div>
+            <div id="feed-container" class="space-y-4">
+                <div class="glass p-5 rounded-[2rem] border-white/5 animate-slide-up">
+                    <div class="flex items-center gap-3 mb-3">
+                        <img src="https://ui-avatars.com/api/?name=User&background=random" class="w-8 h-8 rounded-full">
+                        <p class="text-xs font-bold">Min-el User</p>
+                    </div>
+                    <p class="text-sm text-slate-300 mb-4">Welcome to the new professional community feed!</p>
+                    <div class="flex gap-6 border-t border-white/5 pt-3 text-slate-400 text-xs font-bold">
+                        <button onclick="this.classList.toggle('text-blue-500')" class="flex items-center gap-2"><i class="fa-regular fa-thumbs-up"></i> Like</button>
+                        <button onclick="alert('Comment section coming soon')" class="flex items-center gap-2"><i class="fa-regular fa-comment"></i> Comment</button>
+                        <button onclick="alert('Shared to your profile')" class="flex items-center gap-2"><i class="fa-solid fa-share"></i> Share</button>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
+
+    <main id="policy-tab" class="tab-content container mx-auto px-4 py-12 lg:max-w-4xl">
+        <div class="glass p-8 md:p-12 rounded-[3rem]">
+            <h2 class="text-3xl font-black mb-6">Privacy & Policy</h2>
+            <div class="space-y-6 text-slate-300 text-sm leading-relaxed">
+                <section>
+                    <h3 class="text-white font-bold text-lg mb-2">1. Data Protection</h3>
+                    <p>At Min-el, we protect your business inventory and sales data using industry-standard Firebase encryption. We do not sell your data to third parties.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-lg mb-2">2. Security</h3>
+                    <p>Our terminals are role-based. Owners see admin data, while Sellers only see POS functions to ensure high-level security for your finances.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-lg mb-2">3. Community Guidelines</h3>
+                    <p>Posts on the feed must remain professional. Spam or harmful content will result in immediate account suspension.</p>
+                </section>
+            </div>
+            <button onclick="switchTab('home')" class="mt-10 bg-white/10 px-8 py-3 rounded-xl font-bold">Back to Home</button>
+        </div>
+    </main>
+
+    <div class="fixed bottom-0 left-0 right-0 glass h-20 md:hidden flex items-center justify-around px-6 z-50">
+        <button onclick="switchTab('home')" class="flex flex-col items-center gap-1 text-blue-500">
+            <i class="fa fa-house text-xl"></i>
+            <span class="text-[10px] font-bold">Home</span>
+        </button>
+        <button onclick="openModal('register')" class="flex flex-col items-center gap-1 text-slate-400">
+            <i class="fa fa-user-plus text-xl"></i>
+            <span class="text-[10px] font-bold">Join</span>
+        </button>
+        <button onclick="switchTab('policy')" class="flex flex-col items-center gap-1 text-slate-400">
+            <i class="fa fa-shield-halved text-xl"></i>
+            <span class="text-[10px] font-bold">Policy</span>
+        </button>
+    </div>
 
     <div id="auth-modal" class="hidden fixed inset-0 z-[200] flex items-end md:items-center justify-center">
         <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" onclick="closeModal()"></div>
@@ -165,17 +220,13 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- NEW: LIVE INVENTORY LISTENER ---
         function loadInventory() {
             const colRef = collection(db, "inventory");
             onSnapshot(colRef, (snapshot) => {
-                console.log("🔔 DATABASE UPDATED!");
                 let items = [];
                 snapshot.docs.forEach((doc) => {
                     items.push({ ...doc.data(), id: doc.id });
                 });
-                // This logs your database items to the browser console (F12)
-                console.log("Current Inventory in index.html:", items);
             });
         }
 
@@ -185,7 +236,6 @@
             document.getElementById('auth-modal').classList.remove('hidden');
             const title = document.getElementById('modal-title');
             const roleContainer = document.getElementById('role-container');
-            
             if(type === 'login') {
                 title.innerText = "Welcome Back";
                 roleContainer.classList.add('hidden');
@@ -208,27 +258,16 @@
             const password = document.getElementById('pass1').value;
             const role = document.getElementById('user-role').value;
             const btn = document.getElementById('auth-submit-btn');
-
             btn.innerText = "Processing...";
-
             try {
                 if (window.currentMode === 'register') {
                     const res = await createUserWithEmailAndPassword(auth, email, password);
-                    await setDoc(doc(db, "users", res.user.uid), {
-                        email: email,
-                        role: role,
-                        createdAt: new Date()
-                    });
-                    alert("Account Created! You are now logged in.");
+                    await setDoc(doc(db, "users", res.user.uid), { email: email, role: role, createdAt: new Date() });
                 } else {
                     await signInWithEmailAndPassword(auth, email, password);
                 }
                 closeModal();
-            } catch (err) {
-                alert(err.message);
-            } finally {
-                btn.innerText = "Verify & Enter";
-            }
+            } catch (err) { alert(err.message); } finally { btn.innerText = "Verify & Enter"; }
         };
 
         window.socialLogin = async function(providerName) {
@@ -237,31 +276,21 @@
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
                 const userDoc = await getDoc(doc(db, "users", user.uid));
-                
                 if (!userDoc.exists()) {
                     const role = prompt("First time here! Are you an Owner or Seller?", "Seller");
-                    await setDoc(doc(db, "users", user.uid), {
-                        email: user.email,
-                        role: role,
-                        username: user.displayName
-                    });
+                    await setDoc(doc(db, "users", user.uid), { email: user.email, role: role, username: user.displayName });
                 }
                 closeModal();
-            } catch (err) {
-                alert(err.message);
-            }
+            } catch (err) { alert(err.message); }
         };
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // START LISTENING TO INVENTORY UPON LOGIN
                 loadInventory();
-
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     const role = userDoc.data().role;
                     document.querySelectorAll('.dashboard-item').forEach(i => i.classList.add('locked-card'));
-                    
                     if(role === 'Owner') {
                         document.getElementById('owner-card').classList.remove('locked-card');
                         document.getElementById('meet-card').classList.remove('locked-card');
@@ -274,12 +303,28 @@
     </script>
 
     <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabId + '-tab').classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
         function sharePost() {
             const val = document.getElementById('post-input').value;
             if(!val) return;
-            const card = `<div class="glass p-5 rounded-[2rem] border-white/5 animate-slide-up">
-                            <p class="text-sm text-slate-300">${val}</p>
-                          </div>`;
+            const card = `
+                <div class="glass p-5 rounded-[2rem] border-white/5 animate-slide-up">
+                    <div class="flex items-center gap-3 mb-3">
+                        <img src="https://ui-avatars.com/api/?name=You&background=random" class="w-8 h-8 rounded-full">
+                        <p class="text-xs font-bold">You (Entrepreneur)</p>
+                    </div>
+                    <p class="text-sm text-slate-300 mb-4">${val}</p>
+                    <div class="flex gap-6 border-t border-white/5 pt-3 text-slate-400 text-xs font-bold">
+                        <button onclick="this.classList.toggle('text-blue-500')" class="flex items-center gap-2 transition"><i class="fa-regular fa-thumbs-up"></i> Like</button>
+                        <button onclick="alert('Comment section coming soon')" class="flex items-center gap-2 hover:text-white"><i class="fa-regular fa-comment"></i> Comment</button>
+                        <button onclick="alert('Shared to your business network')" class="flex items-center gap-2 hover:text-white"><i class="fa-solid fa-share"></i> Share</button>
+                    </div>
+                </div>`;
             document.getElementById('feed-container').insertAdjacentHTML('afterbegin', card);
             document.getElementById('post-input').value = '';
         }
