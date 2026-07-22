@@ -1,266 +1,880 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="am">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Seller POS | Min-el Platform</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Min-el POS & Modern Business Dashboard</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .pos-grid { display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 24px; }
-        @media (max-width: 1024px) { .pos-grid { grid-template-columns: 1fr; } }
-        .receipt-item { animation: slideIn 0.2s ease-out; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Ethiopic:wght@400;600;700&display=swap');
+        
+        * {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .active-tab {
+            background-color: #0f172a !important;
+            color: #ffffff !important;
+            box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2);
+        }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col md:flex-row antialiased">
 
-    <nav class="bg-white border-b px-4 py-4 sticky top-0 z-50 shadow-sm flex justify-between items-center">
-        <div class="flex items-center gap-3">
-            <div class="bg-green-600 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-green-200">
-                <i class="fa fa-cash-register text-sm"></i>
-            </div>
-            <div>
-                <h1 class="text-sm font-black text-slate-800 leading-none">Min-el Terminal</h1>
-                <p id="live-clock" class="text-[10px] text-slate-500 font-bold mt-1"></p>
-            </div>
-        </div>
-        <button onclick="location.reload()" class="bg-slate-100 p-2 rounded-lg text-slate-400"><i class="fa fa-sync-alt text-xs"></i></button>
-    </nav>
-
-    <div class="container mx-auto p-4 md:p-8 pos-grid">
-        
-        <div class="space-y-6">
-            
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-                <h2 class="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">New Transaction</h2>
-                
-                <div class="space-y-4">
-                    <div class="relative">
-                        <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Search Product</label>
-                        <input list="inventory-datalist" type="text" id="goodsSearch" placeholder="Type item name..." 
-                               class="w-full bg-slate-50 border-2 border-transparent focus:border-green-500 focus:bg-white rounded-2xl p-4 outline-none transition-all text-lg font-semibold">
-                        <datalist id="inventory-datalist"></datalist>
+    <!-- SIDEBAR NAV -->
+    <aside class="w-full md:w-72 bg-slate-900 text-white flex-shrink-0 flex flex-col justify-between z-40">
+        <div>
+            <!-- Brand -->
+            <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-900/40">
+                        <i class="fa-solid fa-shop text-lg"></i>
                     </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                            <p class="text-[9px] font-bold text-slate-400 uppercase">Unit Price</p>
-                            <p id="autoPrice" class="text-xl font-black text-green-600">$0.00</p>
-                        </div>
-                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                            <p class="text-[9px] font-bold text-slate-400 uppercase">Available Stock</p>
-                            <p id="stock-hint" class="text-xl font-black text-slate-700">0</p>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-4">
-                        <div class="w-1/3">
-                            <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Quantity</label>
-                            <input type="number" id="qty" value="1" min="1" class="w-full bg-slate-50 border-2 border-transparent focus:border-green-500 rounded-2xl p-4 text-center font-bold text-lg outline-none">
-                        </div>
-                        <button onclick="addToCart()" id="add-btn" class="flex-1 bg-slate-900 text-white font-bold rounded-2xl shadow-xl hover:bg-black active:scale-95 transition-all uppercase tracking-tighter">
-                            Add to Cart
-                        </button>
+                    <div>
+                        <h1 class="font-extrabold text-base tracking-wide text-white">Min-el POS</h1>
+                        <p class="text-[11px] text-emerald-400 font-semibold tracking-wider uppercase">Pro Dashboard</p>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-orange-50/50 p-6 rounded-[2rem] border border-orange-100 group">
-                    <div class="w-10 h-10 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center mb-4"><i class="fa fa-trash-can"></i></div>
-                    <h3 class="font-black text-orange-900 text-sm">REPORT WASTAGE</h3>
-                    <p class="text-xs text-orange-700/70 mb-4 leading-relaxed">Record items broken, expired, or unsellable.</p>
-                    <button onclick="handleWastage()" class="w-full bg-orange-600 text-white py-3 rounded-xl font-bold text-xs hover:bg-orange-700 transition">Register Waste</button>
-                </div>
-                <div class="bg-red-50/50 p-6 rounded-[2rem] border border-red-100">
-                    <div class="w-10 h-10 bg-red-100 text-red-600 rounded-xl flex items-center justify-center mb-4"><i class="fa fa-user-clock"></i></div>
-                    <h3 class="font-black text-red-900 text-sm">REGISTER DEBT</h3>
-                    <p class="text-xs text-red-700/70 mb-4 leading-relaxed">Track customers taking items on credit.</p>
-                    <button onclick="handleDebt()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-xs hover:bg-red-700 transition">Record Debt</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col h-fit sticky top-24 overflow-hidden">
-            <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
-                <h3 class="font-black text-slate-800 italic">Current Receipt</h3>
-                <button onclick="clearCart()" class="text-[10px] font-black uppercase text-slate-400 hover:text-red-500 tracking-widest">Reset</button>
-            </div>
-            
-            <div id="cartItems" class="p-6 space-y-3 max-h-[400px] overflow-y-auto min-h-[200px]">
-                <div id="empty-msg" class="text-center py-12">
-                    <i class="fa fa-shopping-basket text-slate-200 text-4xl mb-4 block"></i>
-                    <p class="text-slate-400 text-xs font-bold uppercase tracking-widest italic">Basket is empty</p>
-                </div>
-            </div>
-
-            <div class="p-8 bg-white border-t border-slate-100">
-                <div class="flex justify-between items-end mb-6">
-                    <span class="text-xs font-black text-slate-400 uppercase tracking-widest">Grand Total</span>
-                    <span id="totalDisplay" class="text-4xl font-black text-slate-900 leading-none">$0.00</span>
-                </div>
-                <button onclick="completeSale()" class="w-full bg-blue-600 text-white py-5 rounded-[1.5rem] font-black text-lg shadow-2xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all uppercase tracking-tighter">
-                    Complete & Sync
+            <!-- Navigation Links -->
+            <nav class="p-4 space-y-1.5 text-sm font-semibold">
+                <button onclick="switchTab('pos')" id="tab-btn-pos" class="active-tab nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                    <i class="fa-solid fa-cash-register text-base w-5"></i>
+                    <span>የሽያጭ መመዝገቢያ (POS)</span>
                 </button>
+                <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                    <i class="fa-solid fa-boxes-stacked text-base w-5"></i>
+                    <span>የእቃዎች ዝርዝር (Stock)</span>
+                </button>
+                <button onclick="switchTab('expense')" id="tab-btn-expense" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                    <i class="fa-solid fa-wallet text-base w-5"></i>
+                    <span>የወጪ መመዝገቢያ (Expense)</span>
+                </button>
+                <button onclick="switchTab('debt')" id="tab-btn-debt" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                    <i class="fa-solid fa-hand-holding-dollar text-base w-5"></i>
+                    <span>የእዳ መመዝገቢያ (Debts)</span>
+                </button>
+                <button onclick="switchTab('chat')" id="tab-btn-chat" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                    <i class="fa-solid fa-comments text-base w-5"></i>
+                    <span>የንግድ ቻት / BPR Chat</span>
+                </button>
+                <button onclick="switchTab('knowledge')" id="tab-btn-knowledge" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                    <i class="fa-solid fa-book-open text-base w-5"></i>
+                    <span>የንግድ ማሻሻያ ትምህርቶች</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer Quote / Encouragement -->
+        <div class="p-4 m-4 bg-slate-800/80 rounded-2xl border border-slate-700/50">
+            <div class="flex items-center gap-2 text-amber-400 text-xs font-bold mb-1">
+                <i class="fa-solid fa-cross"></i>
+                <span>የዕለቱ ቃል</span>
+            </div>
+            <p id="sidebar-verse" class="text-xs text-slate-300 italic leading-relaxed">
+                "እግዚአብሔር አምላክህ በእጅህ ሥራ ሁሉ ይባርክሃል።"
+            </p>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+        <!-- TOP BAR -->
+        <header class="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-30 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <h2 id="page-title" class="text-xl font-bold text-slate-800">የሽያጭ መመዝገቢያ (Terminal)</h2>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden sm:flex flex-col text-right">
+                    <span id="live-time" class="text-xs font-extrabold text-slate-700">--:--:--</span>
+                    <span id="live-date" class="text-[11px] font-semibold text-slate-400">---</span>
+                </div>
+                <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-user-tie"></i>
+                    </div>
+                    <span class="text-sm font-bold text-slate-700">ተረኛ ሻጭ</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD SPIRITUAL & MOTIVATIONAL BANNER -->
+        <div class="p-6 pb-0">
+            <div class="bg-gradient-to-r from-emerald-800 via-teal-800 to-slate-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="relative z-10 max-w-3xl">
+                    <div class="flex items-center gap-2 text-amber-300 text-xs font-bold uppercase tracking-widest mb-2">
+                        <i class="fa-solid fa-bible"></i> የመጽሐፍ ቅዱስ አነቃቂ ቃል ለንግድዎ
+                    </div>
+                    <blockquote id="spiritual-quote" class="text-lg md:text-xl font-medium leading-relaxed italic text-emerald-50 mb-3">
+                        "ታማኝ ሰው እጅግ ይባረካል፤ ባለጠጋ ለመሆን የሚቸኩል ግን ሳይቀጣ አይቀርም።" — ምሳሌ 28:20
+                    </blockquote>
+                    <p id="quote-encouragement" class="text-xs text-emerald-200 font-light">
+                        ዛሬም በታማኝነትና በጥሩ መንፈስ ደንበኞችዎን ያገልግሉ። እግዚአብሔር የስራዎን ፍሬ ይባርካል።
+                    </p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        <!-- DAILY QUICK SUMMARY STATS -->
+        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">የዛሬው ጠቅላላ ሽያጭ</p>
+                    <h3 id="stat-daily-sales" class="text-2xl font-black text-slate-800 mt-1">0.00 ETB</h3>
+                    <span class="text-[11px] font-semibold text-emerald-600"><i class="fa-solid fa-arrow-trend-up"></i> የተመዘገቡ ሽያጮች</span>
+                </div>
+                <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+            </div>
 
-        // Firebase Config (Using your provided IDs)
-        const firebaseConfig = {
-            apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
-            authDomain: "min-eli.firebaseapp.com",
-            projectId: "min-eli",
-            storageBucket: "min-eli.firebasestorage.app",
-            messagingSenderId: "61590314630",
-            appId: "1:61590314630:web:f75dcd8296954d8c107b07"
-        };
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">የዛሬ የወጪ መጠን</p>
+                    <h3 id="stat-daily-expense" class="text-2xl font-black text-rose-600 mt-1">0.00 ETB</h3>
+                    <span class="text-[11px] font-semibold text-rose-500"><i class="fa-solid fa-arrow-trend-down"></i> የወጡ ወጪዎች</span>
+                </div>
+                <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-money-bill-wave"></i>
+                </div>
+            </div>
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">ያልተሰበሰበ እዳ</p>
+                    <h3 id="stat-total-debt" class="text-2xl font-black text-amber-600 mt-1">0.00 ETB</h3>
+                    <span class="text-[11px] font-semibold text-amber-600"><i class="fa-solid fa-clock"></i> ከተበዳሪዎች የሚጠበቅ</span>
+                </div>
+                <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                </div>
+            </div>
 
-        let inventory = [];
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">በስቶክ ያሉ እቃዎች</p>
+                    <h3 id="stat-total-stock" class="text-2xl font-black text-blue-600 mt-1">0 አይነት</h3>
+                    <span class="text-[11px] font-semibold text-blue-500"><i class="fa-solid fa-box"></i> በሱቅ ውስጥ የሚገኙ</span>
+                </div>
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT SECTIONS -->
+        <div class="px-6 pb-8 flex-1">
+
+            <!-- 1. POS TERMINAL TAB -->
+            <section id="tab-pos" class="tab-content block space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    <!-- POS Input & Search -->
+                    <div class="lg:col-span-7 space-y-6">
+                        <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+                            <h3 class="text-xs font-extrabold uppercase tracking-widest text-slate-400 mb-4">አዲስ ሽያጭ መመዝገቢያ</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">እቃ ይፈልጉ (የመመገቢያ / የኑሮ እቃ)</label>
+                                    <div class="relative">
+                                        <input list="pos-inventory-list" id="pos-item-search" type="text" placeholder="የእቃውን ስም እዚህ ይጻፉ..."
+                                            class="w-full bg-slate-50 border-2 border-slate-200 focus:border-emerald-500 focus:bg-white rounded-2xl p-4 outline-none text-base font-bold text-slate-800 transition">
+                                        <datalist id="pos-inventory-list"></datalist>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
+                                        <p class="text-[10px] font-extrabold text-slate-400 uppercase">የአንዱ ዋጋ</p>
+                                        <p id="pos-unit-price" class="text-xl font-black text-emerald-600 mt-0.5">0.00 ETB</p>
+                                    </div>
+                                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
+                                        <p class="text-[10px] font-extrabold text-slate-400 uppercase">በስቶክ የቀረ መጠን</p>
+                                        <p id="pos-stock-avail" class="text-xl font-black text-slate-700 mt-0.5">0</p>
+                                    </div>
+                                </div>
+
+                                <!-- Stock Deduction Options -->
+                                <div class="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 space-y-2">
+                                    <p class="text-xs font-bold text-emerald-900">የስቶክ መቀነሻ አማራጭ (Stock Reduction Option)</p>
+                                    <div class="flex flex-wrap gap-4 text-xs font-semibold text-slate-700">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="stockCalcMode" value="auto" checked class="accent-emerald-600">
+                                            <span>አውቶማቲክ ስቶክ ይቀነስ (Auto Deduct)</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="stockCalcMode" value="none" class="accent-emerald-600">
+                                            <span>ስቶክ አይቀነስ (ምንም አልቀነስኩበትም)</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-4">
+                                    <div class="w-1/3">
+                                        <label class="block text-xs font-bold text-slate-600 mb-1">ብዛት (Qty)</label>
+                                        <input type="number" id="pos-qty" value="1" min="1" 
+                                            class="w-full bg-slate-50 border-2 border-slate-200 focus:border-emerald-500 rounded-2xl p-4 text-center font-bold text-lg outline-none">
+                                    </div>
+                                    <button onclick="addToCart()" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-lg shadow-slate-900/20 active:scale-95 transition flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+                                        <i class="fa-solid fa-cart-plus"></i> ወደ ቅርጫት ጨምር
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="switchTab('expense')" class="bg-rose-50 border border-rose-100 p-5 rounded-3xl text-left hover:bg-rose-100/60 transition group">
+                                <div class="w-10 h-10 bg-rose-500 text-white rounded-xl flex items-center justify-center mb-3 shadow-md shadow-rose-200">
+                                    <i class="fa-solid fa-minus"></i>
+                                </div>
+                                <h4 class="font-extrabold text-slate-800 text-sm">ወጪ መመዝገብ</h4>
+                                <p class="text-xs text-slate-500 mt-1">ለተለያየ ምክንያት የወጣ ገንዘብ ያመዝግቡ</p>
+                            </button>
+
+                            <button onclick="switchTab('debt')" class="bg-amber-50 border border-amber-100 p-5 rounded-3xl text-left hover:bg-amber-100/60 transition group">
+                                <div class="w-10 h-10 bg-amber-500 text-white rounded-xl flex items-center justify-center mb-3 shadow-md shadow-amber-200">
+                                    <i class="fa-solid fa-user-pen"></i>
+                                </div>
+                                <h4 class="font-extrabold text-slate-800 text-sm">እዳ መመዝገብ</h4>
+                                <p class="text-xs text-slate-500 mt-1">የተበዳሪውን ሙሉ መረጃ በስም እና በስልክ ይመዝግቡ</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cart / Receipt Display -->
+                    <div class="lg:col-span-5">
+                        <div class="bg-white rounded-3xl border border-slate-200 shadow-lg flex flex-col h-full overflow-hidden">
+                            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/80">
+                                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-receipt text-emerald-600"></i> የካርድ / ደረሰኝ ዝርዝር
+                                </h3>
+                                <button onclick="clearCart()" class="text-xs font-bold text-rose-500 hover:underline">ሁሉንም አጽዳ</button>
+                            </div>
+
+                            <div id="cart-container" class="p-5 space-y-3 min-h-[250px] max-h-[380px] overflow-y-auto custom-scrollbar">
+                                <div id="cart-empty" class="text-center py-12 text-slate-400">
+                                    <i class="fa-solid fa-basket-shopping text-4xl mb-3 opacity-30"></i>
+                                    <p class="text-xs font-bold">ምንም እቃ አልተመረጠም</p>
+                                </div>
+                            </div>
+
+                            <div class="p-6 bg-slate-900 text-white mt-auto space-y-4">
+                                <div class="flex justify-between items-end">
+                                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">ጠቅላላ ድምር (Total)</span>
+                                    <span id="cart-total" class="text-3xl font-black text-emerald-400">0.00 ETB</span>
+                                </div>
+                                <button onclick="checkoutSale()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-4 rounded-2xl shadow-xl shadow-emerald-900/40 active:scale-95 transition text-base tracking-wide flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-check-circle text-lg"></i> ሽያጩን ጨርስ እና መዝግብ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Completed Transactions Log -->
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+                    <h3 class="font-extrabold text-slate-800 text-base mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> በዛሬው ዕለት የተሸጡ እቃዎች ሪፖርት
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 text-slate-400 uppercase font-extrabold">
+                                <tr>
+                                    <th class="p-3">ሰዓት</th>
+                                    <th class="p-3">የእቃው ስም</th>
+                                    <th class="p-3">ብዛት</th>
+                                    <th class="p-3">ያንዱ ዋጋ</th>
+                                    <th class="p-3">ጠቅላላ ዋጋ</th>
+                                    <th class="p-3">ስቶክ ሁኔታ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sales-history-tbody" class="divide-y divide-slate-100 font-semibold">
+                                <tr>
+                                    <td colspan="6" class="text-center p-6 text-slate-400">እስካሁን የተመዘገበ ሽያጭ የለም</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. INVENTORY (STOCK) TAB -->
+            <section id="tab-inventory" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Add Stock Form -->
+                    <div class="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-extrabold text-slate-800 text-base">አዲስ እቃ ወደ ስቶክ መጨመሪያ</h3>
+                        <form id="add-item-form" onsubmit="handleAddNewItem(event)" class="space-y-4 text-xs font-bold">
+                            <div>
+                                <label class="block text-slate-600 mb-1">የእቃው ስም</label>
+                                <input type="text" id="inv-name" required placeholder="ምሳሌ፡ ዘይት 5 ሊትር" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">የመግዣ ዋጋ (Buy Price ETB)</label>
+                                <input type="number" id="inv-cost" required placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">የመሸጫ ዋጋ (Selling Price ETB)</label>
+                                <input type="number" id="inv-sell" required placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">ብዛት (Initial Stock Qty)</label>
+                                <input type="number" id="inv-qty" required placeholder="10" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-emerald-500">
+                            </div>
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg transition">
+                                <i class="fa-solid fa-plus-circle"></i> እቃውን መዝግብ
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Inventory Table -->
+                    <div class="lg:col-span-8 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center flex-wrap gap-2">
+                            <h3 class="font-extrabold text-slate-800 text-base">በስቶክ የቀሩ እቃዎች እና ሊስቶች</h3>
+                            <input type="text" id="inv-filter" oninput="renderInventoryTable()" placeholder="እቃ ይፈልጉ..." class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs outline-none">
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-400 uppercase font-extrabold">
+                                    <tr>
+                                        <th class="p-3">የእቃ ስም</th>
+                                        <th class="p-3">መግዣ ዋጋ</th>
+                                        <th class="p-3">መሸጫ ዋጋ</th>
+                                        <th class="p-3">የቀረ ብዛት</th>
+                                        <th class="p-3">ሁኔታ</th>
+                                        <th class="p-3">ተግባር</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-tbody" class="divide-y divide-slate-100 font-semibold text-slate-700">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. EXPENSE TAB -->
+            <section id="tab-expense" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Expense Form -->
+                    <div class="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-receipt text-rose-600"></i> የወጪ መመዝገቢያ ፎርም
+                        </h3>
+                        <form onsubmit="handleRecordExpense(event)" class="space-y-4 text-xs font-bold">
+                            <div>
+                                <label class="block text-slate-600 mb-1">ለምን ወጣ? (የወጪው ምክንያት)</label>
+                                <input type="text" id="exp-reason" required placeholder="ምሳሌ፡ የሱቅ ኪራይ፣ የመብራት፣ የትራንስፖርት..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-rose-500">
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">ምን ያህል ወጣ? (የገንዘብ መጠን ETB)</label>
+                                <input type="number" id="exp-amount" min="1" required placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-rose-500">
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">የወጣበት ቀን</label>
+                                <input type="date" id="exp-date" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-rose-500">
+                            </div>
+                            <button type="submit" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg transition">
+                                <i class="fa-solid fa-floppy-disk"></i> ወጪውን መዝግብ
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Expense History Table -->
+                    <div class="lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-extrabold text-slate-800 text-base">የወጡ ወጪዎች ዝርዝር</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-400 uppercase font-extrabold">
+                                    <tr>
+                                        <th class="p-3">ቀን</th>
+                                        <th class="p-3">የወጪ ምክንያት</th>
+                                        <th class="p-3">መጠን (ETB)</th>
+                                        <th class="p-3">ተግባር</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expense-tbody" class="divide-y divide-slate-100 font-semibold text-slate-700">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. DEBT TAB -->
+            <section id="tab-debt" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Debt Registration Form -->
+                    <div class="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-user-plus text-amber-600"></i> አዲስ የተበዳሪ/የእዳ መመዝገቢያ
+                        </h3>
+                        <form onsubmit="handleRecordDebt(event)" class="space-y-3 text-xs font-bold">
+                            <div>
+                                <label class="block text-slate-600 mb-1">የተበዳሪው ሙሉ ስም</label>
+                                <input type="text" id="debt-name" required placeholder="ምሳሌ፡ አበበ ከበደ" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">የተበዳሪው ስልክ ቁጥር</label>
+                                <input type="tel" id="debt-phone" required placeholder="0911XXXXXX" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">የተበዳሪው አድራሻ</label>
+                                <input type="text" id="debt-address" required placeholder="ምሳሌ፡ ሰፈራ / ክፍለ ከተማ / ሱቅ ቁጥር" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">የተበደለበት ቀን</label>
+                                <input type="date" id="debt-date" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">የተበደሉት እቃዎች ወይም ምክንያት</label>
+                                <input type="text" id="debt-items" placeholder="ምሳሌ፡ 2 ኪሎ ስኳር እና 1 ዘይት" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">የእዳ መጠን (ETB)</label>
+                                <input type="number" id="debt-amount" min="1" required placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-amber-500">
+                            </div>
+                            <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg transition">
+                                <i class="fa-solid fa-save"></i> እዳውን መዝግብ
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Debt List Table -->
+                    <div class="lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-extrabold text-slate-800 text-base">የተበዳሪዎችና የእዳ ዝርዝር</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-400 uppercase font-extrabold">
+                                    <tr>
+                                        <th class="p-3">ተበዳሪ</th>
+                                        <th class="p-3">ስልክ / አድራሻ</th>
+                                        <th class="p-3">የተበደለበት ቀን</th>
+                                        <th class="p-3">እቃዎች</th>
+                                        <th class="p-3">መጠን</th>
+                                        <th class="p-3">ሁኔታ / ተግባር</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="debt-tbody" class="divide-y divide-slate-100 font-semibold text-slate-700">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. CHAT & BPR DISCUSSION TAB -->
+            <section id="tab-chat" class="tab-content hidden space-y-6">
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-[500px]">
+                    <!-- Chat Sidebar -->
+                    <div class="lg:col-span-4 border-r border-slate-100 p-4 bg-slate-50/50 space-y-4">
+                        <h3 class="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-comments text-emerald-600"></i> የንግድ መልዕክቶችና BPR
+                        </h3>
+                        <div class="space-y-2">
+                            <div class="p-3 bg-emerald-100/60 border border-emerald-200 rounded-2xl flex items-center gap-3 cursor-pointer">
+                                <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">
+                                    BPR
+                                </div>
+                                <div>
+                                    <h4 class="font-extrabold text-slate-800 text-xs">የንግድ ማሻሻያ (BPR Advice)</h4>
+                                    <p class="text-[10px] text-emerald-800 font-semibold">ስለ ንግድ አሰራር ጥያቄ ይጠይቁ</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Chat Screen -->
+                    <div class="lg:col-span-8 flex flex-col justify-between p-4 bg-white">
+                        <div id="chat-messages" class="space-y-4 max-h-[400px] overflow-y-auto p-2 custom-scrollbar">
+                            <div class="flex gap-3">
+                                <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                                    AI
+                                </div>
+                                <div class="bg-slate-100 p-3.5 rounded-2xl rounded-tl-none max-w-md text-xs text-slate-700 leading-relaxed font-semibold">
+                                    ሰላም! እንኳን ወደ Min-el BPR የንግድ መወያያ ቦርድ በሰላም መጡ። ስለ ንግድዎ ማሻሻያ፣ ደንበኛ አያያዝ ወይም የስቶክ ቁጥጥር ጥያቄ ካለዎት እዚህ ይጻፉልኝ!
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat Input -->
+                        <form onsubmit="handleSendChatMessage(event)" class="mt-4 flex gap-2">
+                            <input type="text" id="chat-input" placeholder="ስለ ንግድዎ ጥያቄ ወይም አስፈላጊ መልዕክት እዚህ ይጻፉ..."
+                                class="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs outline-none focus:border-emerald-500 font-semibold">
+                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 rounded-2xl font-bold text-xs shadow-md transition">
+                                <i class="fa-solid fa-paper-plane"></i> ላክ
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. KNOWLEDGE & BUSINESS IMPROVEMENT TAB -->
+            <section id="tab-knowledge" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                    <div>
+                        <h3 class="text-lg font-extrabold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-book-open-reader text-emerald-600"></i> ንግድን እንዴት ማሻሻል እንደሚቻል ረዘም ያሉ አነቃቂ ጽሑፎች
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">ለነጋዴዎች የተዘጋጁ ስልታዊ መመሪያዎችና የስኬት ምስጢሮች</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Article 1 -->
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                            <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-extrabold">የፋይናንስ ቁጥጥር</span>
+                            <h4 class="font-extrabold text-slate-800 text-sm">1. የሱቅዎን ገቢና ወጪ በጥብቅ የመቆጣጠር ጥበብ</h4>
+                            <p class="text-xs text-slate-600 leading-relaxed font-normal">
+                                ብዙ ነጋዴዎች ከሚሳሳቱባቸው ነገሮች አንዱ የሱቅን ገንዘብ እና የግል ገንዘብን አለመቀላቀል ነው። የዕለት ተዕለት የትናንሽ ወጪዎችን ሳያመዘግቡ ሲቀሩ በወር መጨረሻ ትልቅ የገንዘብ ጉድለት ያመጣሉ። ሁልጊዜም የወጣን ሳንቲም ሳይቀር በስርዓቱ ላይ ይመዝግቡ።
+                            </p>
+                        </div>
+
+                        <!-- Article 2 -->
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-[10px] font-extrabold">የደንበኛ አያያዝ</span>
+                            <h4 class="font-extrabold text-slate-800 text-sm">2. ደንበኛን የመሳብ እና የማቆየት ዘዴዎች</h4>
+                            <p class="text-xs text-slate-600 leading-relaxed font-normal">
+                                መልካም ንግግር እና ፈገግታ ከማንኛውም ቅናሽ በላይ ደንበኛን ይስባሉ። ደንበኛ የሚፈልገውን እቃ በወቅቱ በስቶክ ውስጥ እንዲያገኝ ማድረግ እና በታማኝነት ማገልገል የንግድዎ ዋነኛ ምሰሶ ነው።
+                            </p>
+                        </div>
+
+                        <!-- Article 3 -->
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                            <span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-[10px] font-extrabold">የእዳ ቁጥጥር</span>
+                            <h4 class="font-extrabold text-slate-800 text-sm">3. የእዳ (ብድር) አሰጣጥ እና አሰባሰብ መመሪያ</h4>
+                            <p class="text-xs text-slate-600 leading-relaxed font-normal">
+                                እዳ ለንግድ ውድቀት ትልቁ ምክንያት ሊሆን ይችላል። እዳ ሲሰጡ የተበዳሪውን ሙሉ ስም፣ ስልክና አድራሻ በጥንቃቄ መመዝገብዎን ያረጋግጡ።
+                            </p>
+                        </div>
+
+                        <!-- Article 4 -->
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                            <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-[10px] font-extrabold">መንፈሳዊ እሴት</span>
+                            <h4 class="font-extrabold text-slate-800 text-sm">4. በስራዎ ላይ የእግዚአብሔርን በረከት መጋበዝ</h4>
+                            <p class="text-xs text-slate-600 leading-relaxed font-normal">
+                                ንግድዎን በቅንነትና በታማኝነት ሲያካሂዱ እግዚአብሔር በስራዎ ላይ በረከቱን ያፈስሳል። በሀቀኝነት የሚገኝ ትንሽ ትርፍ በማታለል ከሚገኝ ትልቅ ሀብት ይበልጣል።
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- SCRIPT -->
+    <script>
+        let inventory = JSON.parse(localStorage.getItem('minel_inventory')) || [
+            { id: 1, name: 'ዘይት 5 ሊትር', cost: 900, sell: 1100, stock: 15 },
+            { id: 2, name: 'ስኳር 1 ኪሎ', cost: 110, sell: 130, stock: 40 },
+            { id: 3, name: 'ሩዝ 5 ኪሎ', cost: 450, sell: 550, stock: 20 },
+            { id: 4, name: 'የልብስ ሳሙና', cost: 40, sell: 50, stock: 60 }
+        ];
+
+        let salesHistory = JSON.parse(localStorage.getItem('minel_sales')) || [];
+        let expenses = JSON.parse(localStorage.getItem('minel_expenses')) || [];
+        let debts = JSON.parse(localStorage.getItem('minel_debts')) || [];
         let cart = [];
-        let selectedItem = null;
 
-        // 1. LIVE INVENTORY SYNC
-        onSnapshot(collection(db, "inventory"), (snapshot) => {
-            const datalist = document.getElementById('inventory-datalist');
-            datalist.innerHTML = '';
-            inventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        window.addEventListener('DOMContentLoaded', () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+            renderInventoryDatalist();
+            renderInventoryTable();
+            renderExpenseTable();
+            renderDebtTable();
+            renderSalesHistory();
+            updateDashboardStats();
             
+            const today = new Date().toISOString().split('T')[0];
+            if(document.getElementById('exp-date')) document.getElementById('exp-date').value = today;
+            if(document.getElementById('debt-date')) document.getElementById('debt-date').value = today;
+        });
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-time').innerText = now.toLocaleTimeString('am-ET');
+            document.getElementById('live-date').innerText = now.toLocaleDateString('am-ET', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active-tab'));
+
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            document.getElementById('tab-btn-' + tabId).classList.add('active-tab');
+        }
+
+        function renderInventoryDatalist() {
+            const list = document.getElementById('pos-inventory-list');
+            list.innerHTML = '';
             inventory.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.name;
-                datalist.appendChild(option);
+                const opt = document.createElement('option');
+                opt.value = item.name;
+                list.appendChild(opt);
             });
-        });
+        }
 
-        // 2. SEARCH LOGIC
-        document.getElementById('goodsSearch').addEventListener('input', (e) => {
-            selectedItem = inventory.find(i => i.name === e.target.value);
-            if(selectedItem) {
-                document.getElementById('autoPrice').innerText = "$" + selectedItem.sell;
-                document.getElementById('stock-hint').innerText = selectedItem.stock;
+        document.getElementById('pos-item-search').addEventListener('input', (e) => {
+            const item = inventory.find(i => i.name === e.target.value);
+            if(item) {
+                document.getElementById('pos-unit-price').innerText = item.sell.toFixed(2) + ' ETB';
+                document.getElementById('pos-stock-avail').innerText = item.stock;
             } else {
-                document.getElementById('autoPrice').innerText = "$0.00";
-                document.getElementById('stock-hint').innerText = "0";
+                document.getElementById('pos-unit-price').innerText = '0.00 ETB';
+                document.getElementById('pos-stock-avail').innerText = '0';
             }
         });
 
-        // 3. CART ACTIONS
-        window.addToCart = () => {
-            const qty = parseInt(document.getElementById('qty').value);
-            if(!selectedItem || qty <= 0) return alert("Select an item first");
-            if(qty > selectedItem.stock) return alert("Insufficient Stock!");
+        function addToCart() {
+            const name = document.getElementById('pos-item-search').value;
+            const qty = parseInt(document.getElementById('pos-qty').value) || 1;
+            const item = inventory.find(i => i.name === name);
 
-            const existing = cart.find(c => c.id === selectedItem.id);
+            if(!item) return alert('እባክዎን ትክክለኛ እቃ ይምረጡ!');
+
+            const isAutoDeduct = document.querySelector('input[name="stockCalcMode"]:checked').value === 'auto';
+            if(isAutoDeduct && qty > item.stock) return alert('በስቶክ ውስጥ በቂ እቃ የለም!');
+
+            const existing = cart.find(c => c.id === item.id);
             if(existing) {
-                existing.buyQty += qty;
-                existing.subtotal = existing.buyQty * existing.sell;
+                existing.qty += qty;
+                existing.subtotal = existing.qty * existing.price;
             } else {
-                cart.push({ ...selectedItem, buyQty: qty, subtotal: selectedItem.sell * qty });
+                cart.push({ id: item.id, name: item.name, price: item.sell, cost: item.cost, qty, subtotal: item.sell * qty, autoDeduct: isAutoDeduct });
             }
-            
+
+            document.getElementById('pos-item-search').value = '';
             renderCart();
-            document.getElementById('goodsSearch').value = "";
-        };
+        }
 
         function renderCart() {
-            const container = document.getElementById('cartItems');
-            const emptyMsg = document.getElementById('empty-msg');
-            container.innerHTML = "";
-            let total = 0;
+            const container = document.getElementById('cart-container');
+            const emptyMsg = document.getElementById('cart-empty');
 
             if(cart.length === 0) {
+                container.innerHTML = '';
                 container.appendChild(emptyMsg);
-                document.getElementById('totalDisplay').innerText = "$0.00";
+                document.getElementById('cart-total').innerText = '0.00 ETB';
                 return;
             }
 
-            cart.forEach((item, index) => {
+            container.innerHTML = '';
+            let total = 0;
+            cart.forEach((item, idx) => {
                 total += item.subtotal;
                 container.innerHTML += `
-                    <div class="receipt-item flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div class="flex justify-between items-center p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
                         <div>
-                            <p class="font-black text-slate-800 text-sm">${item.name}</p>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase">${item.buyQty} Units x $${item.sell}</p>
+                            <h4 class="font-bold text-slate-800 text-xs">${item.name}</h4>
+                            <p class="text-[10px] text-slate-400 font-semibold">${item.qty} x ${item.price.toFixed(2)} ETB</p>
                         </div>
                         <div class="text-right">
-                            <p class="font-black text-blue-600 text-sm">$${item.subtotal}</p>
-                            <button onclick="removeItem(${index})" class="text-[9px] font-black text-red-400 uppercase tracking-widest mt-1">Remove</button>
+                            <p class="font-extrabold text-emerald-600 text-xs">${item.subtotal.toFixed(2)} ETB</p>
+                            <button onclick="removeFromCart(${idx})" class="text-[10px] text-rose-500 font-bold">ሰርዝ</button>
                         </div>
                     </div>`;
             });
-            document.getElementById('totalDisplay').innerText = "$" + total.toLocaleString();
+            document.getElementById('cart-total').innerText = total.toFixed(2) + ' ETB';
         }
 
-        window.removeItem = (i) => { cart.splice(i, 1); renderCart(); };
-        window.clearCart = () => { cart = []; renderCart(); };
+        function removeFromCart(index) { cart.splice(index, 1); renderCart(); }
+        function clearCart() { cart = []; renderCart(); }
 
-        // 4. COMPLETE SALE
-        window.completeSale = async () => {
-            if(cart.length === 0) return;
-            try {
-                for (const item of cart) {
-                    await updateDoc(doc(db, "inventory", item.id), { stock: item.stock - item.buyQty });
-                    await addDoc(collection(db, "sales"), {
-                        itemName: item.name,
-                        qty: item.buyQty,
-                        costPrice: item.cost, // Crucial for owner profit calculations
-                        totalPrice: item.subtotal,
-                        timestamp: serverTimestamp()
-                    });
+        function checkoutSale() {
+            if(cart.length === 0) return alert('ቅርጫቱ ባዶ ነው!');
+            const timeStr = new Date().toLocaleTimeString('am-ET');
+
+            cart.forEach(cartItem => {
+                if(cartItem.autoDeduct) {
+                    const invItem = inventory.find(i => i.id === cartItem.id);
+                    if(invItem) invItem.stock = Math.max(0, invItem.stock - cartItem.qty);
                 }
-                alert("Success: Inventory Synced!");
-                clearCart();
-            } catch (e) { alert("Error: " + e.message); }
-        };
+                salesHistory.unshift({ time: timeStr, name: cartItem.name, qty: cartItem.qty, price: cartItem.price, total: cartItem.subtotal, autoDeduct: cartItem.autoDeduct });
+            });
 
-        // 5. NEW FUNCTIONALITY: WASTAGE
-        window.handleWastage = async () => {
-            const name = prompt("Enter product name for wastage:");
-            const item = inventory.find(i => i.name === name);
-            if(!item) return alert("Product not found");
-            
-            const qty = parseInt(prompt(`How many ${name} are wasted/broken?`));
-            if(qty > 0 && qty <= item.stock) {
-                if(confirm(`Report ${qty} ${name} as wastage? This reduces stock.`)) {
-                    await updateDoc(doc(db, "inventory", item.id), { stock: item.stock - qty });
-                    await addDoc(collection(db, "wastage"), {
-                        itemName: name,
-                        qty: qty,
-                        reason: "Reported by Seller",
-                        timestamp: serverTimestamp()
-                    });
-                    alert("Wastage logged.");
-                }
-            } else { alert("Invalid quantity"); }
-        };
+            saveData();
+            cart = [];
+            renderCart();
+            renderInventoryTable();
+            renderSalesHistory();
+            updateDashboardStats();
+            alert('ሽያጩ በተሳካ ሁኔታ ተመዝግቧል!');
+        }
 
-        // 6. NEW FUNCTIONALITY: DEBT
-        window.handleDebt = async () => {
-            const customer = prompt("Customer Name:");
-            const amount = prompt("Total Debt Amount ($):");
-            if(customer && amount) {
-                await addDoc(collection(db, "debts"), {
-                    customerName: customer,
-                    amount: Number(amount),
-                    status: "unpaid",
-                    timestamp: serverTimestamp()
-                });
-                alert(`Debt of $${amount} recorded for ${customer}`);
+        function renderSalesHistory() {
+            const tbody = document.getElementById('sales-history-tbody');
+            if(salesHistory.length === 0) return;
+            tbody.innerHTML = salesHistory.slice(0, 10).map(s => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 text-slate-500">${s.time}</td>
+                    <td class="p-3 font-bold text-slate-800">${s.name}</td>
+                    <td class="p-3">${s.qty}</td>
+                    <td class="p-3">${s.price.toFixed(2)} ETB</td>
+                    <td class="p-3 text-emerald-600 font-bold">${s.total.toFixed(2)} ETB</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${s.autoDeduct ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">${s.autoDeduct ? 'ተቀንሷል' : 'አልተቀነሰም'}</span></td>
+                </tr>`).join('');
+        }
+
+        function handleAddNewItem(e) {
+            e.preventDefault();
+            inventory.push({
+                id: Date.now(),
+                name: document.getElementById('inv-name').value,
+                cost: parseFloat(document.getElementById('inv-cost').value),
+                sell: parseFloat(document.getElementById('inv-sell').value),
+                stock: parseInt(document.getElementById('inv-qty').value)
+            });
+            saveData();
+            renderInventoryTable();
+            renderInventoryDatalist();
+            updateDashboardStats();
+            document.getElementById('add-item-form').reset();
+            alert('እቃው ወደ ስቶክ ተጨምሯል!');
+        }
+
+        function renderInventoryTable() {
+            const tbody = document.getElementById('inventory-tbody');
+            tbody.innerHTML = inventory.map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 font-bold text-slate-800">${item.name}</td>
+                    <td class="p-3">${item.cost.toFixed(2)} ETB</td>
+                    <td class="p-3 font-bold text-emerald-600">${item.sell.toFixed(2)} ETB</td>
+                    <td class="p-3 font-black text-slate-800">${item.stock}</td>
+                    <td class="p-3">${item.stock <= 5 ? '<span class="px-2 py-0.5 bg-rose-100 text-rose-700 rounded-full text-[10px] font-extrabold">ያልቃል!</span>' : '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-extrabold">በቂ</span>'}</td>
+                    <td class="p-3"><button onclick="deleteInventoryItem(${item.id})" class="text-rose-500 hover:underline text-[11px] font-bold">ሰርዝ</button></td>
+                </tr>`).join('');
+        }
+
+        function deleteInventoryItem(id) {
+            if(confirm('እርግጠኛ ነዎት ይህን እቃ መስረዝ ይፈልጋሉ?')) {
+                inventory = inventory.filter(i => i.id !== id);
+                saveData();
+                renderInventoryTable();
+                updateDashboardStats();
             }
-        };
+        }
 
-        setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
+        function handleRecordExpense(e) {
+            e.preventDefault();
+            expenses.unshift({
+                id: Date.now(),
+                reason: document.getElementById('exp-reason').value,
+                amount: parseFloat(document.getElementById('exp-amount').value),
+                date: document.getElementById('exp-date').value
+            });
+            saveData();
+            renderExpenseTable();
+            updateDashboardStats();
+            alert('ወጪው ተመዝግቧል!');
+        }
+
+        function renderExpenseTable() {
+            const tbody = document.getElementById('expense-tbody');
+            tbody.innerHTML = expenses.map(exp => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 text-slate-500">${exp.date}</td>
+                    <td class="p-3 font-bold text-slate-800">${exp.reason}</td>
+                    <td class="p-3 text-rose-600 font-bold">${exp.amount.toFixed(2)} ETB</td>
+                    <td class="p-3"><button onclick="deleteExpense(${exp.id})" class="text-rose-500 hover:underline text-[11px] font-bold">ሰርዝ</button></td>
+                </tr>`).join('');
+        }
+
+        function deleteExpense(id) {
+            expenses = expenses.filter(e => e.id !== id);
+            saveData();
+            renderExpenseTable();
+            updateDashboardStats();
+        }
+
+        function handleRecordDebt(e) {
+            e.preventDefault();
+            debts.unshift({
+                id: Date.now(),
+                name: document.getElementById('debt-name').value,
+                phone: document.getElementById('debt-phone').value,
+                address: document.getElementById('debt-address').value,
+                date: document.getElementById('debt-date').value,
+                items: document.getElementById('debt-items').value || 'አልተጠቀሰም',
+                amount: parseFloat(document.getElementById('debt-amount').value),
+                status: 'unpaid'
+            });
+            saveData();
+            renderDebtTable();
+            updateDashboardStats();
+            alert('የተበዳሪው መረጃ በጥንቃቄ ተመዝግቧል!');
+        }
+
+        function renderDebtTable() {
+            const tbody = document.getElementById('debt-tbody');
+            tbody.innerHTML = debts.map(debt => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 font-bold text-slate-800">${debt.name}</td>
+                    <td class="p-3 text-slate-600"><div>${debt.phone}</div><div class="text-[10px] text-slate-400">${debt.address}</div></td>
+                    <td class="p-3 text-slate-500">${debt.date}</td>
+                    <td class="p-3 text-slate-700">${debt.items}</td>
+                    <td class="p-3 text-amber-600 font-black">${debt.amount.toFixed(2)} ETB</td>
+                    <td class="p-3">${debt.status === 'unpaid' ? `<button onclick="markDebtPaid(${debt.id})" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-bold">ተከፍሏል በል</button>` : `<span class="px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold">ተከፍሏል</span>`}</td>
+                </tr>`).join('');
+        }
+
+        function markDebtPaid(id) {
+            const debt = debts.find(d => d.id === id);
+            if(debt && confirm('እዳው ሙሉ በሙሉ ተከፍሏል?')) {
+                debt.status = 'paid';
+                saveData();
+                renderDebtTable();
+                updateDashboardStats();
+            }
+        }
+
+        function handleSendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            if(!input.value.trim()) return;
+            const container = document.getElementById('chat-messages');
+            container.innerHTML += `<div class="flex justify-end"><div class="bg-emerald-600 text-white p-3.5 rounded-2xl text-xs font-semibold">${input.value}</div></div>`;
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateDashboardStats() {
+            const totalSales = salesHistory.reduce((acc, curr) => acc + curr.total, 0);
+            const totalExpenses = expenses.reduce((acc, curr) => acc + curr.amount, 0);
+            const totalUnpaidDebt = debts.filter(d => d.status === 'unpaid').reduce((acc, curr) => acc + curr.amount, 0);
+
+            document.getElementById('stat-daily-sales').innerText = totalSales.toFixed(2) + ' ETB';
+            document.getElementById('stat-daily-expense').innerText = totalExpenses.toFixed(2) + ' ETB';
+            document.getElementById('stat-total-debt').innerText = totalUnpaidDebt.toFixed(2) + ' ETB';
+            document.getElementById('stat-total-stock').innerText = inventory.length + ' አይነት';
+        }
+
+        function saveData() {
+            localStorage.setItem('minel_inventory', JSON.stringify(inventory));
+            localStorage.setItem('minel_sales', JSON.stringify(salesHistory));
+            localStorage.setItem('minel_expenses', JSON.stringify(expenses));
+            localStorage.setItem('minel_debts', JSON.stringify(debts));
+        }
     </script>
 </body>
-</html>
+                        </html>
