@@ -60,7 +60,8 @@
                         <div class="w-1/3">
                             <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Quantity</label>
                             <input type="number" id="qty" value="1" min="1" class="w-full bg-slate-50 border-2 border-transparent focus:border-green-500 rounded-2xl p-4 text-center font-bold text-lg outline-none">
-                        </div>
+
+</div>
                         <button onclick="addToCart()" id="add-btn" class="flex-1 bg-slate-900 text-white font-bold rounded-2xl shadow-xl hover:bg-black active:scale-95 transition-all uppercase tracking-tighter">
                             Add to Cart
                         </button>
@@ -113,9 +114,10 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase Configuration
+        // Firebase Config (Using your provided IDs)
         const firebaseConfig = {
-            apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
+
+apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
             authDomain: "min-eli.firebaseapp.com",
             projectId: "min-eli",
             storageBucket: "min-eli.firebasestorage.app",
@@ -130,7 +132,7 @@
         let cart = [];
         let selectedItem = null;
 
-        // 1. LIVE INVENTORY SYNC (Owner updates reflect instantly)
+        // 1. LIVE INVENTORY SYNC
         onSnapshot(collection(db, "inventory"), (snapshot) => {
             const datalist = document.getElementById('inventory-datalist');
             datalist.innerHTML = '';
@@ -143,12 +145,12 @@
             });
         });
 
-        // 2. SEARCH & AUTOFILL LOGIC
+        // 2. SEARCH LOGIC
         document.getElementById('goodsSearch').addEventListener('input', (e) => {
-            selectedItem = inventory.find(i => i.name.toLowerCase() === e.target.value.toLowerCase());
+            selectedItem = inventory.find(i => i.name === e.target.value);
             if(selectedItem) {
-                document.getElementById('autoPrice').innerText = "$" + Number(selectedItem.sell || 0).toFixed(2);
-                document.getElementById('stock-hint').innerText = selectedItem.stock || 0;
+                document.getElementById('autoPrice').innerText = "$" + selectedItem.sell;
+                document.getElementById('stock-hint').innerText = selectedItem.stock;
             } else {
                 document.getElementById('autoPrice').innerText = "$0.00";
                 document.getElementById('stock-hint').innerText = "0";
@@ -158,12 +160,11 @@
         // 3. CART ACTIONS
         window.addToCart = () => {
             const qty = parseInt(document.getElementById('qty').value);
-            if(!selectedItem || qty <= 0) return alert("Select a valid item first");
+            if(!selectedItem || qty <= 0) return alert("Select an item first");
             if(qty > selectedItem.stock) return alert("Insufficient Stock!");
 
             const existing = cart.find(c => c.id === selectedItem.id);
             if(existing) {
-                if (existing.buyQty + qty > selectedItem.stock) return alert("Insufficient Stock!");
                 existing.buyQty += qty;
                 existing.subtotal = existing.buyQty * existing.sell;
             } else {
@@ -172,56 +173,50 @@
             
             renderCart();
             document.getElementById('goodsSearch').value = "";
-            document.getElementById('autoPrice').innerText = "$0.00";
-            document.getElementById('stock-hint').innerText = "0";
-            selectedItem = null;
         };
 
         function renderCart() {
             const container = document.getElementById('cartItems');
+            const emptyMsg = document.getElementById('empty-msg');
             container.innerHTML = "";
             let total = 0;
 
             if(cart.length === 0) {
-                container.innerHTML = `
-                    <div id="empty-msg" class="text-center py-12">
-                        <i class="fa fa-shopping-basket text-slate-200 text-4xl mb-4 block"></i>
-                        <p class="text-slate-400 text-xs font-bold uppercase tracking-widest italic">Basket is empty</p>
-                    </div>`;
+                container.appendChild(emptyMsg);
                 document.getElementById('totalDisplay').innerText = "$0.00";
                 return;
             }
 
             cart.forEach((item, index) => {
                 total += item.subtotal;
-                container.innerHTML += `
+                container.innerHTML += 
                     <div class="receipt-item flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
                         <div>
                             <p class="font-black text-slate-800 text-sm">${item.name}</p>
                             <p class="text-[10px] text-slate-400 font-bold uppercase">${item.buyQty} Units x $${item.sell}</p>
                         </div>
                         <div class="text-right">
-                            <p class="font-black text-blue-600 text-sm">$${item.subtotal.toFixed(2)}</p>
+                            <p class="font-black text-blue-600 text-sm">$${item.subtotal}</p>
                             <button onclick="removeItem(${index})" class="text-[9px] font-black text-red-400 uppercase tracking-widest mt-1">Remove</button>
                         </div>
-                    </div>`;
+                    </div>;
             });
-            document.getElementById('totalDisplay').innerText = "$" + total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('totalDisplay').innerText = "$" + total.toLocaleString();
         }
 
         window.removeItem = (i) => { cart.splice(i, 1); renderCart(); };
         window.clearCart = () => { cart = []; renderCart(); };
 
-        // 4. COMPLETE SALE
+// 4. COMPLETE SALE
         window.completeSale = async () => {
-            if(cart.length === 0) return alert("Cart is empty!");
+            if(cart.length === 0) return;
             try {
                 for (const item of cart) {
                     await updateDoc(doc(db, "inventory", item.id), { stock: item.stock - item.buyQty });
                     await addDoc(collection(db, "sales"), {
                         itemName: item.name,
                         qty: item.buyQty,
-                        costPrice: item.cost || 0,
+                        costPrice: item.cost, // Crucial for owner profit calculations
                         totalPrice: item.subtotal,
                         timestamp: serverTimestamp()
                     });
@@ -231,29 +226,28 @@
             } catch (e) { alert("Error: " + e.message); }
         };
 
-        // 5. REPORT WASTAGE
+        // 5. NEW FUNCTIONALITY: WASTAGE
         window.handleWastage = async () => {
             const name = prompt("Enter product name for wastage:");
-            if (!name) return;
-            const item = inventory.find(i => i.name.toLowerCase() === name.trim().toLowerCase());
+            const item = inventory.find(i => i.name === name);
             if(!item) return alert("Product not found");
             
-            const qty = parseInt(prompt(`How many units of ${item.name} are wasted/broken?`));
+            const qty = parseInt(prompt(How many ${name} are wasted/broken?));
             if(qty > 0 && qty <= item.stock) {
-                if(confirm(`Report ${qty} unit(s) of ${item.name} as wastage? This will decrease current stock.`)) {
+                if(confirm(Report ${qty} ${name} as wastage? This reduces stock.)) {
                     await updateDoc(doc(db, "inventory", item.id), { stock: item.stock - qty });
                     await addDoc(collection(db, "wastage"), {
-                        itemName: item.name,
+                        itemName: name,
                         qty: qty,
                         reason: "Reported by Seller",
                         timestamp: serverTimestamp()
                     });
-                    alert("Wastage logged successfully.");
+                    alert("Wastage logged.");
                 }
-            } else { alert("Invalid quantity or exceeds stock"); }
+            } else { alert("Invalid quantity"); }
         };
 
-        // 6. REGISTER DEBT
+        // 6. NEW FUNCTIONALITY: DEBT
         window.handleDebt = async () => {
             const customer = prompt("Customer Name:");
             const amount = prompt("Total Debt Amount ($):");
@@ -264,15 +258,11 @@
                     status: "unpaid",
                     timestamp: serverTimestamp()
                 });
-                alert(`Debt of $${amount} recorded for ${customer}`);
+                alert(Debt of $${amount} recorded for ${customer});
             }
         };
 
-        // Live Clock
-        setInterval(() => { 
-            const clockEl = document.getElementById('live-clock');
-            if(clockEl) clockEl.innerText = new Date().toLocaleString(); 
-        }, 1000);
+        setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
     </script>
 </body>
-    </html>
+</html>
