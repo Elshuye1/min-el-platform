@@ -162,6 +162,12 @@
                     </div>
                 </div>
             </div>
+            <div class="glass p-8 rounded-[2.5rem]">
+                <h3 class="text-xl font-black mb-6 text-blue-400 font-display"><i class="fa fa-magnifying-glass mr-2"></i> Customer Requests <span class="text-xs text-slate-500 font-normal">— items customers wanted but you don't stock</span></h3>
+                <div id="requestList" class="space-y-3">
+                    <p class="text-slate-500 text-sm italic">No customer requests yet.</p>
+                </div>
+            </div>
         </section>
 
         <section id="sec-inventory" class="hidden space-y-6">
@@ -354,7 +360,7 @@
             snap.forEach(d => {
                 const w = d.data();
                 container.innerHTML += `<div class="flex justify-between items-center p-3 bg-orange-500/5 border border-orange-500/10 rounded-xl text-xs">
-                    <span><b class="text-orange-500">${w.qty}x</b> ${w.itemName}</span>
+                    <span><b class="text-orange-500">${w.qty}x</b> ${w.itemName}${w.reason ? ` <span class="text-slate-500">(${w.reason})</span>` : ''}${w.note ? `<br><span class="text-slate-600 text-[10px]">${w.note}</span>` : ''}</span>
                     <button onclick="clearRecord('wastage', '${d.id}')" class="text-slate-600">Delete</button>
                 </div>`;
                 wasteCount++;
@@ -373,9 +379,13 @@
             let totalDebt = 0; let debtCount = 0;
             snap.forEach(d => {
                 const b = d.data();
-                container.innerHTML += `<div class="flex justify-between items-center p-3 bg-red-500/5 border border-red-500/10 rounded-xl text-xs">
-                    <span><b>${b.customerName}</b> owes <b class="text-red-500">$${b.amount}</b></span>
-                    <button onclick="clearRecord('debts', '${d.id}')" class="bg-red-500/20 text-red-500 px-2 py-1 rounded">Paid</button>
+                container.innerHTML += `<div class="flex justify-between items-start p-3 bg-red-500/5 border border-red-500/10 rounded-xl text-xs">
+                    <div>
+                        <p><b>${b.customerName}</b> owes <b class="text-red-500">$${b.amount}</b></p>
+                        <p class="text-slate-500 text-[10px] mt-1">${b.phone ? '<i class="fa fa-phone mr-1"></i>' + b.phone + ' ' : ''}${b.address ? '<i class="fa fa-location-dot ml-2 mr-1"></i>' + b.address : ''}</p>
+                        <p class="text-slate-600 text-[10px] mt-1">${b.service ? 'Via: ' + b.service + ' ' : ''}${b.borrowDate ? '· Borrowed: ' + b.borrowDate : ''}</p>
+                    </div>
+                    <button onclick="clearRecord('debts', '${d.id}')" class="bg-red-500/20 text-red-500 px-2 py-1 rounded shrink-0">Paid</button>
                 </div>`;
                 if (b.status !== 'paid') { totalDebt += Number(b.amount) || 0; debtCount++; }
             });
@@ -385,6 +395,25 @@
             document.getElementById('stat-debt').innerText = `$${totalDebt.toLocaleString()}`;
             document.getElementById('debtTotalHeader').innerText = `$${totalDebt.toLocaleString()}`;
             updateAlerts(null, debtCount, totalDebt);
+        });
+
+        // --- CUSTOMER REQUESTS SYNC (additive: items sellers logged as wanted-but-not-stocked) ---
+        onSnapshot(query(collection(db, "customerRequests"), orderBy("timestamp", "desc")), (snap) => {
+            const container = document.getElementById('requestList');
+            container.innerHTML = '';
+            snap.forEach(d => {
+                const r = d.data();
+                const t = r.timestamp && r.timestamp.toDate ? r.timestamp.toDate().toLocaleDateString() : '';
+                container.innerHTML += `<div class="flex justify-between items-start p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl text-xs">
+                    <div>
+                        <p class="font-bold">${r.itemName}</p>
+                        ${r.note ? `<p class="text-slate-500 text-[10px] mt-1">${r.note}</p>` : ''}
+                        <p class="text-slate-600 text-[9px] mt-1">${t}</p>
+                    </div>
+                    <button onclick="clearRecord('customerRequests', '${d.id}')" class="text-slate-600 hover:text-red-500 transition"><i class="fa fa-trash-alt"></i></button>
+                </div>`;
+            });
+            if (snap.size === 0) container.innerHTML = '<p class="text-slate-500 text-sm italic">No customer requests yet.</p>';
         });
 
         // --- ACTIONS (unchanged) ---
@@ -535,4 +564,4 @@
         };
     </script>
 </body>
-    </html>
+                            </html>
