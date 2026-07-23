@@ -7,28 +7,50 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0b0f1a; color: white; }
-        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .sidebar-link.active { background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; color: #3b82f6; opacity: 1; }
-        
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Noto+Sans+Ethiopic:wght@400;600;700&display=swap');
+        :root{
+            --navy:#0b0f1a; --panel:#11162481; --blue:#3b82f6; --gold:#D4A017; --green:#22c55e; --red:#ef4444;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: radial-gradient(circle at 20% 0%, #131a2c 0%, #0b0f1a 55%); color: white; }
+        .font-display{ font-family:'Fraunces', serif; }
+        .amh{ font-family:'Noto Sans Ethiopic','Plus Jakarta Sans', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.035); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.06); }
+        .sidebar-link{ position:relative; opacity:.55; transition:all .15s ease; }
+        .sidebar-link.active { background: linear-gradient(90deg, rgba(59,130,246,0.14), transparent); border-left: 3px solid var(--blue); color: #60a5fa; opacity: 1; }
+        .sidebar-link:hover{ opacity:.9; }
+        .textile-strip{ height:5px; width:100%; background:repeating-linear-gradient(-45deg, var(--green) 0 10px, var(--gold) 10px 20px, var(--red) 20px 30px); opacity:.85; }
+        .pulse-dot{ width:8px; height:8px; border-radius:999px; background:var(--green); box-shadow:0 0 0 0 rgba(34,197,94,.7); animation:pulse 1.8s infinite; }
+        @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(34,197,94,.6);} 70%{box-shadow:0 0 0 8px rgba(34,197,94,0);} 100%{box-shadow:0 0 0 0 rgba(34,197,94,0);} }
+        .feed-row{ animation:slideIn .25s ease-out; }
+        @keyframes slideIn{ from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:translateY(0);} }
+        ::-webkit-scrollbar{ width:6px; height:6px; }
+        ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:10px; }
+        .chip{ font-size:10px; font-weight:900; padding:3px 9px; border-radius:999px; text-transform:uppercase; letter-spacing:.04em; }
+
         @media (max-width: 768px) {
             .sidebar { display: none; }
             .mobile-nav { display: flex; }
-            .main-content { padding-bottom: 100px; }
+            .main-content { padding-bottom: 108px; }
         }
     </style>
 </head>
 <body class="flex flex-col md:flex-row h-screen overflow-hidden">
 
-    <aside class="sidebar w-64 glass border-r border-white/5 flex flex-col">
-        <div class="p-8 font-black text-2xl tracking-tighter text-blue-500">MIN-EL HQ</div>
-        <nav class="flex-1 space-y-1">
-            <button onclick="showSec('overview')" class="sidebar-link active w-full flex items-center gap-4 px-8 py-4 text-sm font-bold opacity-50"><i class="fa fa-chart-line"></i> Dashboard</button>
-            <button onclick="showSec('inventory')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold opacity-50"><i class="fa fa-box"></i> Inventory</button>
-            <button onclick="showSec('losses')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold opacity-50"><i class="fa fa-hand-holding-dollar"></i> Loss & Debts</button>
-            <button onclick="showSec('reports')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold opacity-50"><i class="fa fa-file-invoice"></i> Reports</button>
-            <button onclick="showSec('charity')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold opacity-50"><i class="fa fa-heart"></i> Charity</button>
+    <aside class="sidebar w-64 glass border-r border-white/5 flex flex-col overflow-y-auto">
+        <div class="p-8">
+            <div class="font-black text-2xl tracking-tighter text-blue-500 font-display">MIN-EL HQ</div>
+            <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">Owner Command Center</p>
+        </div>
+        <div class="textile-strip mb-4"></div>
+        <nav class="flex-1 space-y-1 pb-6">
+            <button onclick="showSec('overview')" class="sidebar-link active w-full flex items-center gap-4 px-8 py-4 text-sm font-bold"><i class="fa fa-chart-line w-4"></i> Dashboard</button>
+            <button onclick="showSec('livefeed')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold"><i class="fa fa-satellite-dish w-4"></i> Live Sales</button>
+            <button onclick="showSec('inventory')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold"><i class="fa fa-box w-4"></i> Inventory</button>
+            <button onclick="showSec('losses')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold"><i class="fa fa-hand-holding-dollar w-4"></i> Loss & Debts</button>
+            <button onclick="showSec('chat')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold"><i class="fa fa-comments w-4"></i> Seller Chat</button>
+            <button onclick="showSec('inspire')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold"><i class="fa fa-seedling w-4"></i> Inspiration</button>
+            <button onclick="showSec('reports')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold"><i class="fa fa-file-invoice w-4"></i> Reports</button>
+            <button onclick="showSec('charity')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold"><i class="fa fa-heart w-4"></i> Charity</button>
         </nav>
         <div class="p-6">
             <button onclick="logout()" class="w-full bg-red-600/20 text-red-500 py-3 rounded-xl font-bold text-xs"><i class="fa fa-lock mr-2"></i> LOCK</button>
@@ -38,10 +60,11 @@
     <main class="main-content flex-1 overflow-y-auto p-6 md:p-10">
         <header class="flex justify-between items-center mb-10">
             <div>
-                <h2 id="pageTitle" class="text-2xl md:text-3xl font-black">Executive Overview</h2>
+                <h2 id="pageTitle" class="text-2xl md:text-3xl font-black font-display">Executive Overview</h2>
                 <p id="clock" class="text-[10px] font-mono text-blue-400 mt-1 uppercase tracking-widest"></p>
             </div>
-            <div class="hidden md:block">
+            <div class="hidden md:flex items-center gap-2">
+                <span class="pulse-dot"></span>
                 <span class="bg-green-500/10 text-green-500 px-4 py-2 rounded-full text-[10px] font-black border border-green-500/20 uppercase">Live Sync Active</span>
             </div>
         </header>
@@ -50,26 +73,49 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="glass p-5 rounded-3xl border-b-4 border-blue-500">
                     <p class="text-[10px] text-slate-500 font-bold uppercase">Revenue</p>
-                    <h3 id="stat-rev" class="text-xl font-black mt-1">$0.00</h3>
+                    <h3 id="stat-rev" class="text-xl font-black mt-1 font-display">$0.00</h3>
                 </div>
                 <div class="glass p-5 rounded-3xl border-b-4 border-green-500">
                     <p class="text-[10px] text-slate-500 font-bold uppercase">Net Profit</p>
-                    <h3 id="stat-profit" class="text-xl font-black mt-1 text-green-400">$0.00</h3>
+                    <h3 id="stat-profit" class="text-xl font-black mt-1 text-green-400 font-display">$0.00</h3>
                 </div>
                 <div class="glass p-5 rounded-3xl border-b-4 border-yellow-500">
                     <p class="text-[10px] text-slate-500 font-bold uppercase">Tithe (10%)</p>
-                    <h3 id="stat-tithe" class="text-xl font-black mt-1 text-yellow-500">$0.00</h3>
+                    <h3 id="stat-tithe" class="text-xl font-black mt-1 text-yellow-500 font-display">$0.00</h3>
                 </div>
                 <div class="glass p-5 rounded-3xl border-b-4 border-red-500">
                     <p class="text-[10px] text-slate-500 font-bold uppercase">Low Stock</p>
-                    <h3 id="stat-low" class="text-xl font-black mt-1">0</h3>
+                    <h3 id="stat-low" class="text-xl font-black mt-1 font-display">0</h3>
+                </div>
+            </div>
+
+            <!-- Secondary stats: additive, does not alter original four -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="glass p-5 rounded-3xl">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase">Products Listed</p>
+                    <h3 id="stat-products" class="text-lg font-black mt-1 font-display">0</h3>
+                </div>
+                <div class="glass p-5 rounded-3xl">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase">Units In Stock</p>
+                    <h3 id="stat-units" class="text-lg font-black mt-1 font-display">0</h3>
+                </div>
+                <div class="glass p-5 rounded-3xl">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase">Outstanding Debt</p>
+                    <h3 id="stat-debt" class="text-lg font-black mt-1 text-red-400 font-display">$0.00</h3>
+                </div>
+                <div class="glass p-5 rounded-3xl">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase">Wastage Logged</p>
+                    <h3 id="stat-wastage" class="text-lg font-black mt-1 text-orange-400 font-display">0</h3>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="glass p-6 rounded-[2rem]">
-                    <h4 class="text-[10px] font-black text-blue-500 uppercase mb-4 tracking-widest">Recent Sales Feed</h4>
-                    <div id="miniSales" class="space-y-2"></div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-[10px] font-black text-blue-500 uppercase tracking-widest">Recent Sales Feed</h4>
+                        <span class="chip bg-blue-500/10 text-blue-400"><span class="pulse-dot inline-block mr-1" style="width:5px;height:5px;"></span>Live</span>
+                    </div>
+                    <div id="miniSales" class="space-y-2 max-h-72 overflow-y-auto"></div>
                 </div>
                 <div class="glass p-6 rounded-[2rem]">
                     <h4 class="text-[10px] font-black text-red-500 uppercase mb-4 tracking-widest">Critical Alerts</h4>
@@ -78,16 +124,39 @@
             </div>
         </section>
 
+        <!-- ===================== LIVE SALES (new) ===================== -->
+        <section id="sec-livefeed" class="hidden space-y-6">
+            <div class="glass p-6 md:p-8 rounded-[2.5rem]">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-black font-display"><i class="fa fa-satellite-dish text-blue-400 mr-2"></i> What the seller is selling right now</h3>
+                    <span class="chip bg-green-500/10 text-green-400"><span class="pulse-dot inline-block mr-1" style="width:6px;height:6px;"></span>Live</span>
+                </div>
+                <div id="liveFeedList" class="space-y-2 max-h-[65vh] overflow-y-auto">
+                    <p class="text-slate-500 text-sm italic">Waiting for the first sale...</p>
+                </div>
+            </div>
+        </section>
+
         <section id="sec-losses" class="hidden space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                <div class="glass p-5 rounded-2xl flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-400 uppercase">Total unpaid debt</span>
+                    <span id="debtTotalHeader" class="text-lg font-black text-red-400 font-display">$0.00</span>
+                </div>
+                <div class="glass p-5 rounded-2xl flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-400 uppercase">Total wastage entries</span>
+                    <span id="wastageTotalHeader" class="text-lg font-black text-orange-400 font-display">0</span>
+                </div>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="glass p-8 rounded-[2.5rem]">
-                    <h3 class="text-xl font-black mb-6 text-orange-500"><i class="fa fa-trash-can mr-2"></i> Stock Wastage</h3>
+                    <h3 class="text-xl font-black mb-6 text-orange-500 font-display"><i class="fa fa-trash-can mr-2"></i> Stock Wastage</h3>
                     <div id="wastageList" class="space-y-3">
                         <p class="text-slate-500 text-sm italic">No wastage reported today.</p>
                     </div>
                 </div>
                 <div class="glass p-8 rounded-[2.5rem]">
-                    <h3 class="text-xl font-black mb-6 text-red-500"><i class="fa fa-user-clock mr-2"></i> Unpaid Debts</h3>
+                    <h3 class="text-xl font-black mb-6 text-red-500 font-display"><i class="fa fa-user-clock mr-2"></i> Unpaid Debts</h3>
                     <div id="debtList" class="space-y-3">
                         <p class="text-slate-500 text-sm italic">No active debts found.</p>
                     </div>
@@ -98,37 +167,106 @@
         <section id="sec-inventory" class="hidden space-y-6">
             <div class="glass p-6 rounded-3xl">
                 <form id="addForm" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <input type="text" id="n" placeholder="Product Name" required class="bg-white/5 p-4 rounded-xl border border-white/10 outline-none text-sm">
-                    <input type="number" id="c" placeholder="Cost Price" required class="bg-white/5 p-4 rounded-xl border border-white/10 outline-none text-sm">
-                    <input type="number" id="s" placeholder="Stock Qty" required class="bg-white/5 p-4 rounded-xl border border-white/10 outline-none text-sm">
-                    <input type="number" id="p" placeholder="Sale Price" required class="bg-white/5 p-4 rounded-xl border border-white/10 outline-none text-sm">
-                    <button class="bg-blue-600 col-span-2 md:col-span-4 py-4 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all">Add To Inventory</button>
+                    <input type="text" id="n" placeholder="Product Name" required class="bg-white/5 p-4 rounded-xl border border-white/10 outline-none text-sm focus:border-blue-500">
+                    <input type="number" id="c" placeholder="Cost Price" required class="bg-white/5 p-4 rounded-xl border border-white/10 outline-none text-sm focus:border-blue-500">
+                    <input type="number" id="s" placeholder="Stock Qty" required class="bg-white/5 p-4 rounded-xl border border-white/10 outline-none text-sm focus:border-blue-500">
+                    <input type="number" id="p" placeholder="Sale Price" required class="bg-white/5 p-4 rounded-xl border border-white/10 outline-none text-sm focus:border-blue-500">
+                    <button class="bg-blue-600 col-span-2 md:col-span-4 py-4 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all hover:bg-blue-700">Add To Inventory</button>
                 </form>
             </div>
             <div id="invList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </section>
 
+        <!-- ===================== SELLER CHAT (new) ===================== -->
+        <section id="sec-chat" class="hidden">
+            <div class="glass rounded-[2.5rem] overflow-hidden max-w-2xl mx-auto">
+                <div class="p-5 border-b border-white/5">
+                    <p class="font-black font-display">Chat with your Seller</p>
+                    <p class="text-[11px] text-slate-500">Messages sync instantly with the seller's terminal</p>
+                </div>
+                <div id="hqChatWindow" class="p-5 space-y-3 h-[420px] overflow-y-auto"></div>
+                <div class="p-4 border-t border-white/5 flex gap-2">
+                    <input id="hqChatInput" placeholder="Type a message to your seller..." class="flex-1 bg-white/5 rounded-2xl p-3 outline-none text-sm border border-white/10 focus:border-blue-500" onkeydown="if(event.key==='Enter'){sendHqMessage();}">
+                    <button onclick="sendHqMessage()" class="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shrink-0 hover:bg-blue-700"><i class="fa fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================== INSPIRATION (new) ===================== -->
+        <section id="sec-inspire" class="hidden space-y-6">
+            <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
+                <h3 class="text-xl font-black mb-1 font-display"><i class="fa fa-seedling text-green-400 mr-2"></i>Post daily inspiration</h3>
+                <p class="text-[11px] text-slate-500 mb-6">Share a Bible verse or a business tip — sellers will see it as today's message.</p>
+                <div class="space-y-3">
+                    <select id="inspireType" class="w-full bg-white/5 p-3 rounded-xl border border-white/10 outline-none text-sm">
+                        <option value="verse">Biblical Verse / መንፈሳዊ ጥቅስ</option>
+                        <option value="tip">Business Tip / የንግድ ምክር</option>
+                    </select>
+                    <textarea id="inspireText" rows="3" placeholder="Write in Amharic or English..." class="w-full bg-white/5 p-3 rounded-xl border border-white/10 outline-none text-sm resize-none amh"></textarea>
+                    <input id="inspireRef" placeholder="Reference (optional, e.g. ፊልጵስዩስ 4:13)" class="w-full bg-white/5 p-3 rounded-xl border border-white/10 outline-none text-sm amh">
+                    <button onclick="postInspiration()" class="w-full bg-green-600 hover:bg-green-700 py-3 rounded-xl font-black text-sm uppercase tracking-widest transition">Publish to Sellers</button>
+                </div>
+            </div>
+            <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
+                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Recent Posts</h4>
+                <div id="inspireList" class="space-y-3 max-h-96 overflow-y-auto">
+                    <p class="text-slate-500 text-sm italic">Nothing posted yet.</p>
+                </div>
+            </div>
+        </section>
+
         <section id="sec-reports" class="hidden glass p-10 rounded-[3rem]">
-            <h3 class="text-2xl font-black mb-8 italic text-blue-400">Financial Performance</h3>
+            <h3 class="text-2xl font-black mb-8 italic text-blue-400 font-display">Financial Performance</h3>
             <div class="space-y-6 max-w-lg">
                 <div class="flex justify-between border-b border-white/5 pb-2"><span>Gross Revenue</span><span id="r-gross">$0.00</span></div>
                 <div class="flex justify-between border-b border-white/5 pb-2 text-red-400"><span>Stock Cost</span><span id="r-cost">$0.00</span></div>
-                <div class="flex justify-between text-2xl font-black pt-4 text-green-400"><span>Net Profit</span><span id="r-profit">$0.00</span></div>
-                <button onclick="window.print()" class="w-full bg-white/5 border border-white/10 py-4 rounded-2xl font-bold mt-6">Download Report</button>
+                <div class="flex justify-between text-2xl font-black pt-4 text-green-400 font-display"><span>Net Profit</span><span id="r-profit">$0.00</span></div>
+                <button onclick="window.print()" class="w-full bg-white/5 border border-white/10 py-4 rounded-2xl font-bold mt-6 hover:bg-white/10 transition">Download Report</button>
+            </div>
+        </section>
+
+        <!-- ===================== CHARITY (was missing / now completed) ===================== -->
+        <section id="sec-charity" class="hidden space-y-6">
+            <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
+                <p class="text-[10px] text-slate-500 font-bold uppercase">Available Tithe (10% of profit)</p>
+                <h3 id="charity-available" class="text-3xl font-black mt-1 text-yellow-500 font-display">$0.00</h3>
+                <p class="text-[11px] text-slate-500 mt-2">Automatically calculated from your net profit — log where it goes below.</p>
+            </div>
+            <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
+                <h3 class="text-lg font-black mb-4 font-display"><i class="fa fa-heart text-red-400 mr-2"></i>Log a Charity Contribution</h3>
+                <form id="charityForm" class="space-y-3">
+                    <input type="text" id="charity-recipient" placeholder="Given to (person, church, cause)" required class="w-full bg-white/5 p-3 rounded-xl border border-white/10 outline-none text-sm">
+                    <input type="number" id="charity-amount" placeholder="Amount ($)" required class="w-full bg-white/5 p-3 rounded-xl border border-white/10 outline-none text-sm">
+                    <input type="text" id="charity-note" placeholder="Note (optional)" class="w-full bg-white/5 p-3 rounded-xl border border-white/10 outline-none text-sm">
+                    <button class="w-full bg-yellow-600 hover:bg-yellow-700 py-3 rounded-xl font-black text-sm uppercase tracking-widest transition">Log Contribution</button>
+                </form>
+            </div>
+            <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Giving History</h4>
+                    <span class="text-xs font-bold text-slate-400">Total given: <span id="charity-given" class="text-green-400">$0.00</span></span>
+                </div>
+                <div id="charityList" class="space-y-2 max-h-72 overflow-y-auto">
+                    <p class="text-slate-500 text-sm italic">No contributions logged yet.</p>
+                </div>
             </div>
         </section>
 
     </main>
 
-    <nav class="mobile-nav fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-xl border-t border-white/10 hidden justify-around items-center z-50">
-        <button onclick="showSec('overview')" class="flex flex-col items-center gap-1 text-blue-500"><i class="fa fa-chart-pie"></i><span class="text-[9px] font-bold">Stats</span></button>
-        <button onclick="showSec('inventory')" class="flex flex-col items-center gap-1 text-slate-500"><i class="fa fa-box"></i><span class="text-[9px] font-bold">Stock</span></button>
-        <button onclick="showSec('losses')" class="flex flex-col items-center gap-1 text-slate-500"><i class="fa fa-warning"></i><span class="text-[9px] font-bold">Loss</span></button>
-        <button onclick="showSec('reports')" class="flex flex-col items-center gap-1 text-slate-500"><i class="fa fa-file"></i><span class="text-[9px] font-bold">Docs</span></button>
+    <nav class="mobile-nav fixed bottom-0 left-0 right-0 h-20 bg-black/85 backdrop-blur-xl border-t border-white/10 hidden justify-start md:justify-around items-center z-50 overflow-x-auto px-2 gap-1">
+        <button onclick="showSec('overview')" class="flex flex-col items-center gap-1 text-blue-500 shrink-0 px-3"><i class="fa fa-chart-pie"></i><span class="text-[9px] font-bold">Stats</span></button>
+        <button onclick="showSec('livefeed')" class="flex flex-col items-center gap-1 text-slate-500 shrink-0 px-3"><i class="fa fa-satellite-dish"></i><span class="text-[9px] font-bold">Live</span></button>
+        <button onclick="showSec('inventory')" class="flex flex-col items-center gap-1 text-slate-500 shrink-0 px-3"><i class="fa fa-box"></i><span class="text-[9px] font-bold">Stock</span></button>
+        <button onclick="showSec('losses')" class="flex flex-col items-center gap-1 text-slate-500 shrink-0 px-3"><i class="fa fa-warning"></i><span class="text-[9px] font-bold">Loss</span></button>
+        <button onclick="showSec('chat')" class="flex flex-col items-center gap-1 text-slate-500 shrink-0 px-3"><i class="fa fa-comments"></i><span class="text-[9px] font-bold">Chat</span></button>
+        <button onclick="showSec('inspire')" class="flex flex-col items-center gap-1 text-slate-500 shrink-0 px-3"><i class="fa fa-seedling"></i><span class="text-[9px] font-bold">Inspire</span></button>
+        <button onclick="showSec('reports')" class="flex flex-col items-center gap-1 text-slate-500 shrink-0 px-3"><i class="fa fa-file"></i><span class="text-[9px] font-bold">Docs</span></button>
+        <button onclick="showSec('charity')" class="flex flex-col items-center gap-1 text-slate-500 shrink-0 px-3"><i class="fa fa-heart"></i><span class="text-[9px] font-bold">Charity</span></button>
     </nav>
 
     <script type="module">
-        // --- SECURITY ---
+        // --- SECURITY (unchanged) ---
         const MASTER_PIN = "528989";
         if (sessionStorage.getItem('hq_auth') !== 'true') {
             const p = prompt("Enter Master PIN:");
@@ -137,7 +275,7 @@
         }
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
@@ -159,10 +297,11 @@
             if(event) event.currentTarget.classList.add('active');
         };
 
-        // --- INVENTORY SYNC ---
+        // --- INVENTORY SYNC (unchanged logic, additive stats appended) ---
         onSnapshot(collection(db, "inventory"), (snap) => {
             const list = document.getElementById('invList');
             let low = 0; list.innerHTML = '';
+            let totalUnits = 0; let totalProducts = 0; const lowItems = [];
             snap.forEach(d => {
                 const i = d.data();
                 if(i.stock < 5) low++;
@@ -174,11 +313,19 @@
                             <button onclick="deleteProduct('${d.id}')" class="text-slate-600 hover:text-red-500 transition"><i class="fa fa-trash-alt"></i></button>
                         </div>
                     </div>`;
+                totalUnits += Number(i.stock) || 0;
+                totalProducts++;
+                if (i.stock < 5) lowItems.push(i.name);
             });
             document.getElementById('stat-low').innerText = low;
+
+            // additive: secondary stats + alert message
+            document.getElementById('stat-products').innerText = totalProducts;
+            document.getElementById('stat-units').innerText = totalUnits;
+            updateAlerts(lowItems);
         });
 
-        // --- SALES & PROFIT SYNC ---
+        // --- SALES & PROFIT SYNC (unchanged logic) ---
         onSnapshot(collection(db, "sales"), (snap) => {
             let rev = 0; let cost = 0;
             const feed = document.getElementById('miniSales'); feed.innerHTML = '';
@@ -193,35 +340,54 @@
             document.getElementById('r-gross').innerText = `$${rev.toLocaleString()}`;
             document.getElementById('r-cost').innerText = `$${cost.toLocaleString()}`;
             document.getElementById('r-profit').innerText = `$${profit.toLocaleString()}`;
+
+            // additive: feeds the Charity tab's "available tithe" figure
+            const charityEl = document.getElementById('charity-available');
+            if (charityEl) charityEl.innerText = `$${(profit * 0.1).toLocaleString()}`;
         });
 
-        // --- WASTAGE SYNC ---
+        // --- WASTAGE SYNC (unchanged logic, additive totals) ---
         onSnapshot(collection(db, "wastage"), (snap) => {
             const container = document.getElementById('wastageList');
             container.innerHTML = '';
+            let wasteCount = 0;
             snap.forEach(d => {
                 const w = d.data();
                 container.innerHTML += `<div class="flex justify-between items-center p-3 bg-orange-500/5 border border-orange-500/10 rounded-xl text-xs">
                     <span><b class="text-orange-500">${w.qty}x</b> ${w.itemName}</span>
                     <button onclick="clearRecord('wastage', '${d.id}')" class="text-slate-600">Delete</button>
                 </div>`;
+                wasteCount++;
             });
+            if (wasteCount === 0) container.innerHTML = '<p class="text-slate-500 text-sm italic">No wastage reported today.</p>';
+
+            // additive
+            document.getElementById('stat-wastage').innerText = wasteCount;
+            document.getElementById('wastageTotalHeader').innerText = wasteCount;
         });
 
-        // --- DEBT SYNC ---
+        // --- DEBT SYNC (unchanged logic, additive total) ---
         onSnapshot(collection(db, "debts"), (snap) => {
             const container = document.getElementById('debtList');
             container.innerHTML = '';
+            let totalDebt = 0; let debtCount = 0;
             snap.forEach(d => {
                 const b = d.data();
                 container.innerHTML += `<div class="flex justify-between items-center p-3 bg-red-500/5 border border-red-500/10 rounded-xl text-xs">
                     <span><b>${b.customerName}</b> owes <b class="text-red-500">$${b.amount}</b></span>
                     <button onclick="clearRecord('debts', '${d.id}')" class="bg-red-500/20 text-red-500 px-2 py-1 rounded">Paid</button>
                 </div>`;
+                if (b.status !== 'paid') { totalDebt += Number(b.amount) || 0; debtCount++; }
             });
+            if (debtCount === 0 && snap.size === 0) container.innerHTML = '<p class="text-slate-500 text-sm italic">No active debts found.</p>';
+
+            // additive
+            document.getElementById('stat-debt').innerText = `$${totalDebt.toLocaleString()}`;
+            document.getElementById('debtTotalHeader').innerText = `$${totalDebt.toLocaleString()}`;
+            updateAlerts(null, debtCount, totalDebt);
         });
 
-        // --- ACTIONS ---
+        // --- ACTIONS (unchanged) ---
         document.getElementById('addForm').onsubmit = async (e) => {
             e.preventDefault();
             await addDoc(collection(db, "inventory"), {
@@ -235,8 +401,138 @@
 
         window.deleteProduct = async (id) => { if(confirm("Remove product permanently?")) await deleteDoc(doc(db, "inventory", id)); };
         window.clearRecord = async (col, id) => { if(confirm("Clear this record?")) await deleteDoc(doc(db, col, id)); };
-        
+
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleString(); }, 1000);
+
+        /* =========================================================
+           ADDITIVE: Critical Alerts (fills in the previously static message)
+        ========================================================= */
+        let lastLowItems = [];
+        let lastDebtCount = 0, lastDebtTotal = 0;
+        function updateAlerts(lowItems, debtCount, debtTotal) {
+            if (lowItems) lastLowItems = lowItems;
+            if (debtCount !== undefined) { lastDebtCount = debtCount; lastDebtTotal = debtTotal; }
+            const msgs = [];
+            if (lastLowItems.length > 0) msgs.push(`⚠️ Low stock: ${lastLowItems.slice(0,4).join(', ')}${lastLowItems.length > 4 ? ' and more' : ''}`);
+            if (lastDebtCount > 0) msgs.push(`💸 ${lastDebtCount} unpaid debt(s) totaling $${lastDebtTotal.toLocaleString()}`);
+            const el = document.getElementById('weaknessMsg');
+            el.innerHTML = msgs.length === 0
+                ? 'All systems operational.'
+                : msgs.map(m => `<p class="mb-2">${m}</p>`).join('');
+        }
+
+        /* =========================================================
+           ADDITIVE: Live Sales Feed (dedicated tab, ordered, shows discounts)
+        ========================================================= */
+        onSnapshot(query(collection(db, "sales"), orderBy("timestamp", "desc"), limit(50)), (snap) => {
+            const el = document.getElementById('liveFeedList');
+            const rows = [];
+            snap.forEach(d => {
+                const s = d.data();
+                const t = s.timestamp && s.timestamp.toDate ? s.timestamp.toDate().toLocaleTimeString() : '';
+                const hasDiscount = Number(s.discount) > 0;
+                rows.push(`
+                    <div class="feed-row flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div>
+                            <p class="font-bold text-sm">${s.itemName}</p>
+                            <p class="text-[10px] text-slate-500">${s.qty} units · ${t}${hasDiscount ? ` · <span class="text-red-400">discount $${Number(s.discount).toFixed(2)}</span>` : ''}</p>
+                        </div>
+                        <span class="text-green-400 font-black">+$${Number(s.totalPrice).toLocaleString()}</span>
+                    </div>`);
+            });
+            el.innerHTML = rows.length ? rows.join('') : '<p class="text-slate-500 text-sm italic">Waiting for the first sale...</p>';
+        });
+
+        /* =========================================================
+           ADDITIVE: Seller Chat (shares the "ownerMessages" collection
+           used by the seller terminal, so both sides sync live)
+        ========================================================= */
+        onSnapshot(query(collection(db, "ownerMessages"), orderBy("timestamp", "asc")), (snap) => {
+            const win = document.getElementById('hqChatWindow');
+            win.innerHTML = '';
+            snap.forEach(d => {
+                const m = d.data();
+                const isOwner = m.sender === 'owner';
+                win.innerHTML += `<div class="flex ${isOwner ? 'justify-end' : 'justify-start'}">
+                    <div class="${isOwner ? 'bg-blue-600' : 'bg-white/10'} px-4 py-3 rounded-2xl text-sm max-w-[75%]">
+                        <p class="text-[9px] font-black uppercase mb-1 opacity-60">${m.sender}</p>${m.text || ''}
+                    </div></div>`;
+            });
+            win.scrollTop = win.scrollHeight;
+        });
+        window.sendHqMessage = async () => {
+            const input = document.getElementById('hqChatInput');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            await addDoc(collection(db, "ownerMessages"), { sender: 'owner', text, timestamp: serverTimestamp() });
+        };
+
+        /* =========================================================
+           ADDITIVE: Inspiration posts (owner publishes, sellers can display)
+        ========================================================= */
+        onSnapshot(query(collection(db, "inspirationPosts"), orderBy("timestamp", "desc"), limit(30)), (snap) => {
+            const el = document.getElementById('inspireList');
+            const rows = [];
+            snap.forEach(d => {
+                const p = d.data();
+                const t = p.timestamp && p.timestamp.toDate ? p.timestamp.toDate().toLocaleString() : '';
+                rows.push(`
+                    <div class="flex justify-between items-start p-3 bg-white/5 rounded-xl border border-white/5">
+                        <div>
+                            <span class="chip ${p.category === 'verse' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-green-500/10 text-green-400'}">${p.category === 'verse' ? 'Verse' : 'Tip'}</span>
+                            <p class="text-sm mt-2 amh">${p.text}</p>
+                            ${p.ref ? `<p class="text-[10px] text-slate-500 mt-1 amh">${p.ref}</p>` : ''}
+                            <p class="text-[9px] text-slate-600 mt-1">${t}</p>
+                        </div>
+                        <button onclick="clearRecord('inspirationPosts','${d.id}')" class="text-slate-600 hover:text-red-500 transition"><i class="fa fa-trash-alt"></i></button>
+                    </div>`);
+            });
+            el.innerHTML = rows.length ? rows.join('') : '<p class="text-slate-500 text-sm italic">Nothing posted yet.</p>';
+        });
+        window.postInspiration = async () => {
+            const category = document.getElementById('inspireType').value;
+            const text = document.getElementById('inspireText').value.trim();
+            const ref = document.getElementById('inspireRef').value.trim();
+            if (!text) return alert("Write a message first");
+            await addDoc(collection(db, "inspirationPosts"), { category, text, ref, timestamp: serverTimestamp() });
+            document.getElementById('inspireText').value = '';
+            document.getElementById('inspireRef').value = '';
+        };
+
+        /* =========================================================
+           ADDITIVE: Charity — completes the previously empty tab
+        ========================================================= */
+        onSnapshot(query(collection(db, "charity"), orderBy("timestamp", "desc")), (snap) => {
+            const el = document.getElementById('charityList');
+            const rows = []; let total = 0;
+            snap.forEach(d => {
+                const c = d.data();
+                total += Number(c.amount) || 0;
+                const t = c.timestamp && c.timestamp.toDate ? c.timestamp.toDate().toLocaleDateString() : '';
+                rows.push(`
+                    <div class="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5 text-xs">
+                        <div>
+                            <p class="font-bold">${c.recipient} <span class="text-yellow-500">$${Number(c.amount).toLocaleString()}</span></p>
+                            ${c.note ? `<p class="text-slate-500 text-[10px] mt-1">${c.note}</p>` : ''}
+                            <p class="text-slate-600 text-[9px] mt-1">${t}</p>
+                        </div>
+                        <button onclick="clearRecord('charity','${d.id}')" class="text-slate-600 hover:text-red-500 transition"><i class="fa fa-trash-alt"></i></button>
+                    </div>`);
+            });
+            el.innerHTML = rows.length ? rows.join('') : '<p class="text-slate-500 text-sm italic">No contributions logged yet.</p>';
+            document.getElementById('charity-given').innerText = `$${total.toLocaleString()}`;
+        });
+        document.getElementById('charityForm').onsubmit = async (e) => {
+            e.preventDefault();
+            await addDoc(collection(db, "charity"), {
+                recipient: document.getElementById('charity-recipient').value,
+                amount: Number(document.getElementById('charity-amount').value),
+                note: document.getElementById('charity-note').value,
+                timestamp: serverTimestamp()
+            });
+            e.target.reset(); alert("Contribution logged!");
+        };
     </script>
 </body>
-</html>
+    </html>
