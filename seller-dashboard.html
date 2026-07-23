@@ -1,268 +1,1144 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" id="htmlRoot">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Seller POS | Min-el Platform</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .pos-grid { display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 24px; }
-        @media (max-width: 1024px) { .pos-grid { grid-template-columns: 1fr; } }
-        .receipt-item { animation: slideIn 0.2s ease-out; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Min-el Terminal | ሚን-ኤል ተርሚናል</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Noto+Sans+Ethiopic:wght@400;600;700;800&display=swap');
+
+:root{
+  --bg:#FAF6EC;
+  --surface:#FFFFFF;
+  --green:#0B6E4F;
+  --green-dark:#075A40;
+  --gold:#D4A017;
+  --gold-soft:#F3E3B8;
+  --red:#B23A2E;
+  --ink:#241C14;
+  --muted:#8A7F6E;
+}
+*{box-sizing:border-box;}
+body{
+  font-family:'Plus Jakarta Sans', sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-tap-highlight-color:transparent;
+}
+[lang="am"], .amh, .am-text{ font-family:'Noto Sans Ethiopic','Plus Jakarta Sans', sans-serif; }
+.font-display{ font-family:'Fraunces', serif; }
+
+.textile-band{
+  height:7px;
+  width:100%;
+  background:repeating-linear-gradient(-45deg,
+    var(--green) 0px, var(--green) 10px,
+    var(--gold) 10px, var(--gold) 20px,
+    var(--red) 20px, var(--red) 30px);
+  opacity:0.9;
+}
+.pos-grid{ display:grid; grid-template-columns:1.8fr 1.2fr; gap:24px; }
+@media (max-width:1024px){ .pos-grid{ grid-template-columns:1fr; } }
+.receipt-item{ animation:slideIn 0.2s ease-out; }
+@keyframes slideIn{ from{opacity:0; transform:translateY(5px);} to{opacity:1; transform:translateY(0);} }
+
+.tab-btn{
+  padding:10px 18px; border-radius:999px; font-weight:800; font-size:12px;
+  letter-spacing:.03em; color:var(--muted); background:transparent; white-space:nowrap;
+  transition:all .15s ease; border:2px solid transparent;
+}
+.tab-btn.active{ background:var(--ink); color:#fff; }
+.tab-panel{ display:none; }
+.tab-panel.active{ display:block; animation:fadeUp .25s ease-out; }
+@keyframes fadeUp{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+.card{ background:var(--surface); border:1px solid rgba(36,28,20,0.06); border-radius:1.75rem; }
+
+.chat-scroll::-webkit-scrollbar, .cart-scroll::-webkit-scrollbar{ width:6px; }
+.chat-scroll::-webkit-scrollbar-thumb, .cart-scroll::-webkit-scrollbar-thumb{ background:#e6ddc9; border-radius:10px; }
+
+.bubble-user{ background:var(--green); color:#fff; border-radius:18px 18px 4px 18px; }
+.bubble-ai{ background:#F1EEE4; color:var(--ink); border-radius:18px 18px 18px 4px; }
+.bubble-owner{ background:var(--gold-soft); color:var(--ink); border-radius:18px 18px 4px 18px; }
+.bubble-seller{ background:#F1EEE4; color:var(--ink); border-radius:18px 18px 18px 4px; }
+
+.dot-typing span{ animation: blink 1.2s infinite; }
+.dot-typing span:nth-child(2){ animation-delay:.2s; }
+.dot-typing span:nth-child(3){ animation-delay:.4s; }
+@keyframes blink{ 0%,80%,100%{opacity:.2;} 40%{opacity:1;} }
+
+.fab{
+  position:fixed; bottom:22px; right:22px; z-index:60;
+  width:60px; height:60px; border-radius:50%;
+  background:var(--green); color:#fff; box-shadow:0 12px 24px rgba(11,110,79,0.35);
+  display:flex; align-items:center; justify-content:center; font-size:22px;
+}
+.stat-card{ border-radius:1.5rem; padding:20px; }
+video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; object-fit:cover; }
+.modal-panel{ animation:modalIn .18s ease-out; }
+@keyframes modalIn{ from{opacity:0; transform:scale(.94) translateY(8px);} to{opacity:1; transform:scale(1) translateY(0);} }
+</style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="min-h-screen">
 
-    <nav class="bg-white border-b px-4 py-4 sticky top-0 z-50 shadow-sm flex justify-between items-center">
-        <div class="flex items-center gap-3">
-            <div class="bg-green-600 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-green-200">
-                <i class="fa fa-cash-register text-sm"></i>
-            </div>
-            <div>
-                <h1 class="text-sm font-black text-slate-800 leading-none">Min-el Terminal</h1>
-                <p id="live-clock" class="text-[10px] text-slate-500 font-bold mt-1"></p>
-            </div>
-        </div>
-        <button onclick="location.reload()" class="bg-slate-100 p-2 rounded-lg text-slate-400"><i class="fa fa-sync-alt text-xs"></i></button>
-    </nav>
+<nav class="bg-white px-4 py-4 sticky top-0 z-50 shadow-sm flex justify-between items-center">
+  <div class="flex items-center gap-3">
+    <div class="bg-[var(--green)] text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style="box-shadow:0 8px 18px rgba(11,110,79,.25)">
+      <i class="fa fa-cash-register text-sm"></i>
+    </div>
+    <div>
+      <h1 class="text-sm font-black leading-none font-display" data-i18n="brand">Min-el Terminal</h1>
+      <p id="live-clock" class="text-[10px] font-bold mt-1" style="color:var(--muted)"></p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    <button onclick="toggleLang()" id="langBtn" class="bg-[var(--gold-soft)] text-[11px] font-black px-3 py-2 rounded-lg" style="color:var(--green-dark)">EN / አማ</button>
+    <button onclick="location.reload()" class="bg-slate-100 p-2 rounded-lg text-slate-400"><i class="fa fa-sync-alt text-xs"></i></button>
+  </div>
+</nav>
+<div class="textile-band"></div>
 
-    <div class="container mx-auto p-4 md:p-8 pos-grid">
-        
-        <div class="space-y-6">
-            
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-                <h2 class="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">New Transaction</h2>
-                
-                <div class="space-y-4">
-                    <div class="relative">
-                        <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Search Product</label>
-                        <input list="inventory-datalist" type="text" id="goodsSearch" placeholder="Type item name..." 
-                               class="w-full bg-slate-50 border-2 border-transparent focus:border-green-500 focus:bg-white rounded-2xl p-4 outline-none transition-all text-lg font-semibold">
-                        <datalist id="inventory-datalist"></datalist>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                            <p class="text-[9px] font-bold text-slate-400 uppercase">Unit Price</p>
-                            <p id="autoPrice" class="text-xl font-black text-green-600">$0.00</p>
-                        </div>
-                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                            <p class="text-[9px] font-bold text-slate-400 uppercase">Available Stock</p>
-                            <p id="stock-hint" class="text-xl font-black text-slate-700">0</p>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-4">
-                        <div class="w-1/3">
-                            <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Quantity</label>
-                            <input type="number" id="qty" value="1" min="1" class="w-full bg-slate-50 border-2 border-transparent focus:border-green-500 rounded-2xl p-4 text-center font-bold text-lg outline-none">
-
+<!-- Tabs -->
+<div class="container mx-auto px-4 pt-4 flex gap-2 overflow-x-auto pb-1">
+  <button class="tab-btn active" data-tab="pos" onclick="switchTab('pos')"><i class="fa fa-cash-register mr-1"></i> <span data-i18n="tab_pos">POS</span></button>
+  <button class="tab-btn" data-tab="store" onclick="switchTab('store')"><i class="fa fa-boxes-stacked mr-1"></i> <span data-i18n="tab_store">Store List</span></button>
+  <button class="tab-btn" data-tab="reports" onclick="switchTab('reports')"><i class="fa fa-chart-line mr-1"></i> <span data-i18n="tab_reports">Reports</span></button>
+  <button class="tab-btn" data-tab="ai" onclick="switchTab('ai')"><i class="fa fa-robot mr-1"></i> <span data-i18n="tab_ai">AI Advisor</span></button>
+  <button class="tab-btn" data-tab="owner" onclick="switchTab('owner')"><i class="fa fa-user-tie mr-1"></i> <span data-i18n="tab_owner">Owner</span></button>
+  <button class="tab-btn" data-tab="inspire" onclick="switchTab('inspire')"><i class="fa fa-seedling mr-1"></i> <span data-i18n="tab_inspire">Inspiration</span></button>
 </div>
-                        <button onclick="addToCart()" id="add-btn" class="flex-1 bg-slate-900 text-white font-bold rounded-2xl shadow-xl hover:bg-black active:scale-95 transition-all uppercase tracking-tighter">
-                            Add to Cart
-                        </button>
-                    </div>
-                </div>
-            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-orange-50/50 p-6 rounded-[2rem] border border-orange-100 group">
-                    <div class="w-10 h-10 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center mb-4"><i class="fa fa-trash-can"></i></div>
-                    <h3 class="font-black text-orange-900 text-sm">REPORT WASTAGE</h3>
-                    <p class="text-xs text-orange-700/70 mb-4 leading-relaxed">Record items broken, expired, or unsellable.</p>
-                    <button onclick="handleWastage()" class="w-full bg-orange-600 text-white py-3 rounded-xl font-bold text-xs hover:bg-orange-700 transition">Register Waste</button>
-                </div>
-                <div class="bg-red-50/50 p-6 rounded-[2rem] border border-red-100">
-                    <div class="w-10 h-10 bg-red-100 text-red-600 rounded-xl flex items-center justify-center mb-4"><i class="fa fa-user-clock"></i></div>
-                    <h3 class="font-black text-red-900 text-sm">REGISTER DEBT</h3>
-                    <p class="text-xs text-red-700/70 mb-4 leading-relaxed">Track customers taking items on credit.</p>
-                    <button onclick="handleDebt()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-xs hover:bg-red-700 transition">Record Debt</button>
-                </div>
+<div class="container mx-auto p-4 md:p-8">
+
+  <!-- ================= POS TAB ================= -->
+  <div class="tab-panel active pos-grid" id="panel-pos">
+    <div class="space-y-6">
+      <div class="card p-6">
+        <h2 class="text-sm font-black uppercase tracking-widest mb-4" style="color:var(--muted)" data-i18n="new_transaction">New Transaction</h2>
+        <div class="space-y-4">
+          <div class="relative">
+            <label class="text-[10px] font-bold uppercase ml-1" style="color:var(--muted)" data-i18n="search_product">Search Product</label>
+            <input list="inventory-datalist" type="text" id="goodsSearch" placeholder="Type item name..."
+                   class="w-full bg-[var(--bg)] border-2 border-transparent focus:border-[var(--green)] focus:bg-white rounded-2xl p-4 outline-none transition-all text-lg font-semibold">
+            <datalist id="inventory-datalist"></datalist>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-[var(--bg)] p-4 rounded-2xl border border-black/5">
+              <p class="text-[9px] font-bold uppercase" style="color:var(--muted)" data-i18n="unit_price">Unit Price</p>
+              <p id="autoPrice" class="text-xl font-black" style="color:var(--green)">$0.00</p>
             </div>
+            <div class="bg-[var(--bg)] p-4 rounded-2xl border border-black/5">
+              <p class="text-[9px] font-bold uppercase" style="color:var(--muted)" data-i18n="available_stock">Available Stock</p>
+              <p id="stock-hint" class="text-xl font-black">0</p>
+            </div>
+          </div>
+          <div>
+            <label class="text-[10px] font-bold uppercase ml-1" style="color:var(--muted)" data-i18n="sale_price">Selling Price (you can adjust)</label>
+            <input type="number" id="salePriceInput" step="0.01" placeholder="0.00"
+                   class="w-full bg-[var(--bg)] border-2 border-transparent focus:border-[var(--gold)] rounded-2xl p-4 font-bold text-lg outline-none">
+            <p id="discountHint" class="text-[11px] font-black mt-1 ml-1 hidden"></p>
+            <input type="text" id="discountReasonInput" placeholder="Reason for discount (e.g. loyal customer, bulk buy)" class="w-full mt-2 bg-[var(--bg)] border-2 border-transparent focus:border-[var(--gold)] rounded-xl p-3 text-sm outline-none hidden">
+          </div>
+          <div class="flex gap-4">
+            <div class="w-1/3">
+              <label class="text-[10px] font-bold uppercase ml-1" style="color:var(--muted)" data-i18n="quantity">Quantity</label>
+              <input type="number" id="qty" value="1" min="1" class="w-full bg-[var(--bg)] border-2 border-transparent focus:border-[var(--green)] rounded-2xl p-4 text-center font-bold text-lg outline-none">
+            </div>
+            <button onclick="addToCart()" id="add-btn" class="flex-1 bg-[var(--ink)] text-white font-bold rounded-2xl shadow-xl hover:bg-black active:scale-95 transition-all uppercase tracking-tighter" data-i18n="add_to_cart">Add to Cart</button>
+          </div>
         </div>
+      </div>
 
-        <div class="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col h-fit sticky top-24 overflow-hidden">
-            <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
-                <h3 class="font-black text-slate-800 italic">Current Receipt</h3>
-                <button onclick="clearCart()" class="text-[10px] font-black uppercase text-slate-400 hover:text-red-500 tracking-widest">Reset</button>
-            </div>
-            
-            <div id="cartItems" class="p-6 space-y-3 max-h-[400px] overflow-y-auto min-h-[200px]">
-                <div id="empty-msg" class="text-center py-12">
-                    <i class="fa fa-shopping-basket text-slate-200 text-4xl mb-4 block"></i>
-                    <p class="text-slate-400 text-xs font-bold uppercase tracking-widest italic">Basket is empty</p>
-                </div>
-            </div>
-
-            <div class="p-8 bg-white border-t border-slate-100">
-                <div class="flex justify-between items-end mb-6">
-                    <span class="text-xs font-black text-slate-400 uppercase tracking-widest">Grand Total</span>
-                    <span id="totalDisplay" class="text-4xl font-black text-slate-900 leading-none">$0.00</span>
-                </div>
-                <button onclick="completeSale()" class="w-full bg-blue-600 text-white py-5 rounded-[1.5rem] font-black text-lg shadow-2xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all uppercase tracking-tighter">
-                    Complete & Sync
-                </button>
-            </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-6 rounded-[2rem] border" style="background:rgba(178,58,46,0.05); border-color:rgba(178,58,46,0.15)">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style="background:rgba(178,58,46,0.12); color:var(--red)"><i class="fa fa-trash-can"></i></div>
+          <h3 class="font-black text-sm" style="color:var(--red)" data-i18n="wastage_title">REPORT WASTAGE</h3>
+          <p class="text-xs mb-4 leading-relaxed" style="color:var(--muted)" data-i18n="wastage_desc">Record items broken, expired, or unsellable.</p>
+          <button onclick="openWastageModal()" class="w-full text-white py-3 rounded-xl font-bold text-xs transition" style="background:var(--red)" data-i18n="wastage_btn">Register Waste</button>
         </div>
+        <div class="p-6 rounded-[2rem] border" style="background:rgba(212,160,23,0.08); border-color:rgba(212,160,23,0.25)">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style="background:rgba(212,160,23,0.2); color:var(--gold)"><i class="fa fa-user-clock"></i></div>
+          <h3 class="font-black text-sm" style="color:#8a6b0c" data-i18n="debt_title">REGISTER DEBT</h3>
+          <p class="text-xs mb-4 leading-relaxed" style="color:var(--muted)" data-i18n="debt_desc">Track customers taking items on credit.</p>
+          <button onclick="openDebtModal()" class="w-full text-white py-3 rounded-xl font-bold text-xs transition" style="background:var(--gold)" data-i18n="debt_btn">Record Debt</button>
+        </div>
+        <div class="p-6 rounded-[2rem] border" style="background:rgba(11,110,79,0.06); border-color:rgba(11,110,79,0.2)">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style="background:rgba(11,110,79,0.15); color:var(--green)"><i class="fa fa-magnifying-glass"></i></div>
+          <h3 class="font-black text-sm" style="color:var(--green)" data-i18n="request_title">CUSTOMER REQUEST</h3>
+          <p class="text-xs mb-4 leading-relaxed" style="color:var(--muted)" data-i18n="request_desc">Log an item a customer wanted that we don't stock.</p>
+          <button onclick="openRequestModal()" class="w-full text-white py-3 rounded-xl font-bold text-xs transition" style="background:var(--green)" data-i18n="request_btn">Log Request</button>
+        </div>
+      </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <div class="card shadow-xl flex flex-col h-fit sticky top-24 overflow-hidden">
+      <div class="p-6 border-b flex justify-between items-center" style="background:var(--bg)">
+        <h3 class="font-black italic font-display" data-i18n="current_receipt">Current Receipt</h3>
+        <button onclick="clearCart()" class="text-[10px] font-black uppercase hover:text-red-500 tracking-widest" style="color:var(--muted)" data-i18n="reset">Reset</button>
+      </div>
+      <div id="cartItems" class="cart-scroll p-6 space-y-3 max-h-[400px] overflow-y-auto min-h-[200px]">
+        <div id="empty-msg" class="text-center py-12">
+          <i class="fa fa-shopping-basket text-4xl mb-4 block" style="color:#e6ddc9"></i>
+          <p class="text-xs font-bold uppercase tracking-widest italic" style="color:var(--muted)" data-i18n="basket_empty">Basket is empty</p>
+        </div>
+      </div>
+      <div class="p-8 bg-white border-t border-black/5">
+        <div class="flex justify-between items-end mb-6">
+          <span class="text-xs font-black uppercase tracking-widest" style="color:var(--muted)" data-i18n="grand_total">Grand Total</span>
+          <span id="totalDisplay" class="text-4xl font-black leading-none font-display">$0.00</span>
+        </div>
+        <button onclick="completeSale()" class="w-full bg-[var(--green)] text-white py-5 rounded-[1.5rem] font-black text-lg shadow-2xl hover:bg-[var(--green-dark)] active:scale-95 transition-all uppercase tracking-tighter" style="box-shadow:0 16px 30px rgba(11,110,79,.28)" data-i18n="complete_sync">Complete &amp; Sync</button>
+      </div>
+    </div>
+  </div>
 
-        // Firebase Config (Using your provided IDs)
-        const firebaseConfig = {
+  <!-- ================= STORE LIST TAB ================= -->
+  <div class="tab-panel" id="panel-store">
+    <div class="card p-6 max-w-4xl mx-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-black text-sm uppercase tracking-widest" style="color:var(--muted)" data-i18n="store_list_title">Everything in Store</h3>
+        <span class="text-[11px] font-bold" style="color:var(--muted)"><span data-i18n="store_list_count">Products:</span> <span id="storeListCount">0</span></span>
+      </div>
+      <input type="text" id="storeListSearch" placeholder="Search..." class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm mb-4 border-2 border-transparent focus:border-[var(--green)]">
+      <div id="storeList" class="space-y-2 max-h-[65vh] overflow-y-auto"></div>
+    </div>
+  </div>
 
-apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
-            authDomain: "min-eli.firebaseapp.com",
-            projectId: "min-eli",
-            storageBucket: "min-eli.firebasestorage.app",
-            messagingSenderId: "61590314630",
-            appId: "1:61590314630:web:f75dcd8296954d8c107b07"
-        };
+  <!-- ================= REPORTS TAB ================= -->
+  <div class="tab-panel" id="panel-reports">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="stat-card card">
+        <p class="text-[10px] font-black uppercase tracking-widest" style="color:var(--muted)" data-i18n="stat_products">Products in Stock</p>
+        <p id="statProductCount" class="text-3xl font-black font-display mt-2">0</p>
+        <p class="text-[11px] mt-1" style="color:var(--muted)"><span data-i18n="stat_units">Total units:</span> <span id="statUnitCount">0</span></p>
+      </div>
+      <div class="stat-card card">
+        <p class="text-[10px] font-black uppercase tracking-widest" style="color:var(--muted)" data-i18n="stat_low">Low Stock Alerts</p>
+        <p id="statLowCount" class="text-3xl font-black font-display mt-2" style="color:var(--red)">0</p>
+        <p class="text-[11px] mt-1" style="color:var(--muted)" data-i18n="stat_low_desc">Items with 5 or fewer left</p>
+      </div>
+      <div class="stat-card card">
+        <p class="text-[10px] font-black uppercase tracking-widest" style="color:var(--muted)" data-i18n="stat_today_sales">Today's Transactions</p>
+        <p id="statTodayCount" class="text-3xl font-black font-display mt-2" style="color:var(--green)">0</p>
+        <p class="text-[11px] mt-1" style="color:var(--muted)" data-i18n="stat_today_desc">Sales completed today</p>
+      </div>
+    </div>
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="stat-card card" style="border-top:4px solid var(--green)">
+        <p class="text-[10px] font-black uppercase tracking-widest" style="color:var(--muted)" data-i18n="profit_daily">Daily Profit</p>
+        <p id="profitDaily" class="text-2xl font-black font-display mt-2">$0.00</p>
+        <p id="revenueDaily" class="text-[11px] mt-1" style="color:var(--muted)">$0.00 revenue</p>
+        <p id="discountDaily" class="text-[11px] mt-1 font-bold" style="color:var(--red)"></p>
+      </div>
+      <div class="stat-card card" style="border-top:4px solid var(--gold)">
+        <p class="text-[10px] font-black uppercase tracking-widest" style="color:var(--muted)" data-i18n="profit_weekly">Weekly Profit</p>
+        <p id="profitWeekly" class="text-2xl font-black font-display mt-2">$0.00</p>
+        <p id="revenueWeekly" class="text-[11px] mt-1" style="color:var(--muted)">$0.00 revenue</p>
+        <p id="discountWeekly" class="text-[11px] mt-1 font-bold" style="color:var(--red)"></p>
+      </div>
+      <div class="stat-card card" style="border-top:4px solid var(--red)">
+        <p class="text-[10px] font-black uppercase tracking-widest" style="color:var(--muted)" data-i18n="profit_monthly">Monthly Profit</p>
+        <p id="profitMonthly" class="text-2xl font-black font-display mt-2">$0.00</p>
+        <p id="revenueMonthly" class="text-[11px] mt-1" style="color:var(--muted)">$0.00 revenue</p>
+        <p id="discountMonthly" class="text-[11px] mt-1 font-bold" style="color:var(--red)"></p>
+      </div>
+    </div>
 
-        let inventory = [];
-        let cart = [];
-        let selectedItem = null;
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="card p-6">
+        <h3 class="font-black text-sm uppercase tracking-widest mb-4" style="color:var(--muted)" data-i18n="daily_report">Daily Report</h3>
+        <div id="dailyReportList" class="space-y-2 max-h-[320px] overflow-y-auto chat-scroll">
+          <p class="text-xs italic" style="color:var(--muted)" data-i18n="no_sales_today">No sales recorded yet today.</p>
+        </div>
+      </div>
+      <div class="card p-6">
+        <h3 class="font-black text-sm uppercase tracking-widest mb-4" style="color:var(--muted)" data-i18n="low_stock_list">Low Stock Items</h3>
+        <div id="lowStockList" class="space-y-2 max-h-[320px] overflow-y-auto chat-scroll">
+          <p class="text-xs italic" style="color:var(--muted)" data-i18n="all_good_stock">All products are well stocked.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        // 1. LIVE INVENTORY SYNC
-        onSnapshot(collection(db, "inventory"), (snapshot) => {
-            const datalist = document.getElementById('inventory-datalist');
-            datalist.innerHTML = '';
-            inventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            inventory.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.name;
-                datalist.appendChild(option);
-            });
-        });
+  <!-- ================= AI ADVISOR TAB ================= -->
+  <div class="tab-panel" id="panel-ai">
+    <div class="card overflow-hidden max-w-3xl mx-auto">
+      <div class="p-5 border-b flex items-center gap-3" style="background:var(--bg)">
+        <svg width="42" height="42" viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="21" fill="var(--green)"/>
+          <circle cx="14" cy="19" r="3" fill="#fff"/>
+          <circle cx="28" cy="19" r="3" fill="#fff"/>
+          <path d="M13 27 Q21 33 29 27" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <rect x="18" y="4" width="6" height="6" rx="2" fill="var(--gold)"/>
+        </svg>
+        <div>
+          <p class="font-black text-sm font-display" data-i18n="ai_name">Miny — Business Advisor</p>
+          <p class="text-[11px]" style="color:var(--muted)" data-i18n="ai_tagline">Ask anything about running your shop</p>
+        </div>
+      </div>
+      <div id="aiChatWindow" class="chat-scroll p-5 space-y-3 h-[420px] overflow-y-auto">
+        <div class="flex"><div class="bubble-ai px-4 py-3 text-sm max-w-[80%]" data-i18n="ai_welcome">Selam! I'm Miny, your business assistant. Ask me about pricing, customers, marketing, or your reports — in Amharic or English.</div></div>
+      </div>
+      <div class="p-4 border-t flex gap-2 items-end">
+        <textarea id="aiInput" rows="1" placeholder="Type your question... / ጥያቄዎን ይጻፉ..." class="flex-1 bg-[var(--bg)] rounded-2xl p-3 outline-none text-sm resize-none" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendAIMessage();}"></textarea>
+        <button onclick="sendAIMessage()" class="w-12 h-12 rounded-2xl bg-[var(--green)] text-white flex items-center justify-center shrink-0"><i class="fa fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
 
-        // 2. SEARCH LOGIC
-        document.getElementById('goodsSearch').addEventListener('input', (e) => {
-            selectedItem = inventory.find(i => i.name === e.target.value);
-            if(selectedItem) {
-                document.getElementById('autoPrice').innerText = "$" + selectedItem.sell;
-                document.getElementById('stock-hint').innerText = selectedItem.stock;
-            } else {
-                document.getElementById('autoPrice').innerText = "$0.00";
-                document.getElementById('stock-hint').innerText = "0";
-            }
-        });
+  <!-- ================= OWNER TAB ================= -->
+  <div class="tab-panel" id="panel-owner">
+    <div class="flex gap-2 mb-4 justify-center">
+      <button class="tab-btn active" data-owner-tab="text" onclick="switchOwnerTab('text')" data-i18n="owner_text">Text Chat</button>
+      <button class="tab-btn" data-owner-tab="video" onclick="switchOwnerTab('video')" data-i18n="owner_video">Video Call</button>
+    </div>
 
-        // 3. CART ACTIONS
-        window.addToCart = () => {
-            const qty = parseInt(document.getElementById('qty').value);
-            if(!selectedItem || qty <= 0) return alert("Select an item first");
-            if(qty > selectedItem.stock) return alert("Insufficient Stock!");
+    <div id="owner-text" class="card max-w-2xl mx-auto overflow-hidden">
+      <div class="p-5 border-b" style="background:var(--bg)">
+        <p class="font-black text-sm font-display" data-i18n="owner_chat_title">Chat with Owner</p>
+        <p class="text-[11px]" style="color:var(--muted)" data-i18n="owner_chat_desc">Send updates or questions directly to the shop owner</p>
+      </div>
+      <div id="ownerChatWindow" class="chat-scroll p-5 space-y-3 h-[380px] overflow-y-auto"></div>
+      <div class="p-4 border-t flex gap-2 items-center">
+        <select id="ownerSenderRole" class="text-[10px] font-black rounded-lg p-2 bg-[var(--bg)] outline-none">
+          <option value="seller">Seller</option>
+          <option value="owner">Owner</option>
+        </select>
+        <input id="ownerInput" placeholder="Type a message..." class="flex-1 bg-[var(--bg)] rounded-2xl p-3 outline-none text-sm" onkeydown="if(event.key==='Enter'){sendOwnerMessage();}">
+        <button onclick="sendOwnerMessage()" class="w-12 h-12 rounded-2xl bg-[var(--gold)] text-white flex items-center justify-center shrink-0"><i class="fa fa-paper-plane"></i></button>
+      </div>
+    </div>
 
-            const existing = cart.find(c => c.id === selectedItem.id);
-            if(existing) {
-                existing.buyQty += qty;
-                existing.subtotal = existing.buyQty * existing.sell;
-            } else {
-                cart.push({ ...selectedItem, buyQty: qty, subtotal: selectedItem.sell * qty });
-            }
-            
-            renderCart();
-            document.getElementById('goodsSearch').value = "";
-        };
+    <div id="owner-video" class="card max-w-3xl mx-auto p-6 hidden">
+      <p class="font-black text-sm font-display mb-1" data-i18n="video_title">Video Call with Owner</p>
+      <p class="text-[11px] mb-4" style="color:var(--muted)" data-i18n="video_note">Both people open this page. One person starts a call and shares the Call ID; the other joins with that ID. Needs camera/microphone permission and a secure connection.</p>
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <video id="localVideo" autoplay playsinline muted></video>
+        <video id="remoteVideo" autoplay playsinline></video>
+      </div>
+      <div class="flex flex-wrap gap-3 items-center mb-3">
+        <button onclick="startCall()" class="bg-[var(--green)] text-white px-4 py-2 rounded-xl text-xs font-black" data-i18n="start_call">Start Call</button>
+        <span class="text-xs" style="color:var(--muted)" data-i18n="call_id_label">Call ID:</span>
+        <span id="callIdDisplay" class="text-xs font-mono bg-[var(--bg)] px-2 py-1 rounded">—</span>
+      </div>
+      <div class="flex flex-wrap gap-3 items-center mb-3">
+        <input id="callIdInput" placeholder="Enter Call ID to join" class="bg-[var(--bg)] rounded-xl p-2 text-xs outline-none flex-1 min-w-[160px]">
+        <button onclick="joinCall()" class="bg-[var(--ink)] text-white px-4 py-2 rounded-xl text-xs font-black" data-i18n="join_call">Join Call</button>
+      </div>
+      <button onclick="hangUp()" class="text-white px-4 py-2 rounded-xl text-xs font-black" style="background:var(--red)" data-i18n="hang_up">Hang Up</button>
+    </div>
+  </div>
 
-        function renderCart() {
-            const container = document.getElementById('cartItems');
-            const emptyMsg = document.getElementById('empty-msg');
-            container.innerHTML = "";
-            let total = 0;
+  <!-- ================= INSPIRATION TAB ================= -->
+  <div class="tab-panel" id="panel-inspire">
+    <div class="max-w-4xl mx-auto mb-6">
+      <div id="ownerPostCard" class="card p-6 hidden" style="border-top:5px solid var(--green)">
+        <p class="text-[10px] font-black uppercase tracking-widest mb-3" style="color:var(--green)"><i class="fa fa-user-tie mr-1"></i><span data-i18n="owner_post_label">Message from your Owner</span></p>
+        <p id="ownerPostCategory" class="amh text-[11px] font-black mb-1"></p>
+        <p id="ownerPostText" class="amh text-lg font-bold leading-relaxed"></p>
+        <p id="ownerPostRef" class="amh text-xs mt-2" style="color:var(--muted)"></p>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+      <div class="card p-6" style="border-top:5px solid var(--gold)">
+        <p class="text-[10px] font-black uppercase tracking-widest mb-3" style="color:var(--muted)" data-i18n="verse_of_day">Verse of the Day</p>
+        <p id="verseText" class="amh text-lg font-bold leading-relaxed"></p>
+        <p id="verseRef" class="amh text-xs mt-3" style="color:var(--gold)"></p>
+      </div>
+      <div class="card p-6" style="border-top:5px solid var(--green)">
+        <div class="flex justify-between items-start mb-3">
+          <p class="text-[10px] font-black uppercase tracking-widest" style="color:var(--muted)" data-i18n="tip_of_day">Business Tip</p>
+          <button onclick="renderInspiration(true)" class="text-[10px] font-black" style="color:var(--green)"><i class="fa fa-shuffle mr-1"></i><span data-i18n="new_tip">New tip</span></button>
+        </div>
+        <p id="tipText" class="amh text-base font-semibold leading-relaxed"></p>
+      </div>
+    </div>
+  </div>
+</div>
 
-            if(cart.length === 0) {
-                container.appendChild(emptyMsg);
-                document.getElementById('totalDisplay').innerText = "$0.00";
-                return;
-            }
+<button class="fab" onclick="switchTab('ai')" title="Ask Miny"><i class="fa fa-comment-dots"></i></button>
 
-            cart.forEach((item, index) => {
-                total += item.subtotal;
-                container.innerHTML += 
-                    <div class="receipt-item flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <div>
-                            <p class="font-black text-slate-800 text-sm">${item.name}</p>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase">${item.buyQty} Units x $${item.sell}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-black text-blue-600 text-sm">$${item.subtotal}</p>
-                            <button onclick="removeItem(${index})" class="text-[9px] font-black text-red-400 uppercase tracking-widest mt-1">Remove</button>
-                        </div>
-                    </div>;
-            });
-            document.getElementById('totalDisplay').innerText = "$" + total.toLocaleString();
-        }
+<!-- ================= MODALS ================= -->
+<div id="modalBackdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
+  <div id="wastageModal" class="modal-panel bg-white rounded-[2rem] p-6 w-full max-w-md hidden">
+    <h3 class="font-black text-lg mb-4" data-i18n="wastage_title">REPORT WASTAGE</h3>
+    <div class="space-y-3">
+      <input list="inventory-datalist" id="wm-name" placeholder="Product name" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <input type="number" id="wm-qty" placeholder="Quantity wasted" min="1" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <select id="wm-purpose" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+        <option value="">Purpose / reason...</option>
+        <option value="Expired">Expired</option>
+        <option value="Broken/Damaged">Broken or damaged</option>
+        <option value="Spoiled">Spoiled</option>
+        <option value="Given away">Given away</option>
+        <option value="Personal use">Personal use</option>
+        <option value="Other">Other</option>
+      </select>
+      <input type="text" id="wm-note" placeholder="Extra note (optional)" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <div class="flex gap-3 pt-2">
+        <button onclick="closeAllModals()" class="flex-1 bg-slate-100 py-3 rounded-xl font-bold text-xs uppercase">Cancel</button>
+        <button onclick="submitWastage()" class="flex-1 text-white py-3 rounded-xl font-bold text-xs uppercase" style="background:var(--red)">Submit</button>
+      </div>
+    </div>
+  </div>
 
-        window.removeItem = (i) => { cart.splice(i, 1); renderCart(); };
-        window.clearCart = () => { cart = []; renderCart(); };
+  <div id="debtModal" class="modal-panel bg-white rounded-[2rem] p-6 w-full max-w-md hidden">
+    <h3 class="font-black text-lg mb-4" data-i18n="debt_title">REGISTER DEBT</h3>
+    <div class="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+      <input type="text" id="dm-name" placeholder="Customer name" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <input type="tel" id="dm-phone" placeholder="Phone number" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <input type="text" id="dm-address" placeholder="Address / area" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <input type="number" id="dm-amount" placeholder="Amount owed ($)" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <input type="text" id="dm-service" placeholder="Payment service used (e.g. Telebirr, CBE, cash)" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <div>
+        <label class="text-[10px] font-bold uppercase ml-1" style="color:var(--muted)">Date borrowed</label>
+        <input type="date" id="dm-date" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="closeAllModals()" class="flex-1 bg-slate-100 py-3 rounded-xl font-bold text-xs uppercase">Cancel</button>
+        <button onclick="submitDebt()" class="flex-1 text-white py-3 rounded-xl font-bold text-xs uppercase" style="background:var(--gold)">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="requestModal" class="modal-panel bg-white rounded-[2rem] p-6 w-full max-w-md hidden">
+    <h3 class="font-black text-lg mb-4" data-i18n="request_title">CUSTOMER REQUEST</h3>
+    <div class="space-y-3">
+      <input type="text" id="rm-item" placeholder="What item did they want?" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <input type="text" id="rm-note" placeholder="Note (brand, quantity, customer name...)" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <div class="flex gap-3 pt-2">
+        <button onclick="closeAllModals()" class="flex-1 bg-slate-100 py-3 rounded-xl font-bold text-xs uppercase">Cancel</button>
+        <button onclick="submitRequest()" class="flex-1 text-white py-3 rounded-xl font-bold text-xs uppercase" style="background:var(--green)">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, setDoc, getDoc,
+  serverTimestamp, query, orderBy, limit
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// Firebase Config (Using your provided IDs)
+const firebaseConfig = {
+  apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
+  authDomain: "min-eli.firebaseapp.com",
+  projectId: "min-eli",
+  storageBucket: "min-eli.firebasestorage.app",
+  messagingSenderId: "61590314630",
+  appId: "1:61590314630:web:f75dcd8296954d8c107b07"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let inventory = [];
+let cart = [];
+let selectedItem = null;
+
+// 1. LIVE INVENTORY SYNC
+onSnapshot(collection(db, "inventory"), (snapshot) => {
+  const datalist = document.getElementById('inventory-datalist');
+  datalist.innerHTML = '';
+  inventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+  inventory.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item.name;
+    datalist.appendChild(option);
+  });
+
+  renderStockOverview();
+  renderStoreList();
+});
+
+// 2. SEARCH LOGIC
+document.getElementById('goodsSearch').addEventListener('input', (e) => {
+  selectedItem = inventory.find(i => i.name === e.target.value);
+  if (selectedItem) {
+    document.getElementById('autoPrice').innerText = "$" + selectedItem.sell;
+    document.getElementById('stock-hint').innerText = selectedItem.stock;
+    document.getElementById('salePriceInput').value = selectedItem.sell;
+  } else {
+    document.getElementById('autoPrice').innerText = "$0.00";
+    document.getElementById('stock-hint').innerText = "0";
+    document.getElementById('salePriceInput').value = "";
+  }
+  updateDiscountHint();
+});
+
+// Shows how much the seller has reduced the price by, compared to the owner's set price
+function updateDiscountHint() {
+  const hint = document.getElementById('discountHint');
+  const reasonInput = document.getElementById('discountReasonInput');
+  const salePrice = parseFloat(document.getElementById('salePriceInput').value);
+  if (!selectedItem || isNaN(salePrice)) { hint.classList.add('hidden'); reasonInput.classList.add('hidden'); return; }
+  const diff = Number(selectedItem.sell) - salePrice;
+  if (diff > 0) {
+    hint.classList.remove('hidden');
+    hint.style.color = 'var(--red)';
+    hint.innerText = (currentLang === 'am' ? `ቅናሽ፦ ${diff.toFixed(2)} ብር ከዋናው ${selectedItem.sell} ብር ተቀንሷል` : `Discount: $${diff.toFixed(2)} off the set price of $${selectedItem.sell}`);
+    reasonInput.classList.remove('hidden');
+  } else if (diff < 0) {
+    hint.classList.remove('hidden');
+    hint.style.color = 'var(--gold)';
+    hint.innerText = (currentLang === 'am' ? `ጭማሪ፦ ${Math.abs(diff).toFixed(2)} ብር ከዋናው ${selectedItem.sell} ብር በላይ ተሽጧል` : `Markup: $${Math.abs(diff).toFixed(2)} above the set price of $${selectedItem.sell}`);
+    reasonInput.classList.add('hidden');
+  } else {
+    hint.classList.add('hidden');
+    reasonInput.classList.add('hidden');
+  }
+}
+document.getElementById('salePriceInput').addEventListener('input', updateDiscountHint);
+
+// 3. CART ACTIONS
+window.addToCart = () => {
+  const qty = parseInt(document.getElementById('qty').value);
+  if (!selectedItem || qty <= 0) return alert("Select an item first");
+  if (qty > selectedItem.stock) return alert("Insufficient Stock!");
+
+  const enteredPrice = parseFloat(document.getElementById('salePriceInput').value);
+  const sellPrice = isNaN(enteredPrice) ? selectedItem.sell : enteredPrice;
+  const discountPerUnit = Number(selectedItem.sell) - sellPrice;
+  const discountReason = document.getElementById('discountReasonInput').value.trim();
+
+  if (discountPerUnit > 0 && !discountReason) {
+    return alert(currentLang === 'am' ? "እባክዎ ለቅናሹ ምክንያት ይጻፉ (ለምሳሌ፦ ታማኝ ደንበኛ)" : "Please give a reason for the discount (e.g. loyal customer) — this protects you during audits.");
+  }
+
+  const existing = cart.find(c => c.id === selectedItem.id && c.sellPrice === sellPrice);
+  if (existing) {
+    existing.buyQty += qty;
+    existing.subtotal = existing.buyQty * sellPrice;
+    existing.discountTotal = existing.buyQty * discountPerUnit;
+  } else {
+    cart.push({
+      ...selectedItem,
+      buyQty: qty,
+      sellPrice: sellPrice,
+      originalPrice: selectedItem.sell,
+      discountPerUnit: discountPerUnit,
+      discountTotal: discountPerUnit * qty,
+      discountReason: discountPerUnit > 0 ? discountReason : "",
+      subtotal: sellPrice * qty
+    });
+  }
+
+  renderCart();
+  document.getElementById('goodsSearch').value = "";
+  document.getElementById('discountHint').classList.add('hidden');
+  document.getElementById('discountReasonInput').classList.add('hidden');
+  document.getElementById('discountReasonInput').value = "";
+};
+
+function renderCart() {
+  const container = document.getElementById('cartItems');
+  const emptyMsg = document.getElementById('empty-msg');
+  container.innerHTML = "";
+  let total = 0;
+
+  if (cart.length === 0) {
+    container.appendChild(emptyMsg);
+    document.getElementById('totalDisplay').innerText = "$0.00";
+    return;
+  }
+
+  cart.forEach((item, index) => {
+    total += item.subtotal;
+    const hasDiscount = item.discountPerUnit && item.discountPerUnit > 0;
+    const priceLine = hasDiscount
+      ? `${item.buyQty} Units x <span class="line-through opacity-50">$${item.originalPrice}</span> $${item.sellPrice}`
+      : `${item.buyQty} Units x $${item.sellPrice != null ? item.sellPrice : item.sell}`;
+    container.innerHTML += `
+      <div class="receipt-item flex justify-between items-center bg-[var(--bg)] p-4 rounded-2xl border border-black/5">
+        <div>
+          <p class="font-black text-sm">${item.name}</p>
+          <p class="text-[10px] font-bold uppercase" style="color:var(--muted)">${priceLine}</p>
+          ${hasDiscount ? `<p class="text-[10px] font-black" style="color:var(--red)">${currentLang === 'am' ? 'ቅናሽ' : 'Discount'}: $${item.discountTotal.toFixed(2)}${item.discountReason ? ' — ' + item.discountReason : ''}</p>` : ''}
+        </div>
+        <div class="text-right">
+          <p class="font-black text-sm" style="color:var(--green)">$${item.subtotal}</p>
+          <button onclick="removeItem(${index})" class="text-[9px] font-black uppercase tracking-widest mt-1" style="color:var(--red)">Remove</button>
+        </div>
+      </div>`;
+  });
+  document.getElementById('totalDisplay').innerText = "$" + total.toLocaleString();
+}
+
+window.removeItem = (i) => { cart.splice(i, 1); renderCart(); };
+window.clearCart = () => { cart = []; renderCart(); };
 
 // 4. COMPLETE SALE
-        window.completeSale = async () => {
-            if(cart.length === 0) return;
-            try {
-                for (const item of cart) {
-                    await updateDoc(doc(db, "inventory", item.id), { stock: item.stock - item.buyQty });
-                    await addDoc(collection(db, "sales"), {
-                        itemName: item.name,
-                        qty: item.buyQty,
-                        costPrice: item.cost, // Crucial for owner profit calculations
-                        totalPrice: item.subtotal,
-                        timestamp: serverTimestamp()
-                    });
-                }
-                alert("Success: Inventory Synced!");
-                clearCart();
-            } catch (e) { alert("Error: " + e.message); }
-        };
+window.completeSale = async () => {
+  if (cart.length === 0) return;
+  try {
+    for (const item of cart) {
+      await updateDoc(doc(db, "inventory", item.id), { stock: item.stock - item.buyQty });
+      await addDoc(collection(db, "sales"), {
+        itemName: item.name,
+        qty: item.buyQty,
+        costPrice: item.cost, // Crucial for owner profit calculations
+        totalPrice: item.subtotal,
+        sellPrice: item.sellPrice != null ? item.sellPrice : item.sell,
+        originalPrice: item.originalPrice != null ? item.originalPrice : item.sell,
+        discount: item.discountTotal || 0,
+        discountReason: item.discountReason || "",
+        timestamp: serverTimestamp()
+      });
+    }
+    alert("Success: Inventory Synced!");
+    clearCart();
+  } catch (e) { alert("Error: " + e.message); }
+};
 
-        // 5. NEW FUNCTIONALITY: WASTAGE
-        window.handleWastage = async () => {
-            const name = prompt("Enter product name for wastage:");
-            const item = inventory.find(i => i.name === name);
-            if(!item) return alert("Product not found");
-            
-            const qty = parseInt(prompt(How many ${name} are wasted/broken?));
-            if(qty > 0 && qty <= item.stock) {
-                if(confirm(Report ${qty} ${name} as wastage? This reduces stock.)) {
-                    await updateDoc(doc(db, "inventory", item.id), { stock: item.stock - qty });
-                    await addDoc(collection(db, "wastage"), {
-                        itemName: name,
-                        qty: qty,
-                        reason: "Reported by Seller",
-                        timestamp: serverTimestamp()
-                    });
-                    alert("Wastage logged.");
-                }
-            } else { alert("Invalid quantity"); }
-        };
+// 5. WASTAGE
+window.handleWastage = async () => {
+  const name = prompt("Enter product name for wastage:");
+  const item = inventory.find(i => i.name === name);
+  if (!item) return alert("Product not found");
 
-        // 6. NEW FUNCTIONALITY: DEBT
-        window.handleDebt = async () => {
-            const customer = prompt("Customer Name:");
-            const amount = prompt("Total Debt Amount ($):");
-            if(customer && amount) {
-                await addDoc(collection(db, "debts"), {
-                    customerName: customer,
-                    amount: Number(amount),
-                    status: "unpaid",
-                    timestamp: serverTimestamp()
-                });
-                alert(Debt of $${amount} recorded for ${customer});
-            }
-        };
+  const qty = parseInt(prompt(`How many ${name} are wasted/broken?`));
+  if (qty > 0 && qty <= item.stock) {
+    if (confirm(`Report ${qty} ${name} as wastage? This reduces stock.`)) {
+      await updateDoc(doc(db, "inventory", item.id), { stock: item.stock - qty });
+      await addDoc(collection(db, "wastage"), {
+        itemName: name,
+        qty: qty,
+        reason: "Reported by Seller",
+        timestamp: serverTimestamp()
+      });
+      alert("Wastage logged.");
+    }
+  } else { alert("Invalid quantity"); }
+};
 
-        setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
-    </script>
+// 6. DEBT
+window.handleDebt = async () => {
+  const customer = prompt("Customer Name:");
+  const amount = prompt("Total Debt Amount ($):");
+  if (customer && amount) {
+    await addDoc(collection(db, "debts"), {
+      customerName: customer,
+      amount: Number(amount),
+      status: "unpaid",
+      timestamp: serverTimestamp()
+    });
+    alert(`Debt of $${amount} recorded for ${customer}`);
+  }
+};
+
+setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
+
+/* =========================================================
+   MODALS: wastage (with purpose), debt (full details), customer request
+========================================================= */
+window.closeAllModals = () => {
+  document.getElementById('modalBackdrop').classList.add('hidden');
+  document.querySelectorAll('.modal-panel').forEach(m => m.classList.add('hidden'));
+};
+function openModal(id) {
+  document.getElementById('modalBackdrop').classList.remove('hidden');
+  document.querySelectorAll('.modal-panel').forEach(m => m.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+window.openWastageModal = () => {
+  document.getElementById('wm-name').value = '';
+  document.getElementById('wm-qty').value = '';
+  document.getElementById('wm-purpose').value = '';
+  document.getElementById('wm-note').value = '';
+  openModal('wastageModal');
+};
+window.openDebtModal = () => {
+  ['dm-name','dm-phone','dm-address','dm-amount','dm-service'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('dm-date').value = new Date().toISOString().split('T')[0];
+  openModal('debtModal');
+};
+window.openRequestModal = () => {
+  document.getElementById('rm-item').value = '';
+  document.getElementById('rm-note').value = '';
+  openModal('requestModal');
+};
+
+window.submitWastage = async () => {
+  const name = document.getElementById('wm-name').value.trim();
+  const qty = parseInt(document.getElementById('wm-qty').value);
+  const purpose = document.getElementById('wm-purpose').value;
+  const note = document.getElementById('wm-note').value.trim();
+  const item = inventory.find(i => i.name === name);
+  if (!item) return alert("Product not found in inventory");
+  if (!(qty > 0 && qty <= item.stock)) return alert("Enter a valid quantity");
+  if (!purpose) return alert("Please choose a purpose / reason");
+
+  await updateDoc(doc(db, "inventory", item.id), { stock: item.stock - qty });
+  await addDoc(collection(db, "wastage"), {
+    itemName: name,
+    qty: qty,
+    reason: purpose,
+    note: note,
+    timestamp: serverTimestamp()
+  });
+  closeAllModals();
+  alert("Wastage logged.");
+};
+
+window.submitDebt = async () => {
+  const customerName = document.getElementById('dm-name').value.trim();
+  const phone = document.getElementById('dm-phone').value.trim();
+  const address = document.getElementById('dm-address').value.trim();
+  const amount = document.getElementById('dm-amount').value;
+  const service = document.getElementById('dm-service').value.trim();
+  const borrowDate = document.getElementById('dm-date').value;
+  if (!customerName || !amount) return alert("Customer name and amount are required");
+
+  await addDoc(collection(db, "debts"), {
+    customerName,
+    phone,
+    address,
+    amount: Number(amount),
+    service,
+    borrowDate,
+    status: "unpaid",
+    timestamp: serverTimestamp()
+  });
+  closeAllModals();
+  alert(`Debt of $${amount} recorded for ${customerName}`);
+};
+
+window.submitRequest = async () => {
+  const itemName = document.getElementById('rm-item').value.trim();
+  const note = document.getElementById('rm-note').value.trim();
+  if (!itemName) return alert("Enter what the customer asked for");
+
+  await addDoc(collection(db, "customerRequests"), {
+    itemName,
+    note,
+    timestamp: serverTimestamp()
+  });
+  closeAllModals();
+  alert("Customer request logged for the owner to review.");
+};
+
+/* =========================================================
+   STORE LIST: browsable view of everything in stock
+========================================================= */
+function renderStoreList(filter) {
+  const el = document.getElementById('storeList');
+  if (!el) return;
+  const term = (filter || document.getElementById('storeListSearch')?.value || '').toLowerCase();
+  const items = inventory.filter(i => i.name.toLowerCase().includes(term));
+  document.getElementById('storeListCount').innerText = inventory.length;
+  el.innerHTML = items.length ? items.map(i => `
+    <div class="flex justify-between items-center bg-[var(--bg)] p-4 rounded-2xl border border-black/5">
+      <div>
+        <p class="font-black text-sm">${i.name}</p>
+        <p class="text-[10px] font-bold uppercase" style="color:var(--muted)">$${i.sell} <span class="mx-1">·</span> ${i.stock} in stock</p>
+      </div>
+      <span class="text-[10px] font-black px-3 py-1 rounded-full" style="background:${i.stock <= 5 ? 'rgba(178,58,46,0.1);color:var(--red)' : 'rgba(11,110,79,0.1);color:var(--green)'}">${i.stock <= 5 ? 'Low' : 'In stock'}</span>
+    </div>`).join('') : '<p class="text-xs italic" style="color:var(--muted)">No products match your search.</p>';
+}
+document.getElementById('storeListSearch')?.addEventListener('input', (e) => renderStoreList(e.target.value));
+
+/* =========================================================
+   OWNER'S LATEST INSPIRATION POST (bridges the HQ dashboard)
+========================================================= */
+onSnapshot(query(collection(db, "inspirationPosts"), orderBy("timestamp", "desc"), limit(1)), (snap) => {
+  const card = document.getElementById('ownerPostCard');
+  if (snap.empty) { card.classList.add('hidden'); return; }
+  const p = snap.docs[0].data();
+  card.classList.remove('hidden');
+  document.getElementById('ownerPostCategory').innerText = p.category === 'verse' ? (currentLang === 'am' ? 'መንፈሳዊ ጥቅስ' : 'Biblical Verse') : (currentLang === 'am' ? 'የንግድ ምክር' : 'Business Tip');
+  document.getElementById('ownerPostText').innerText = p.text || '';
+  document.getElementById('ownerPostRef').innerText = p.ref || '';
+});
+
+/* =========================================================
+   TABS
+========================================================= */
+window.switchTab = (tab) => {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+};
+window.switchOwnerTab = (t) => {
+  document.getElementById('owner-text').classList.toggle('hidden', t !== 'text');
+  document.getElementById('owner-video').classList.toggle('hidden', t !== 'video');
+  document.querySelectorAll('.tab-btn[data-owner-tab]').forEach(b => b.classList.toggle('active', b.dataset.ownerTab === t));
+};
+
+/* =========================================================
+   LANGUAGE (English / Amharic)
+========================================================= */
+const i18n = {
+  brand: { en: "Min-el Terminal", am: "ሚን-ኤል ተርሚናል" },
+  tab_pos: { en: "POS", am: "ሽያጭ" },
+  tab_reports: { en: "Reports", am: "ሪፖርት" },
+  tab_ai: { en: "AI Advisor", am: "AI አማካሪ" },
+  tab_owner: { en: "Owner", am: "ባለቤት" },
+  tab_inspire: { en: "Inspiration", am: "መነሳሳት" },
+  tab_store: { en: "Store List", am: "የእቃ ዝርዝር" },
+  new_transaction: { en: "New Transaction", am: "አዲስ ሽያጭ" },
+  search_product: { en: "Search Product", am: "ምርት ይፈልጉ" },
+  unit_price: { en: "Unit Price", am: "የአንድ ዋጋ" },
+  available_stock: { en: "Available Stock", am: "ያለው ስቶክ" },
+  quantity: { en: "Quantity", am: "ብዛት" },
+  sale_price: { en: "Selling Price (you can adjust)", am: "የሽያጭ ዋጋ (ማስተካከል ይችላሉ)" },
+  add_to_cart: { en: "Add to Cart", am: "ወደ ቅርጫት ጨምር" },
+  wastage_title: { en: "REPORT WASTAGE", am: "ብክነት አስመዝግብ" },
+  wastage_desc: { en: "Record items broken, expired, or unsellable.", am: "የተሰበሩ፣ ጊዜያቸው ያለፈባቸው ወይም የማይሸጡ ዕቃዎችን ያስመዝግቡ።" },
+  wastage_btn: { en: "Register Waste", am: "ብክነት መዝግብ" },
+  debt_title: { en: "REGISTER DEBT", am: "ዕዳ አስመዝግብ" },
+  debt_desc: { en: "Track customers taking items on credit.", am: "በዱቤ የሚወስዱ ደንበኞችን ይከታተሉ።" },
+  debt_btn: { en: "Record Debt", am: "ዕዳ መዝግብ" },
+  request_title: { en: "CUSTOMER REQUEST", am: "የደንበኛ ጥያቄ" },
+  request_desc: { en: "Log an item a customer wanted that we don't stock.", am: "ደንበኛ የፈለገውን ነገር ግን በስቶክ የሌለንን ይመዝግቡ።" },
+  request_btn: { en: "Log Request", am: "ጥያቄ መዝግብ" },
+  store_list_title: { en: "Everything in Store", am: "በሱቅ ውስጥ ያለው ሁሉ" },
+  store_list_count: { en: "Products:", am: "ምርቶች፡" },
+  owner_post_label: { en: "Message from your Owner", am: "ከባለቤትዎ የመጣ መልእክት" },
+  current_receipt: { en: "Current Receipt", am: "የአሁኑ ደረሰኝ" },
+  reset: { en: "Reset", am: "ደግመህ ጀምር" },
+  basket_empty: { en: "Basket is empty", am: "ቅርጫት ባዶ ነው" },
+  grand_total: { en: "Grand Total", am: "ጠቅላላ ድምር" },
+  complete_sync: { en: "Complete & Sync", am: "ጨርስ እና አስተላልፍ" },
+  stat_products: { en: "Products in Stock", am: "በስቶክ ያሉ ምርቶች" },
+  stat_units: { en: "Total units:", am: "ጠቅላላ ብዛት፡" },
+  stat_low: { en: "Low Stock Alerts", am: "የስቶክ ማስጠንቀቂያ" },
+  stat_low_desc: { en: "Items with 5 or fewer left", am: "5 ወይም ከዚያ በታች የቀሩ ዕቃዎች" },
+  stat_today_sales: { en: "Today's Transactions", am: "የዛሬ ሽያጮች" },
+  stat_today_desc: { en: "Sales completed today", am: "ዛሬ የተጠናቀቁ ሽያጮች" },
+  profit_daily: { en: "Daily Profit", am: "የዕለት ትርፍ" },
+  profit_weekly: { en: "Weekly Profit", am: "የሳምንት ትርፍ" },
+  profit_monthly: { en: "Monthly Profit", am: "የወር ትርፍ" },
+  daily_report: { en: "Daily Report", am: "የዕለት ሪፖርት" },
+  no_sales_today: { en: "No sales recorded yet today.", am: "ዛሬ እስካሁን ሽያጭ አልተመዘገበም።" },
+  low_stock_list: { en: "Low Stock Items", am: "ያነሱ ዕቃዎች" },
+  all_good_stock: { en: "All products are well stocked.", am: "ሁሉም ምርቶች በበቂ ሁኔታ አሉ።" },
+  ai_name: { en: "Miny — Business Advisor", am: "ሚኒ — የንግድ አማካሪ" },
+  ai_tagline: { en: "Ask anything about running your shop", am: "ስለ ሱቅዎ አስተዳደር ማንኛውንም ነገር ይጠይቁ" },
+  ai_welcome: { en: "Selam! I'm Miny, your business assistant. Ask me about pricing, customers, marketing, or your reports — in Amharic or English.", am: "ሰላም! እኔ ሚኒ ነኝ፣ የንግድ ረዳትዎ። ስለ ዋጋ አሰጣጥ፣ ደንበኞች፣ ማርኬቲንግ ወይም ስለ ሪፖርትዎ በአማርኛ ወይም በእንግሊዝኛ ይጠይቁኝ።" },
+  owner_text: { en: "Text Chat", am: "የጽሑፍ ውይይት" },
+  owner_video: { en: "Video Call", am: "የቪዲዮ ጥሪ" },
+  owner_chat_title: { en: "Chat with Owner", am: "ከባለቤት ጋር ይወያዩ" },
+  owner_chat_desc: { en: "Send updates or questions directly to the shop owner", am: "ለሱቁ ባለቤት በቀጥታ መልእክት ወይም ጥያቄ ይላኩ" },
+  video_title: { en: "Video Call with Owner", am: "ከባለቤት ጋር የቪዲዮ ጥሪ" },
+  video_note: { en: "Both people open this page. One person starts a call and shares the Call ID; the other joins with that ID. Needs camera/microphone permission and a secure connection.", am: "ሁለቱም ሰዎች ይህን ገጽ ይክፈቱ። አንዱ ሰው ጥሪ ይጀምርና የጥሪ መለያ (Call ID) ያካፍላል፤ ሌላው በዚያ መለያ ይቀላቀላል። የካሜራ/ማይክሮፎን ፈቃድ እና አስተማማኝ ግንኙነት ያስፈልጋል።" },
+  start_call: { en: "Start Call", am: "ጥሪ ጀምር" },
+  call_id_label: { en: "Call ID:", am: "የጥሪ መለያ፡" },
+  join_call: { en: "Join Call", am: "ጥሪ ተቀላቀል" },
+  hang_up: { en: "Hang Up", am: "ጥሪ ዝጋ" },
+  verse_of_day: { en: "Verse of the Day", am: "የዕለቱ የመጽሐፍ ቅዱስ ቃል" },
+  tip_of_day: { en: "Business Tip", am: "የንግድ ምክር" },
+  new_tip: { en: "New tip", am: "ሌላ ምክር" },
+};
+
+let currentLang = 'am';
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[key]) el.innerText = i18n[key][currentLang];
+  });
+  document.getElementById('htmlRoot').lang = currentLang;
+  document.querySelectorAll('.amh, [data-i18n]').forEach(el => {
+    if (currentLang === 'am') el.classList.add('amh'); else el.classList.remove('amh');
+  });
+}
+window.toggleLang = () => {
+  currentLang = currentLang === 'en' ? 'am' : 'en';
+  applyLang();
+  renderInspiration(false);
+};
+applyLang();
+
+/* =========================================================
+   REPORTS: stock overview + daily/weekly/monthly profit
+========================================================= */
+function renderStockOverview() {
+  const totalProducts = inventory.length;
+  const totalUnits = inventory.reduce((s, i) => s + (Number(i.stock) || 0), 0);
+  const lowStock = inventory.filter(i => (Number(i.stock) || 0) <= 5);
+
+  document.getElementById('statProductCount').innerText = totalProducts;
+  document.getElementById('statUnitCount').innerText = totalUnits;
+  document.getElementById('statLowCount').innerText = lowStock.length;
+
+  const lowList = document.getElementById('lowStockList');
+  if (lowStock.length === 0) {
+    lowList.innerHTML = `<p class="text-xs italic" style="color:var(--muted)" data-i18n="all_good_stock">${i18n.all_good_stock[currentLang]}</p>`;
+  } else {
+    lowList.innerHTML = lowStock.map(i => `
+      <div class="flex justify-between items-center bg-[var(--bg)] p-3 rounded-xl">
+        <span class="text-sm font-bold">${i.name}</span>
+        <span class="text-xs font-black" style="color:var(--red)">${i.stock} left</span>
+      </div>`).join('');
+  }
+}
+
+let salesRecords = [];
+onSnapshot(query(collection(db, "sales"), orderBy("timestamp", "desc")), (snapshot) => {
+  salesRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderReports();
+});
+
+function renderReports() {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(startOfDay); startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  function sumSince(since) {
+    let revenue = 0, profit = 0, count = 0, discount = 0;
+    salesRecords.forEach(s => {
+      const t = s.timestamp && s.timestamp.toDate ? s.timestamp.toDate() : null;
+      if (t && t >= since) {
+        revenue += Number(s.totalPrice) || 0;
+        profit += (Number(s.totalPrice) || 0) - ((Number(s.costPrice) || 0) * (Number(s.qty) || 0));
+        discount += Number(s.discount) || 0;
+        count++;
+      }
+    });
+    return { revenue, profit, count, discount };
+  }
+
+  const day = sumSince(startOfDay);
+  const week = sumSince(startOfWeek);
+  const month = sumSince(startOfMonth);
+
+  function discountLabel(d) {
+    if (!d || d <= 0) return "";
+    return (currentLang === 'am' ? `ቅናሽ ተደርጓል፦ $${d.toFixed(2)}` : `Discount given: $${d.toFixed(2)}`);
+  }
+
+  document.getElementById('statTodayCount').innerText = day.count;
+  document.getElementById('profitDaily').innerText = "$" + day.profit.toFixed(2);
+  document.getElementById('revenueDaily').innerText = "$" + day.revenue.toFixed(2) + " revenue";
+  document.getElementById('discountDaily').innerText = discountLabel(day.discount);
+  document.getElementById('profitWeekly').innerText = "$" + week.profit.toFixed(2);
+  document.getElementById('revenueWeekly').innerText = "$" + week.revenue.toFixed(2) + " revenue";
+  document.getElementById('discountWeekly').innerText = discountLabel(week.discount);
+  document.getElementById('profitMonthly').innerText = "$" + month.profit.toFixed(2);
+  document.getElementById('revenueMonthly').innerText = "$" + month.revenue.toFixed(2) + " revenue";
+  document.getElementById('discountMonthly').innerText = discountLabel(month.discount);
+
+  const todaysSales = salesRecords.filter(s => {
+    const t = s.timestamp && s.timestamp.toDate ? s.timestamp.toDate() : null;
+    return t && t >= startOfDay;
+  });
+  const listEl = document.getElementById('dailyReportList');
+  if (todaysSales.length === 0) {
+    listEl.innerHTML = `<p class="text-xs italic" style="color:var(--muted)">${i18n.no_sales_today[currentLang]}</p>`;
+  } else {
+    listEl.innerHTML = todaysSales.map(s => {
+      const hasDiscount = Number(s.discount) > 0;
+      return `
+      <div class="flex justify-between items-center bg-[var(--bg)] p-3 rounded-xl">
+        <div>
+          <p class="text-sm font-bold">${s.itemName}</p>
+          <p class="text-[10px]" style="color:var(--muted)">${s.qty} units${hasDiscount ? ` · <span style="color:var(--red)">${currentLang === 'am' ? 'ቅናሽ' : 'discount'} $${Number(s.discount).toFixed(2)}${s.discountReason ? ' (' + s.discountReason + ')' : ''}</span>` : ''}</p>
+        </div>
+        <span class="text-sm font-black" style="color:var(--green)">$${(Number(s.totalPrice) || 0).toFixed(2)}</span>
+      </div>`;
+    }).join('');
+  }
+}
+
+/* =========================================================
+   AI ADVISOR (Anthropic API)
+========================================================= */
+let aiHistory = [];
+function appendAIMessage(role, text, loadingId) {
+  const win = document.getElementById('aiChatWindow');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
+  if (loadingId) wrapper.id = loadingId;
+  wrapper.innerHTML = `<div class="${role === 'user' ? 'bubble-user' : 'bubble-ai'} px-4 py-3 text-sm max-w-[80%] whitespace-pre-wrap">${text}</div>`;
+  win.appendChild(wrapper);
+  win.scrollTop = win.scrollHeight;
+}
+
+window.sendAIMessage = async () => {
+  const input = document.getElementById('aiInput');
+  const text = input.value.trim();
+  if (!text) return;
+  appendAIMessage('user', text);
+  input.value = '';
+  const loadingId = 'loading-' + Date.now();
+  appendAIMessage('ai', '<span class="dot-typing"><span>.</span><span>.</span><span>.</span></span>', loadingId);
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: "You are Miny, a warm, practical business advisor helping a small shop owner who uses the Min-el POS system. Give short, concrete, actionable advice about pricing, attracting and keeping customers, marketing, managing wastage, handling customer debt/credit, and reading sales reports. Reply in the same language the person writes in (Amharic or English), in simple friendly language suited to a small retail shop owner.",
+        messages: [...aiHistory, { role: "user", content: text }]
+      })
+    });
+    const data = await response.json();
+    const reply = (data.content || []).map(c => c.text || '').join('') || (currentLang === 'am' ? "ይቅርታ፣ መልስ ማምጣት አልቻልኩም።" : "Sorry, I couldn't get a response.");
+    document.getElementById(loadingId)?.remove();
+    appendAIMessage('ai', reply);
+    aiHistory.push({ role: "user", content: text });
+    aiHistory.push({ role: "assistant", content: reply });
+  } catch (e) {
+    document.getElementById(loadingId)?.remove();
+    appendAIMessage('ai', currentLang === 'am' ? "ይቅርታ፣ ስህተት ተፈጥሯል፤ እንደገና ይሞክሩ።" : "Sorry, something went wrong. Please try again.");
+  }
+};
+
+/* =========================================================
+   OWNER TEXT CHAT
+========================================================= */
+onSnapshot(query(collection(db, "ownerMessages"), orderBy("timestamp", "asc")), (snapshot) => {
+  const win = document.getElementById('ownerChatWindow');
+  win.innerHTML = '';
+  snapshot.docs.forEach(d => {
+    const m = d.data();
+    const isOwner = m.sender === 'owner';
+    win.innerHTML += `<div class="flex ${isOwner ? 'justify-start' : 'justify-end'}">
+      <div class="${isOwner ? 'bubble-owner' : 'bubble-seller'} px-4 py-3 text-sm max-w-[80%]">
+        <p class="text-[9px] font-black uppercase mb-1 opacity-60">${m.sender}</p>${m.text || ''}
+      </div></div>`;
+  });
+  win.scrollTop = win.scrollHeight;
+});
+
+window.sendOwnerMessage = async () => {
+  const input = document.getElementById('ownerInput');
+  const text = input.value.trim();
+  const sender = document.getElementById('ownerSenderRole').value;
+  if (!text) return;
+  input.value = '';
+  await addDoc(collection(db, "ownerMessages"), { sender, text, timestamp: serverTimestamp() });
+};
+
+/* =========================================================
+   VIDEO CALL (WebRTC signaled through Firestore)
+========================================================= */
+let pc, localStream, remoteStream;
+const rtcServers = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
+
+async function setupMedia() {
+  pc = new RTCPeerConnection(rtcServers);
+  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  remoteStream = new MediaStream();
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  pc.ontrack = (event) => { event.streams[0].getTracks().forEach(t => remoteStream.addTrack(t)); };
+  document.getElementById('localVideo').srcObject = localStream;
+  document.getElementById('remoteVideo').srcObject = remoteStream;
+}
+
+window.startCall = async () => {
+  try {
+    await setupMedia();
+    const callDoc = doc(collection(db, 'calls'));
+    const offerCandidates = collection(callDoc, 'offerCandidates');
+    const answerCandidates = collection(callDoc, 'answerCandidates');
+    document.getElementById('callIdDisplay').innerText = callDoc.id;
+
+    pc.onicecandidate = (event) => { event.candidate && addDoc(offerCandidates, event.candidate.toJSON()); };
+
+    const offerDescription = await pc.createOffer();
+    await pc.setLocalDescription(offerDescription);
+    await setDoc(callDoc, { offer: { sdp: offerDescription.sdp, type: offerDescription.type } });
+
+    onSnapshot(callDoc, (snap) => {
+      const data = snap.data();
+      if (!pc.currentRemoteDescription && data && data.answer) {
+        pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+      }
+    });
+
+    onSnapshot(answerCandidates, (snap) => {
+      snap.docChanges().forEach((change) => {
+        if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+      });
+    });
+  } catch (e) { alert("Camera/mic error: " + e.message); }
+};
+
+window.joinCall = async () => {
+  const callId = document.getElementById('callIdInput').value.trim();
+  if (!callId) return alert("Enter a Call ID first");
+  try {
+    await setupMedia();
+    const callDoc = doc(db, 'calls', callId);
+    const answerCandidates = collection(callDoc, 'answerCandidates');
+    const offerCandidates = collection(callDoc, 'offerCandidates');
+
+    pc.onicecandidate = (event) => { event.candidate && addDoc(answerCandidates, event.candidate.toJSON()); };
+
+    const callSnap = await getDoc(callDoc);
+    const callData = callSnap.data();
+    if (!callData || !callData.offer) return alert("Call not found");
+    await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
+
+    const answerDescription = await pc.createAnswer();
+    await pc.setLocalDescription(answerDescription);
+    await updateDoc(callDoc, { answer: { type: answerDescription.type, sdp: answerDescription.sdp } });
+
+    onSnapshot(offerCandidates, (snap) => {
+      snap.docChanges().forEach((change) => {
+        if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+      });
+    });
+  } catch (e) { alert("Camera/mic error: " + e.message); }
+};
+
+window.hangUp = () => {
+  if (pc) pc.close();
+  if (localStream) localStream.getTracks().forEach(t => t.stop());
+  document.getElementById('localVideo').srcObject = null;
+  document.getElementById('remoteVideo').srcObject = null;
+  document.getElementById('callIdDisplay').innerText = '—';
+};
+
+/* =========================================================
+   INSPIRATION: daily Bible verse + business tip (Amharic)
+========================================================= */
+const verses = [
+  { text: "ጌታ በጎ ነውና ምስጋና አቅርቡለት፤ ምሕረቱ ለዘላለም ይኖራል።", ref: "መዝሙር 107:1" },
+  { text: "በሚያበረታኝ በክርስቶስ ሁሉን ማድረግ እችላለሁ።", ref: "ፊልጵስዩስ 4:13" },
+  { text: "እግዚአብሔር ፍቅር ነው።", ref: "1ኛ ዮሐንስ 4:8" },
+  { text: "ተስፋ የሚያደርጉ ግን ኃይላቸውን ያድሳሉ፤ እንደ ንስር በክንፍ ይወጣሉ።", ref: "ኢሳይያስ 40:31" },
+  { text: "በፍጹም ልብህ በጌታ ታመን፤ በራስህ ማስተዋል አትደገፍ።", ref: "ምሳሌ 3:5" },
+  { text: "ስለ ነገር ሁሉ አመስግኑ፤ ይህ በክርስቶስ ኢየሱስ ስለ እናንተ የእግዚአብሔር ፈቃድ ነውና።", ref: "1ኛ ተሰሎንቄ 5:18" },
+  { text: "ለሚወዱት ለእግዚአብሔር ነገር ሁሉ ለበጎ እንዲሆን እናውቃለን።", ref: "ሮሜ 8:28" },
+  { text: "እጆችህ የሚሠሩትን ሁሉ ባርክ።", ref: "ዘዳግም 28:12" },
+];
+const tips = [
+  "ደንበኞችን ለመሳብ ሱቅዎን ንጹህና ማራኪ ያድርጉት፤ የመጀመሪያው ስሜት ይቆያል።",
+  "ለተደጋጋሚ ደንበኞች ትንሽ ቅናሽ ወይም ስጦታ መስጠት ታማኝነታቸውን ይጨምራል።",
+  "ስቶክዎን ዘወትር ይከታተሉ፤ ዕቃ ከማለቁ በፊት አስቀድመው ያዘዙ።",
+  "ደንበኞችን በፈገግታና በፍጥነት ማገልገል ተመላሽ እንዲሆኑ ያደርጋቸዋል።",
+  "ማህበራዊ ሚዲያን ተጠቅመው አዳዲስ ምርቶችን ለደንበኞችዎ ያሳውቁ።",
+  "የዱቤ ሽያጭን በጥንቃቄ ይመዝግቡ፤ ውዝፍ ዕዳ የገንዘብ ፍሰትዎን ሊጎዳ ይችላል።",
+  "ትንሽ ስጦታ ወይም ማመስገኛ ካርድ ጨምረው ሲሸጡ ደንበኞች ልዩ እንደሆኑ ይሰማቸዋል።",
+  "በየቀኑ ሪፖርትዎን ይመልከቱ፤ በጣም የሚሸጡ ዕቃዎችን ለይተው ላይ ላይ ያተኩሩ።",
+];
+
+function dayOfYear() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  return Math.floor((now - start) / 86400000);
+}
+
+window.renderInspiration = (shuffleTip) => {
+  const vIdx = dayOfYear() % verses.length;
+  document.getElementById('verseText').innerText = verses[vIdx].text;
+  document.getElementById('verseRef').innerText = verses[vIdx].ref;
+
+  const tipEl = document.getElementById('tipText');
+  const tIdx = shuffleTip ? Math.floor(Math.random() * tips.length) : dayOfYear() % tips.length;
+  tipEl.innerText = tips[tIdx];
+};
+renderInspiration(false);
+</script>
 </body>
-</html>
+                </html>
