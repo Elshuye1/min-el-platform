@@ -151,7 +151,7 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="p-6 rounded-[2rem] border" style="background:rgba(178,58,46,0.05); border-color:rgba(178,58,46,0.15)">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style="background:rgba(178,58,46,0.12); color:var(--red)"><i class="fa fa-trash-can"></i></div>
           <h3 class="font-black text-sm" style="color:var(--red)" data-i18n="wastage_title">REPORT WASTAGE</h3>
@@ -169,6 +169,12 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
           <h3 class="font-black text-sm" style="color:var(--green)" data-i18n="request_title">CUSTOMER REQUEST</h3>
           <p class="text-xs mb-4 leading-relaxed" style="color:var(--muted)" data-i18n="request_desc">Log an item a customer wanted that we don't stock.</p>
           <button onclick="openRequestModal()" class="w-full text-white py-3 rounded-xl font-bold text-xs transition" style="background:var(--green)" data-i18n="request_btn">Log Request</button>
+        </div>
+        <div class="p-6 rounded-[2rem] border" style="background:rgba(59,74,110,0.08); border-color:rgba(59,74,110,0.25)">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style="background:rgba(59,74,110,0.18); color:#3b4a6e"><i class="fa fa-receipt"></i></div>
+          <h3 class="font-black text-sm" style="color:#3b4a6e" data-i18n="expense_title">DAILY EXPENSE</h3>
+          <p class="text-xs mb-4 leading-relaxed" style="color:var(--muted)" data-i18n="expense_desc">Record food, transport, or other cash spent today.</p>
+          <button onclick="openExpenseModal()" class="w-full text-white py-3 rounded-xl font-bold text-xs transition" style="background:#3b4a6e" data-i18n="expense_btn">Log Expense</button>
         </div>
       </div>
     </div>
@@ -244,6 +250,54 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
         <p id="profitMonthly" class="text-2xl font-black font-display mt-2">$0.00</p>
         <p id="revenueMonthly" class="text-[11px] mt-1" style="color:var(--muted)">$0.00 revenue</p>
         <p id="discountMonthly" class="text-[11px] mt-1 font-bold" style="color:var(--red)"></p>
+      </div>
+    </div>
+
+    <!-- ===== Daily Cash Flow: expenses, net profit, and bank deposit confirmation ===== -->
+    <div class="card p-6 mb-6" style="border-top:5px solid #3b4a6e">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-black text-sm uppercase tracking-widest" style="color:var(--muted)" data-i18n="cashflow_title">Today's Cash Flow</h3>
+        <span id="depositStatusBadge" class="text-[10px] font-black px-3 py-1 rounded-full"></span>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div class="bg-[var(--bg)] p-3 rounded-xl">
+          <p class="text-[9px] font-bold uppercase" style="color:var(--muted)" data-i18n="cf_sales">Sales Today</p>
+          <p id="cfSales" class="font-black text-sm mt-1">$0.00</p>
+        </div>
+        <div class="bg-[var(--bg)] p-3 rounded-xl">
+          <p class="text-[9px] font-bold uppercase" style="color:var(--muted)" data-i18n="cf_expenses">Expenses Today</p>
+          <p id="cfExpenses" class="font-black text-sm mt-1" style="color:var(--red)">$0.00</p>
+        </div>
+        <div class="bg-[var(--bg)] p-3 rounded-xl">
+          <p class="text-[9px] font-bold uppercase" style="color:var(--muted)" data-i18n="cf_debt">New Debt Today</p>
+          <p id="cfDebt" class="font-black text-sm mt-1" style="color:var(--gold)">$0.00</p>
+        </div>
+        <div class="bg-[var(--bg)] p-3 rounded-xl">
+          <p class="text-[9px] font-bold uppercase" style="color:var(--muted)" data-i18n="cf_net">Net Daily Profit</p>
+          <p id="cfNet" class="font-black text-sm mt-1" style="color:var(--green)">$0.00</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap justify-between items-center gap-3 bg-[var(--bg)] p-4 rounded-2xl">
+        <div>
+          <p class="text-[10px] font-bold uppercase" style="color:var(--muted)" data-i18n="cf_to_deposit">Cash to deposit in bank</p>
+          <p id="cfToDeposit" class="text-2xl font-black font-display" style="color:var(--ink)">$0.00</p>
+        </div>
+        <button onclick="openDepositModal()" class="bg-[var(--green)] text-white px-5 py-3 rounded-xl font-bold text-xs uppercase" data-i18n="deposit_btn">Confirm Deposit</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div class="card p-6">
+        <h3 class="font-black text-sm uppercase tracking-widest mb-4" style="color:var(--muted)" data-i18n="expense_list_title">Today's Expenses</h3>
+        <div id="expenseList" class="space-y-2 max-h-[280px] overflow-y-auto chat-scroll">
+          <p class="text-xs italic" style="color:var(--muted)" data-i18n="no_expenses_today">No expenses logged today.</p>
+        </div>
+      </div>
+      <div class="card p-6">
+        <h3 class="font-black text-sm uppercase tracking-widest mb-4" style="color:var(--muted)" data-i18n="deposit_history_title">Deposit History</h3>
+        <div id="depositList" class="space-y-2 max-h-[280px] overflow-y-auto chat-scroll">
+          <p class="text-xs italic" style="color:var(--muted)" data-i18n="no_deposits_yet">No deposits confirmed yet.</p>
+        </div>
       </div>
     </div>
 
@@ -415,6 +469,47 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
       </div>
     </div>
   </div>
+
+  <div id="expenseModal" class="modal-panel bg-white rounded-[2rem] p-6 w-full max-w-md hidden">
+    <h3 class="font-black text-lg mb-4" data-i18n="expense_title">DAILY EXPENSE</h3>
+    <div class="space-y-3">
+      <select id="em-category" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+        <option value="">Category...</option>
+        <option value="Food">Food</option>
+        <option value="Transport">Transport</option>
+        <option value="Supplies">Shop supplies</option>
+        <option value="Repairs">Repairs</option>
+        <option value="Other">Other</option>
+      </select>
+      <input type="number" id="em-amount" placeholder="Amount spent ($)" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <input type="text" id="em-note" placeholder="Note (optional)" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <div class="flex gap-3 pt-2">
+        <button onclick="closeAllModals()" class="flex-1 bg-slate-100 py-3 rounded-xl font-bold text-xs uppercase">Cancel</button>
+        <button onclick="submitExpense()" class="flex-1 text-white py-3 rounded-xl font-bold text-xs uppercase" style="background:#3b4a6e">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="depositModal" class="modal-panel bg-white rounded-[2rem] p-6 w-full max-w-md hidden">
+    <h3 class="font-black text-lg mb-2" data-i18n="deposit_title">CONFIRM BANK DEPOSIT</h3>
+    <p class="text-xs mb-4" style="color:var(--muted)" data-i18n="deposit_desc">Confirm you deposited today's remaining cash and attach a receipt as proof.</p>
+    <div class="space-y-3">
+      <div class="bg-[var(--bg)] p-3 rounded-xl flex justify-between items-center text-sm">
+        <span style="color:var(--muted)" data-i18n="deposit_suggested">Suggested amount:</span>
+        <span id="dep-suggested" class="font-black">$0.00</span>
+      </div>
+      <input type="number" id="dep-amount" placeholder="Amount deposited ($)" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <div>
+        <label class="text-[10px] font-bold uppercase ml-1" style="color:var(--muted)" data-i18n="deposit_receipt">Receipt photo</label>
+        <input type="file" id="dep-receipt" accept="image/*" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      </div>
+      <input type="text" id="dep-note" placeholder="Note (optional)" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
+      <div class="flex gap-3 pt-2">
+        <button onclick="closeAllModals()" class="flex-1 bg-slate-100 py-3 rounded-xl font-bold text-xs uppercase">Cancel</button>
+        <button onclick="submitDeposit()" id="dep-submit-btn" class="flex-1 text-white py-3 rounded-xl font-bold text-xs uppercase" style="background:var(--green)">Confirm Deposit</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script type="module">
@@ -423,6 +518,7 @@ import {
   getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, setDoc, getDoc,
   serverTimestamp, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 // Firebase Config (Using your provided IDs)
 const firebaseConfig = {
@@ -436,6 +532,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 let inventory = [];
 let cart = [];
@@ -723,6 +820,69 @@ window.submitRequest = async () => {
   alert("Customer request logged for the owner to review.");
 };
 
+window.openExpenseModal = () => {
+  document.getElementById('em-category').value = '';
+  document.getElementById('em-amount').value = '';
+  document.getElementById('em-note').value = '';
+  openModal('expenseModal');
+};
+
+window.submitExpense = async () => {
+  const category = document.getElementById('em-category').value;
+  const amount = document.getElementById('em-amount').value;
+  const note = document.getElementById('em-note').value.trim();
+  if (!category) return alert("Please choose a category");
+  if (!amount || Number(amount) <= 0) return alert("Enter a valid amount");
+
+  await addDoc(collection(db, "expenses"), {
+    category,
+    amount: Number(amount),
+    note,
+    timestamp: serverTimestamp()
+  });
+  closeAllModals();
+  alert("Expense logged.");
+};
+
+window.openDepositModal = () => {
+  document.getElementById('dep-amount').value = window.suggestedDeposit ? window.suggestedDeposit.toFixed(2) : '';
+  document.getElementById('dep-suggested').innerText = "$" + (window.suggestedDeposit || 0).toFixed(2);
+  document.getElementById('dep-receipt').value = '';
+  document.getElementById('dep-note').value = '';
+  openModal('depositModal');
+};
+
+window.submitDeposit = async () => {
+  const amount = document.getElementById('dep-amount').value;
+  const note = document.getElementById('dep-note').value.trim();
+  const fileInput = document.getElementById('dep-receipt');
+  const file = fileInput.files[0];
+  if (!amount || Number(amount) <= 0) return alert("Enter the amount you deposited");
+  if (!file) return alert("Please attach a photo of the deposit receipt as proof");
+
+  const btn = document.getElementById('dep-submit-btn');
+  btn.innerText = "Uploading...";
+  try {
+    const path = `receipts/${Date.now()}-${file.name}`;
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const receiptUrl = await getDownloadURL(storageRef);
+
+    await addDoc(collection(db, "bankDeposits"), {
+      amount: Number(amount),
+      note,
+      receiptUrl,
+      timestamp: serverTimestamp()
+    });
+    closeAllModals();
+    alert("Deposit confirmed — receipt attached.");
+  } catch (e) {
+    alert("Upload failed: " + e.message);
+  } finally {
+    btn.innerText = "Confirm Deposit";
+  }
+};
+
 /* =========================================================
    STORE LIST: browsable view of everything in stock
 ========================================================= */
@@ -797,6 +957,24 @@ const i18n = {
   request_title: { en: "CUSTOMER REQUEST", am: "የደንበኛ ጥያቄ" },
   request_desc: { en: "Log an item a customer wanted that we don't stock.", am: "ደንበኛ የፈለገውን ነገር ግን በስቶክ የሌለንን ይመዝግቡ።" },
   request_btn: { en: "Log Request", am: "ጥያቄ መዝግብ" },
+  expense_title: { en: "DAILY EXPENSE", am: "እለታዊ ወጪ" },
+  expense_desc: { en: "Record food, transport, or other cash spent today.", am: "ለምግብ፣ ለትራንስፖርት ወይም ለሌላ ዛሬ የወጣውን ገንዘብ ያስመዝግቡ።" },
+  expense_btn: { en: "Log Expense", am: "ወጪ መዝግብ" },
+  cashflow_title: { en: "Today's Cash Flow", am: "የዛሬ ገንዘብ እንቅስቃሴ" },
+  cf_sales: { en: "Sales Today", am: "የዛሬ ሽያጭ" },
+  cf_expenses: { en: "Expenses Today", am: "የዛሬ ወጪ" },
+  cf_debt: { en: "New Debt Today", am: "የዛሬ አዲስ ዕዳ" },
+  cf_net: { en: "Net Daily Profit", am: "የዕለት ተጣራ ትርፍ" },
+  cf_to_deposit: { en: "Cash to deposit in bank", am: "ወደ ባንክ የሚገባ ገንዘብ" },
+  deposit_btn: { en: "Confirm Deposit", am: "ገቢ ማድረግዎን ያረጋግጡ" },
+  deposit_title: { en: "CONFIRM BANK DEPOSIT", am: "የባንክ ገቢ ማረጋገጫ" },
+  deposit_desc: { en: "Confirm you deposited today's remaining cash and attach a receipt as proof.", am: "የዛሬውን የቀረ ገንዘብ ወደ ባንክ ማስገባትዎን ያረጋግጡና ደረሰኝ ያያይዙ።" },
+  deposit_suggested: { en: "Suggested amount:", am: "የሚመከር መጠን፦" },
+  deposit_receipt: { en: "Receipt photo", am: "የደረሰኝ ፎቶ" },
+  expense_list_title: { en: "Today's Expenses", am: "የዛሬ ወጪዎች" },
+  no_expenses_today: { en: "No expenses logged today.", am: "ዛሬ ምንም ወጪ አልተመዘገበም።" },
+  deposit_history_title: { en: "Deposit History", am: "የገቢ ታሪክ" },
+  no_deposits_yet: { en: "No deposits confirmed yet.", am: "እስካሁን ምንም ገቢ አልተረጋገጠም።" },
   store_list_title: { en: "Everything in Store", am: "በሱቅ ውስጥ ያለው ሁሉ" },
   store_list_count: { en: "Products:", am: "ምርቶች፡" },
   owner_post_label: { en: "Message from your Owner", am: "ከባለቤትዎ የመጣ መልእክት" },
@@ -907,6 +1085,8 @@ function renderReports() {
   const day = sumSince(startOfDay);
   const week = sumSince(startOfWeek);
   const month = sumSince(startOfMonth);
+  window.todayRevenue = day.revenue;
+  window.todayGrossProfit = day.profit;
 
   function discountLabel(d) {
     if (!d || d <= 0) return "";
@@ -944,6 +1124,93 @@ function renderReports() {
       </div>`;
     }).join('');
   }
+  renderCashFlow();
+}
+
+/* =========================================================
+   DAILY CASH FLOW: expenses, today's new debt, net profit,
+   and the bank-deposit confirmation workflow
+========================================================= */
+let expenseRecords = [];
+let debtRecords = [];
+let depositRecords = [];
+
+onSnapshot(query(collection(db, "expenses"), orderBy("timestamp", "desc")), (snapshot) => {
+  expenseRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderCashFlow();
+});
+
+onSnapshot(query(collection(db, "debts"), orderBy("timestamp", "desc")), (snapshot) => {
+  debtRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderCashFlow();
+});
+
+onSnapshot(query(collection(db, "bankDeposits"), orderBy("timestamp", "desc")), (snapshot) => {
+  depositRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderCashFlow();
+});
+
+function isToday(ts) {
+  if (!ts || !ts.toDate) return false;
+  const t = ts.toDate();
+  const now = new Date();
+  return t.getFullYear() === now.getFullYear() && t.getMonth() === now.getMonth() && t.getDate() === now.getDate();
+}
+
+function renderCashFlow() {
+  const revenue = window.todayRevenue || 0;
+  const grossProfit = window.todayGrossProfit || 0;
+
+  const todaysExpenses = expenseRecords.filter(e => isToday(e.timestamp));
+  const expensesTotal = todaysExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+  const todaysDebts = debtRecords.filter(d => isToday(d.timestamp));
+  const debtTotal = todaysDebts.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+
+  const netProfit = grossProfit - expensesTotal;
+  const cashToDeposit = revenue - debtTotal - expensesTotal;
+  window.suggestedDeposit = cashToDeposit;
+
+  document.getElementById('cfSales').innerText = "$" + revenue.toFixed(2);
+  document.getElementById('cfExpenses').innerText = "$" + expensesTotal.toFixed(2);
+  document.getElementById('cfDebt').innerText = "$" + debtTotal.toFixed(2);
+  document.getElementById('cfNet').innerText = "$" + netProfit.toFixed(2);
+  document.getElementById('cfToDeposit').innerText = "$" + cashToDeposit.toFixed(2);
+
+  // expense list
+  const expEl = document.getElementById('expenseList');
+  expEl.innerHTML = todaysExpenses.length ? todaysExpenses.map(e => `
+    <div class="flex justify-between items-center bg-[var(--bg)] p-3 rounded-xl">
+      <div>
+        <p class="text-sm font-bold">${e.category}</p>
+        ${e.note ? `<p class="text-[10px]" style="color:var(--muted)">${e.note}</p>` : ''}
+      </div>
+      <span class="text-sm font-black" style="color:var(--red)">-$${Number(e.amount).toFixed(2)}</span>
+    </div>`).join('') : `<p class="text-xs italic" style="color:var(--muted)">${i18n.no_expenses_today[currentLang]}</p>`;
+
+  // deposit status badge + history
+  const todaysDeposits = depositRecords.filter(d => isToday(d.timestamp));
+  const badge = document.getElementById('depositStatusBadge');
+  if (todaysDeposits.length > 0) {
+    badge.style.background = 'rgba(11,110,79,0.12)'; badge.style.color = 'var(--green)';
+    badge.innerText = currentLang === 'am' ? 'ገቢ ተደርጓል ✓' : 'Deposited Today ✓';
+  } else {
+    badge.style.background = 'rgba(178,58,46,0.12)'; badge.style.color = 'var(--red)';
+    badge.innerText = currentLang === 'am' ? 'ገና አልገባም' : 'Not Deposited Yet';
+  }
+
+  const depEl = document.getElementById('depositList');
+  depEl.innerHTML = depositRecords.length ? depositRecords.slice(0, 15).map(d => {
+    const t = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : '';
+    return `
+    <div class="flex justify-between items-center bg-[var(--bg)] p-3 rounded-xl">
+      <div>
+        <p class="text-sm font-bold">$${Number(d.amount).toFixed(2)}</p>
+        <p class="text-[10px]" style="color:var(--muted)">${t}${d.note ? ' · ' + d.note : ''}</p>
+      </div>
+      ${d.receiptUrl ? `<a href="${d.receiptUrl}" target="_blank" class="text-[10px] font-black" style="color:var(--green)"><i class="fa fa-receipt mr-1"></i>Receipt</a>` : ''}
+    </div>`;
+  }).join('') : `<p class="text-xs italic" style="color:var(--muted)">${i18n.no_deposits_yet[currentLang]}</p>`;
 }
 
 /* =========================================================
@@ -1141,4 +1408,4 @@ window.renderInspiration = (shuffleTip) => {
 renderInspiration(false);
 </script>
 </body>
-                </html>
+  </html>
