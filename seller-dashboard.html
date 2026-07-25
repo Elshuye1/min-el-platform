@@ -106,7 +106,7 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
   <button class="tab-btn" data-tab="store" onclick="switchTab('store')"><i class="fa fa-boxes-stacked mr-1"></i> <span data-i18n="tab_store">Store List</span></button>
   <button class="tab-btn" data-tab="reports" onclick="switchTab('reports')"><i class="fa fa-chart-line mr-1"></i> <span data-i18n="tab_reports">Reports</span></button>
   <button class="tab-btn" data-tab="ai" onclick="switchTab('ai')"><i class="fa fa-robot mr-1"></i> <span data-i18n="tab_ai">AI Advisor</span></button>
-  <button class="tab-btn" data-tab="owner" onclick="switchTab('owner')"><i class="fa fa-user-tie mr-1"></i> <span data-i18n="tab_owner">Owner</span></button>
+  <button class="tab-btn" data-tab="owner" onclick="switchTab('owner')"><i class="fa fa-user-tie mr-1"></i> <span data-i18n="tab_owner">Manager</span></button>
   <button class="tab-btn" data-tab="inspire" onclick="switchTab('inspire')"><i class="fa fa-seedling mr-1"></i> <span data-i18n="tab_inspire">Inspiration</span></button>
 </div>
 
@@ -253,6 +253,29 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
       </div>
     </div>
 
+    <!-- ===== Tithe (አስራት): 10% of profit — daily, weekly, monthly ===== -->
+    <div class="card p-6 mb-6" style="border-top:5px solid var(--gold)">
+      <h3 class="font-black text-sm uppercase tracking-widest mb-4" style="color:var(--muted)" data-i18n="tithe_title">Tithe — 10% of Profit</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="bg-[var(--bg)] p-4 rounded-2xl text-center">
+          <p class="text-[9px] font-bold uppercase" style="color:var(--muted)" data-i18n="tithe_daily">Daily Tithe</p>
+          <p id="titheDaily" class="text-xl font-black font-display mt-1" style="color:var(--gold)">$0.00</p>
+        </div>
+        <div class="bg-[var(--bg)] p-4 rounded-2xl text-center">
+          <p class="text-[9px] font-bold uppercase" style="color:var(--muted)" data-i18n="tithe_weekly">Weekly Tithe</p>
+          <p id="titheWeekly" class="text-xl font-black font-display mt-1" style="color:var(--gold)">$0.00</p>
+        </div>
+        <div class="bg-[var(--bg)] p-4 rounded-2xl text-center">
+          <p class="text-[9px] font-bold uppercase" style="color:var(--muted)" data-i18n="tithe_monthly">Monthly Tithe</p>
+          <p id="titheMonthly" class="text-xl font-black font-display mt-1" style="color:var(--gold)">$0.00</p>
+        </div>
+      </div>
+      <div class="bg-[var(--bg)] p-4 rounded-2xl">
+        <p id="titheVerseText" class="amh text-sm font-bold leading-relaxed"></p>
+        <p id="titheVerseRef" class="amh text-xs mt-2" style="color:var(--gold)"></p>
+      </div>
+    </div>
+
     <!-- ===== Daily Cash Flow: expenses, net profit, and bank deposit confirmation ===== -->
     <div class="card p-6 mb-6" style="border-top:5px solid #3b4a6e">
       <div class="flex justify-between items-center mb-4">
@@ -320,25 +343,29 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
   <!-- ================= AI ADVISOR TAB ================= -->
   <div class="tab-panel" id="panel-ai">
     <div class="card overflow-hidden max-w-3xl mx-auto">
-      <div class="p-5 border-b flex items-center gap-3" style="background:var(--bg)">
-        <svg width="42" height="42" viewBox="0 0 42 42">
-          <circle cx="21" cy="21" r="21" fill="var(--green)"/>
-          <circle cx="14" cy="19" r="3" fill="#fff"/>
-          <circle cx="28" cy="19" r="3" fill="#fff"/>
-          <path d="M13 27 Q21 33 29 27" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-          <rect x="18" y="4" width="6" height="6" rx="2" fill="var(--gold)"/>
-        </svg>
-        <div>
-          <p class="font-black text-sm font-display" data-i18n="ai_name">Miny — Business Advisor</p>
-          <p class="text-[11px]" style="color:var(--muted)" data-i18n="ai_tagline">Ask anything about running your shop</p>
+      <div class="p-5 border-b flex items-center justify-between gap-3" style="background:var(--bg)">
+        <div class="flex items-center gap-3">
+          <svg width="42" height="42" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="21" fill="var(--green)"/>
+            <circle cx="14" cy="19" r="3" fill="#fff"/>
+            <circle cx="28" cy="19" r="3" fill="#fff"/>
+            <path d="M13 27 Q21 33 29 27" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <rect x="18" y="4" width="6" height="6" rx="2" fill="var(--gold)"/>
+          </svg>
+          <div>
+            <p class="font-black text-sm font-display" data-i18n="ai_name">Miny — Business Advisor</p>
+            <p class="text-[11px] flex items-center gap-1" style="color:var(--muted)"><span class="inline-block w-1.5 h-1.5 rounded-full" style="background:var(--green)"></span><span data-i18n="ai_tagline">Ask anything about running your shop</span></p>
+          </div>
         </div>
+        <button onclick="startNewAIChat()" class="text-[10px] font-black uppercase px-3 py-2 rounded-lg shrink-0" style="color:var(--muted); background:rgba(0,0,0,0.04)" data-i18n="ai_new_chat"><i class="fa fa-rotate-left mr-1"></i>New Chat</button>
       </div>
       <div id="aiChatWindow" class="chat-scroll p-5 space-y-3 h-[420px] overflow-y-auto">
         <div class="flex"><div class="bubble-ai px-4 py-3 text-sm max-w-[80%]" data-i18n="ai_welcome">Selam! I'm Miny, your business assistant. Ask me about pricing, customers, marketing, or your reports — in Amharic or English.</div></div>
+        <div id="aiSuggestions" class="flex flex-wrap gap-2 pt-1"></div>
       </div>
       <div class="p-4 border-t flex gap-2 items-end">
         <textarea id="aiInput" rows="1" placeholder="Type your question... / ጥያቄዎን ይጻፉ..." class="flex-1 bg-[var(--bg)] rounded-2xl p-3 outline-none text-sm resize-none" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendAIMessage();}"></textarea>
-        <button onclick="sendAIMessage()" class="w-12 h-12 rounded-2xl bg-[var(--green)] text-white flex items-center justify-center shrink-0"><i class="fa fa-paper-plane"></i></button>
+        <button onclick="sendAIMessage()" id="aiSendBtn" class="w-12 h-12 rounded-2xl bg-[var(--green)] text-white flex items-center justify-center shrink-0"><i class="fa fa-paper-plane"></i></button>
       </div>
     </div>
   </div>
@@ -352,14 +379,14 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
 
     <div id="owner-text" class="card max-w-2xl mx-auto overflow-hidden">
       <div class="p-5 border-b" style="background:var(--bg)">
-        <p class="font-black text-sm font-display" data-i18n="owner_chat_title">Chat with Owner</p>
-        <p class="text-[11px]" style="color:var(--muted)" data-i18n="owner_chat_desc">Send updates or questions directly to the shop owner</p>
+        <p class="font-black text-sm font-display" data-i18n="owner_chat_title">Chat with Manager</p>
+        <p class="text-[11px]" style="color:var(--muted)" data-i18n="owner_chat_desc">Send updates or questions directly to the shop manager</p>
       </div>
       <div id="ownerChatWindow" class="chat-scroll p-5 space-y-3 h-[380px] overflow-y-auto"></div>
       <div class="p-4 border-t flex gap-2 items-center">
         <select id="ownerSenderRole" class="text-[10px] font-black rounded-lg p-2 bg-[var(--bg)] outline-none">
           <option value="seller">Seller</option>
-          <option value="owner">Owner</option>
+          <option value="owner">Manager</option>
         </select>
         <input id="ownerInput" placeholder="Type a message..." class="flex-1 bg-[var(--bg)] rounded-2xl p-3 outline-none text-sm" onkeydown="if(event.key==='Enter'){sendOwnerMessage();}">
         <button onclick="sendOwnerMessage()" class="w-12 h-12 rounded-2xl bg-[var(--gold)] text-white flex items-center justify-center shrink-0"><i class="fa fa-paper-plane"></i></button>
@@ -367,7 +394,7 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
     </div>
 
     <div id="owner-video" class="card max-w-3xl mx-auto p-6 hidden">
-      <p class="font-black text-sm font-display mb-1" data-i18n="video_title">Video Call with Owner</p>
+      <p class="font-black text-sm font-display mb-1" data-i18n="video_title">Video Call with Manager</p>
       <p class="text-[11px] mb-4" style="color:var(--muted)" data-i18n="video_note">Both people open this page. One person starts a call and shares the Call ID; the other joins with that ID. Needs camera/microphone permission and a secure connection.</p>
       <div class="grid grid-cols-2 gap-3 mb-4">
         <video id="localVideo" autoplay playsinline muted></video>
@@ -390,7 +417,7 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
   <div class="tab-panel" id="panel-inspire">
     <div class="max-w-4xl mx-auto mb-6">
       <div id="ownerPostCard" class="card p-6 hidden" style="border-top:5px solid var(--green)">
-        <p class="text-[10px] font-black uppercase tracking-widest mb-3" style="color:var(--green)"><i class="fa fa-user-tie mr-1"></i><span data-i18n="owner_post_label">Message from your Owner</span></p>
+        <p class="text-[10px] font-black uppercase tracking-widest mb-3" style="color:var(--green)"><i class="fa fa-user-tie mr-1"></i><span data-i18n="owner_post_label">Message from your Manager</span></p>
         <p id="ownerPostCategory" class="amh text-[11px] font-black mb-1"></p>
         <p id="ownerPostText" class="amh text-lg font-bold leading-relaxed"></p>
         <p id="ownerPostRef" class="amh text-xs mt-2" style="color:var(--muted)"></p>
@@ -817,7 +844,7 @@ window.submitRequest = async () => {
     timestamp: serverTimestamp()
   });
   closeAllModals();
-  alert("Customer request logged for the owner to review.");
+  alert("Customer request logged for the manager to review.");
 };
 
 window.openExpenseModal = () => {
@@ -938,7 +965,7 @@ const i18n = {
   tab_pos: { en: "POS", am: "ሽያጭ" },
   tab_reports: { en: "Reports", am: "ሪፖርት" },
   tab_ai: { en: "AI Advisor", am: "AI አማካሪ" },
-  tab_owner: { en: "Owner", am: "ባለቤት" },
+  tab_owner: { en: "Manager", am: "ማናጀር" },
   tab_inspire: { en: "Inspiration", am: "መነሳሳት" },
   tab_store: { en: "Store List", am: "የእቃ ዝርዝር" },
   new_transaction: { en: "New Transaction", am: "አዲስ ሽያጭ" },
@@ -966,6 +993,10 @@ const i18n = {
   cf_debt: { en: "New Debt Today", am: "የዛሬ አዲስ ዕዳ" },
   cf_net: { en: "Net Daily Profit", am: "የዕለት ተጣራ ትርፍ" },
   cf_to_deposit: { en: "Cash to deposit in bank", am: "ወደ ባንክ የሚገባ ገንዘብ" },
+  tithe_title: { en: "Tithe — 10% of Profit", am: "አስራት — ከትርፍ 10 በመቶ" },
+  tithe_daily: { en: "Daily Tithe", am: "የእለት አስራት" },
+  tithe_weekly: { en: "Weekly Tithe", am: "የሳምንት አስራት" },
+  tithe_monthly: { en: "Monthly Tithe", am: "የወር አስራት" },
   deposit_btn: { en: "Confirm Deposit", am: "ገቢ ማድረግዎን ያረጋግጡ" },
   deposit_title: { en: "CONFIRM BANK DEPOSIT", am: "የባንክ ገቢ ማረጋገጫ" },
   deposit_desc: { en: "Confirm you deposited today's remaining cash and attach a receipt as proof.", am: "የዛሬውን የቀረ ገንዘብ ወደ ባንክ ማስገባትዎን ያረጋግጡና ደረሰኝ ያያይዙ።" },
@@ -977,7 +1008,7 @@ const i18n = {
   no_deposits_yet: { en: "No deposits confirmed yet.", am: "እስካሁን ምንም ገቢ አልተረጋገጠም።" },
   store_list_title: { en: "Everything in Store", am: "በሱቅ ውስጥ ያለው ሁሉ" },
   store_list_count: { en: "Products:", am: "ምርቶች፡" },
-  owner_post_label: { en: "Message from your Owner", am: "ከባለቤትዎ የመጣ መልእክት" },
+  owner_post_label: { en: "Message from your Manager", am: "ከማናጀርዎ የመጣ መልእክት" },
   current_receipt: { en: "Current Receipt", am: "የአሁኑ ደረሰኝ" },
   reset: { en: "Reset", am: "ደግመህ ጀምር" },
   basket_empty: { en: "Basket is empty", am: "ቅርጫት ባዶ ነው" },
@@ -998,12 +1029,13 @@ const i18n = {
   all_good_stock: { en: "All products are well stocked.", am: "ሁሉም ምርቶች በበቂ ሁኔታ አሉ።" },
   ai_name: { en: "Miny — Business Advisor", am: "ሚኒ — የንግድ አማካሪ" },
   ai_tagline: { en: "Ask anything about running your shop", am: "ስለ ሱቅዎ አስተዳደር ማንኛውንም ነገር ይጠይቁ" },
+  ai_new_chat: { en: "New Chat", am: "አዲስ ውይይት" },
   ai_welcome: { en: "Selam! I'm Miny, your business assistant. Ask me about pricing, customers, marketing, or your reports — in Amharic or English.", am: "ሰላም! እኔ ሚኒ ነኝ፣ የንግድ ረዳትዎ። ስለ ዋጋ አሰጣጥ፣ ደንበኞች፣ ማርኬቲንግ ወይም ስለ ሪፖርትዎ በአማርኛ ወይም በእንግሊዝኛ ይጠይቁኝ።" },
   owner_text: { en: "Text Chat", am: "የጽሑፍ ውይይት" },
   owner_video: { en: "Video Call", am: "የቪዲዮ ጥሪ" },
-  owner_chat_title: { en: "Chat with Owner", am: "ከባለቤት ጋር ይወያዩ" },
-  owner_chat_desc: { en: "Send updates or questions directly to the shop owner", am: "ለሱቁ ባለቤት በቀጥታ መልእክት ወይም ጥያቄ ይላኩ" },
-  video_title: { en: "Video Call with Owner", am: "ከባለቤት ጋር የቪዲዮ ጥሪ" },
+  owner_chat_title: { en: "Chat with Manager", am: "ከማናጀር ጋር ይወያዩ" },
+  owner_chat_desc: { en: "Send updates or questions directly to the shop manager", am: "ለሱቁ ማናጀር በቀጥታ መልእክት ወይም ጥያቄ ይላኩ" },
+  video_title: { en: "Video Call with Manager", am: "ከማናጀር ጋር የቪዲዮ ጥሪ" },
   video_note: { en: "Both people open this page. One person starts a call and shares the Call ID; the other joins with that ID. Needs camera/microphone permission and a secure connection.", am: "ሁለቱም ሰዎች ይህን ገጽ ይክፈቱ። አንዱ ሰው ጥሪ ይጀምርና የጥሪ መለያ (Call ID) ያካፍላል፤ ሌላው በዚያ መለያ ይቀላቀላል። የካሜራ/ማይክሮፎን ፈቃድ እና አስተማማኝ ግንኙነት ያስፈልጋል።" },
   start_call: { en: "Start Call", am: "ጥሪ ጀምር" },
   call_id_label: { en: "Call ID:", am: "የጥሪ መለያ፡" },
@@ -1103,6 +1135,14 @@ function renderReports() {
   document.getElementById('profitMonthly').innerText = "$" + month.profit.toFixed(2);
   document.getElementById('revenueMonthly').innerText = "$" + month.revenue.toFixed(2) + " revenue";
   document.getElementById('discountMonthly').innerText = discountLabel(month.discount);
+
+  // Tithe: 10% of profit for each period — "የእለት/የሳምንት/የወር አስራት"
+  document.getElementById('titheDaily').innerText = "$" + (Math.max(day.profit, 0) * 0.1).toFixed(2);
+  document.getElementById('titheWeekly').innerText = "$" + (Math.max(week.profit, 0) * 0.1).toFixed(2);
+  document.getElementById('titheMonthly').innerText = "$" + (Math.max(month.profit, 0) * 0.1).toFixed(2);
+  const titheIdx = dayOfYear() % titheVerses.length;
+  document.getElementById('titheVerseText').innerText = titheVerses[titheIdx].text;
+  document.getElementById('titheVerseRef').innerText = titheVerses[titheIdx].ref;
 
   const todaysSales = salesRecords.filter(s => {
     const t = s.timestamp && s.timestamp.toDate ? s.timestamp.toDate() : null;
@@ -1217,45 +1257,126 @@ function renderCashFlow() {
    AI ADVISOR (Anthropic API)
 ========================================================= */
 let aiHistory = [];
-function appendAIMessage(role, text, loadingId) {
+
+// Minimal, safe markdown-ish renderer: escapes HTML first (no injection risk),
+// then turns **bold**, *italic*, "- " bullet lines, and blank lines into real
+// formatting — so replies read like a normal chat app instead of a wall of text.
+function escapeHtml(str) {
+  return str.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function renderMarkdownLite(raw) {
+  const escaped = escapeHtml(raw);
+  const lines = escaped.split('\n');
+  let html = '';
+  let inList = false;
+  lines.forEach((line) => {
+    const bulletMatch = line.match(/^\s*[-•]\s+(.*)/);
+    if (bulletMatch) {
+      if (!inList) { html += '<ul class="list-disc pl-5 space-y-1 my-1">'; inList = true; }
+      html += `<li>${inlineFormat(bulletMatch[1])}</li>`;
+    } else {
+      if (inList) { html += '</ul>'; inList = false; }
+      if (line.trim() === '') { html += '<br>'; }
+      else { html += `<p class="mb-1 last:mb-0">${inlineFormat(line)}</p>`; }
+    }
+  });
+  if (inList) html += '</ul>';
+  return html;
+}
+function inlineFormat(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(?<!\*)\*(?!\*)(.+?)\*(?!\*)/g, '<em>$1</em>');
+}
+
+function appendAIMessage(role, text, loadingId, isMarkdown) {
   const win = document.getElementById('aiChatWindow');
   const wrapper = document.createElement('div');
   wrapper.className = 'flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
   if (loadingId) wrapper.id = loadingId;
-  wrapper.innerHTML = `<div class="${role === 'user' ? 'bubble-user' : 'bubble-ai'} px-4 py-3 text-sm max-w-[80%] whitespace-pre-wrap">${text}</div>`;
+  const bubbleClass = role === 'user' ? 'bubble-user' : 'bubble-ai';
+  const content = isMarkdown ? renderMarkdownLite(text) : (loadingId ? text : escapeHtml(text));
+  wrapper.innerHTML = `<div class="${bubbleClass} px-4 py-3 text-sm max-w-[85%] leading-relaxed">${content}</div>`;
   win.appendChild(wrapper);
   win.scrollTop = win.scrollHeight;
+  return wrapper;
 }
+
+// Quick-start suggestion chips shown before the first message
+const aiSuggestionsByLang = {
+  en: ["How can I attract more customers?", "Tips to reduce wastage", "How do I read my daily report?", "Ideas for handling customer debt"],
+  am: ["ደንበኞችን እንዴት እስባለሁ?", "ብክነትን ለመቀነስ ምክር ስጠኝ", "የዕለት ሪፖርቴን እንዴት አነባለሁ?", "የደንበኛ ዕዳን እንዴት ላስተዳድር?"]
+};
+function renderAISuggestions() {
+  const el = document.getElementById('aiSuggestions');
+  if (!el) return;
+  const list = aiSuggestionsByLang[currentLang] || aiSuggestionsByLang.en;
+  el.innerHTML = list.map(q => `<button onclick="askAISuggestion(this)" class="text-[11px] font-bold px-3 py-2 rounded-full border transition hover:bg-[var(--green)] hover:text-white hover:border-[var(--green)]" style="border-color:rgba(0,0,0,0.1); color:var(--muted)">${q}</button>`).join('');
+}
+window.askAISuggestion = (btn) => {
+  document.getElementById('aiInput').value = btn.innerText;
+  sendAIMessage();
+};
+renderAISuggestions();
+
+window.startNewAIChat = () => {
+  aiHistory = [];
+  const win = document.getElementById('aiChatWindow');
+  win.innerHTML = `<div class="flex"><div class="bubble-ai px-4 py-3 text-sm max-w-[80%]" data-i18n="ai_welcome">${i18n.ai_welcome[currentLang]}</div></div><div id="aiSuggestions" class="flex flex-wrap gap-2 pt-1"></div>`;
+  renderAISuggestions();
+};
+
+// Miny calls a small Firebase Cloud Function ("aiAdvisor") instead of the
+// Anthropic API directly. A browser can't safely call api.anthropic.com on its
+// own — there's no API key to send, and even with one, exposing it in client
+// code lets anyone steal it. The Cloud Function keeps the real key on the
+// server. See the "aiAdvisor Cloud Function" file for the code to deploy.
+const AI_ADVISOR_ENDPOINT = "https://us-central1-min-eli.cloudfunctions.net/aiAdvisor";
 
 window.sendAIMessage = async () => {
   const input = document.getElementById('aiInput');
+  const sendBtn = document.getElementById('aiSendBtn');
   const text = input.value.trim();
   if (!text) return;
+
+  document.getElementById('aiSuggestions')?.remove();
   appendAIMessage('user', text);
   input.value = '';
+  input.disabled = true;
+  sendBtn.disabled = true;
+  sendBtn.classList.add('opacity-50');
+
   const loadingId = 'loading-' + Date.now();
   appendAIMessage('ai', '<span class="dot-typing"><span>.</span><span>.</span><span>.</span></span>', loadingId);
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch(AI_ADVISOR_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1000,
-        system: "You are Miny, a warm, practical business advisor helping a small shop owner who uses the Min-el POS system. Give short, concrete, actionable advice about pricing, attracting and keeping customers, marketing, managing wastage, handling customer debt/credit, and reading sales reports. Reply in the same language the person writes in (Amharic or English), in simple friendly language suited to a small retail shop owner.",
-        messages: [...aiHistory, { role: "user", content: text }]
+        message: text,
+        history: aiHistory,
+        lang: currentLang
       })
     });
+    if (!response.ok) throw new Error("Server responded with " + response.status);
     const data = await response.json();
-    const reply = (data.content || []).map(c => c.text || '').join('') || (currentLang === 'am' ? "ይቅርታ፣ መልስ ማምጣት አልቻልኩም።" : "Sorry, I couldn't get a response.");
+    const reply = data.reply || (currentLang === 'am' ? "ይቅርታ፣ መልስ ማምጣት አልቻልኩም።" : "Sorry, I couldn't get a response.");
     document.getElementById(loadingId)?.remove();
-    appendAIMessage('ai', reply);
+    appendAIMessage('ai', reply, null, true);
     aiHistory.push({ role: "user", content: text });
     aiHistory.push({ role: "assistant", content: reply });
+    if (aiHistory.length > 20) aiHistory = aiHistory.slice(-20); // keep the request small
   } catch (e) {
     document.getElementById(loadingId)?.remove();
-    appendAIMessage('ai', currentLang === 'am' ? "ይቅርታ፣ ስህተት ተፈጥሯል፤ እንደገና ይሞክሩ።" : "Sorry, something went wrong. Please try again.");
+    appendAIMessage('ai', currentLang === 'am'
+      ? "ይቅርታ፣ ከረዳቱ ጋር መገናኘት አልተቻለም። የበይነመረብ ግንኙነትዎን ያረጋግጡ ወይም ትንሽ ቆይተው ይሞክሩ።"
+      : "Sorry, I couldn't reach the advisor service. Check your connection or try again shortly.");
+  } finally {
+    input.disabled = false;
+    sendBtn.disabled = false;
+    sendBtn.classList.remove('opacity-50');
+    input.focus();
   }
 };
 
@@ -1268,9 +1389,10 @@ onSnapshot(query(collection(db, "ownerMessages"), orderBy("timestamp", "asc")), 
   snapshot.docs.forEach(d => {
     const m = d.data();
     const isOwner = m.sender === 'owner';
+    const senderLabel = isOwner ? 'Manager' : 'Seller';
     win.innerHTML += `<div class="flex ${isOwner ? 'justify-start' : 'justify-end'}">
       <div class="${isOwner ? 'bubble-owner' : 'bubble-seller'} px-4 py-3 text-sm max-w-[80%]">
-        <p class="text-[9px] font-black uppercase mb-1 opacity-60">${m.sender}</p>${m.text || ''}
+        <p class="text-[9px] font-black uppercase mb-1 opacity-60">${senderLabel}</p>${m.text || ''}
       </div></div>`;
   });
   win.scrollTop = win.scrollHeight;
@@ -1369,6 +1491,14 @@ window.hangUp = () => {
 /* =========================================================
    INSPIRATION: daily Bible verse + business tip (Amharic)
 ========================================================= */
+// Verses about tithing/giving, shown next to the tithe summary in Reports
+const titheVerses = [
+  { text: "ከገንዘብህና ከፍሬህ ሁሉ በኩራት እግዚአብሔርን አክብር፤ ጎተራህም በብዛት ይሞላል።", ref: "ምሳሌ 3:9-10" },
+  { text: "አስራታችሁን ሁሉ ወደ ግምጃ ቤት አግቡ፤ የሰማይን መስኮቶች ከፍቼ በረከትን አላፈስስላችሁምን ብዬ ሞክሩኝ ይላል ጌታ።", ref: "ሚልክያስ 3:10" },
+  { text: "እያንዳንዱ በልቡ እንዳሰበ ይስጥ፤ በደስታ የሚሰጥን እግዚአብሔር ይወዳልና።", ref: "2ኛ ቆሮንቶስ 9:7" },
+  { text: "ስጡ፣ ይሰጣችሁማል፤ የተነቀነቀና የተጠቀጠቀ የተትረፈረፈም መስፈሪያ በጭንዎ ውስጥ ይሰጣችኋል።", ref: "ሉቃስ 6:38" },
+  { text: "ንግድ የሚባረከው ሲወጣ ነው፤ ለእግዚአብሔር ቤት የተሰጠው ሁሉ በረከትን ይመልሳል።", ref: "ምሳሌ 11:24-25" },
+];
 const verses = [
   { text: "ጌታ በጎ ነውና ምስጋና አቅርቡለት፤ ምሕረቱ ለዘላለም ይኖራል።", ref: "መዝሙር 107:1" },
   { text: "በሚያበረታኝ በክርስቶስ ሁሉን ማድረግ እችላለሁ።", ref: "ፊልጵስዩስ 4:13" },
@@ -1408,4 +1538,4 @@ window.renderInspiration = (shuffleTip) => {
 renderInspiration(false);
 </script>
 </body>
-  </html>
+        </html>
