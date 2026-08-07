@@ -51,6 +51,7 @@
             <button onclick="showSec('inspire')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold"><i class="fa fa-seedling w-4"></i> Inspiration</button>
             <button onclick="showSec('reports')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold"><i class="fa fa-file-invoice w-4"></i> Reports</button>
             <button onclick="showSec('charity')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold"><i class="fa fa-heart w-4"></i> Charity</button>
+            <button onclick="showSec('team')" class="sidebar-link w-full flex items-center gap-4 px-8 py-4 text-sm font-bold"><i class="fa fa-users w-4"></i> Team <span id="pendingBadge" class="hidden ml-auto bg-red-500 text-white text-[9px] font-black rounded-full w-5 h-5 flex items-center justify-center"></span></button>
         </nav>
         <div class="p-6">
             <button onclick="logout()" class="w-full bg-red-600/20 text-red-500 py-3 rounded-xl font-bold text-xs"><i class="fa fa-lock mr-2"></i> LOCK</button>
@@ -258,6 +259,38 @@
             </div>
         </section>
 
+        <section id="sec-team" class="hidden space-y-6">
+            <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
+                <p class="text-[10px] text-slate-500 font-bold uppercase">Your Company</p>
+                <h3 id="team-company-name" class="text-2xl font-black mt-1 font-display">—</h3>
+                <div class="mt-4 flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div>
+                        <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Seller Invite Code</p>
+                        <p id="team-invite-code" class="text-xl font-black text-blue-400 font-mono tracking-widest mt-1">------</p>
+                    </div>
+                    <button onclick="copyInviteCode()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition"><i class="fa fa-copy mr-1"></i> Copy</button>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-3">Share this code with new sellers — they enter it on the Register page under "Seller".</p>
+            </div>
+
+            <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-black font-display"><i class="fa fa-user-clock text-yellow-400 mr-2"></i>Pending Sellers</h3>
+                    <span id="pendingCount" class="bg-red-500/10 text-red-400 text-[10px] font-black px-3 py-1 rounded-full border border-red-500/20">0 waiting</span>
+                </div>
+                <div id="pendingSellersList" class="space-y-3">
+                    <p class="text-slate-500 text-sm italic">No sellers waiting for approval.</p>
+                </div>
+            </div>
+
+            <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
+                <h3 class="text-lg font-black mb-4 font-display"><i class="fa fa-users text-green-400 mr-2"></i>Active Team</h3>
+                <div id="activeSellersList" class="space-y-2 max-h-72 overflow-y-auto">
+                    <p class="text-slate-500 text-sm italic">No active sellers yet.</p>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <nav class="mobile-nav fixed bottom-0 left-0 right-0 h-20 bg-black/85 backdrop-blur-xl border-t border-white/10 hidden justify-start md:justify-around items-center z-50 overflow-x-auto px-2 gap-1">
@@ -269,13 +302,14 @@
         <button onclick="showSec('inspire')" class="flex flex-col items-center gap-1 text-slate-500 shrink-0 px-3"><i class="fa fa-seedling"></i><span class="text-[9px] font-bold">Inspire</span></button>
         <button onclick="showSec('reports')" class="flex flex-col items-center gap-1 text-slate-500 shrink-0 px-3"><i class="fa fa-file"></i><span class="text-[9px] font-bold">Docs</span></button>
         <button onclick="showSec('charity')" class="flex flex-col items-center gap-1 text-slate-500 shrink-0 px-3"><i class="fa fa-heart"></i><span class="text-[9px] font-bold">Charity</span></button>
+        <button onclick="showSec('team')" class="flex flex-col items-center gap-1 text-slate-500 shrink-0 px-3"><i class="fa fa-users"></i><span class="text-[9px] font-bold">Team</span></button>
     </nav>
 
     <script type="module">
         // --- SECURITY: real Firebase Auth + company/role check (replaces the old hardcoded PIN) ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, getDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
@@ -292,6 +326,7 @@
         // Every query/write below is scoped to this companyId once auth resolves.
         let companyId = null;
         let currentUid = null;
+        let defaultBranchId = null;
 
         window.logout = () => { signOut(auth).then(() => window.location.href = "index.html"); };
 
@@ -330,6 +365,7 @@
                 }
                 companyId = profile.companyId;
                 currentUid = user.uid;
+                defaultBranchId = profile.branchId || null;
                 initDashboard();
             } catch (err) {
                 alert("Could not verify your account: " + err.message);
@@ -601,7 +637,101 @@
             e.target.reset(); alert("Contribution logged!");
         };
 
+        // --- TEAM: company info, invite code, seller approval ---
+        getDoc(doc(db, "companies", companyId)).then(snap => {
+            if (!snap.exists()) return;
+            const c = snap.data();
+            document.getElementById('team-company-name').innerText = c.name || 'Your Business';
+            document.getElementById('team-invite-code').innerText = c.inviteCode || '------';
+            window._inviteCode = c.inviteCode || '';
+        });
+
+        window.copyInviteCode = () => {
+            if (!window._inviteCode) return;
+            navigator.clipboard.writeText(window._inviteCode)
+                .then(() => alert('Invite code copied: ' + window._inviteCode))
+                .catch(() => alert('Code: ' + window._inviteCode));
+        };
+
+        // Pending sellers (status == "pending") — owner approves or rejects here,
+        // no more manual Firestore Console editing.
+        onSnapshot(query(collection(db, "users"), where("companyId", "==", companyId), where("role", "==", "seller"), where("status", "==", "pending")), (snap) => {
+            const list = document.getElementById('pendingSellersList');
+            const badge = document.getElementById('pendingBadge');
+            const count = document.getElementById('pendingCount');
+            count.innerText = `${snap.size} waiting`;
+            if (snap.empty) {
+                list.innerHTML = '<p class="text-slate-500 text-sm italic">No sellers waiting for approval.</p>';
+                badge.classList.add('hidden');
+                return;
+            }
+            badge.classList.remove('hidden');
+            badge.innerText = snap.size;
+            list.innerHTML = snap.docs.map(d => {
+                const u = d.data();
+                return `
+                <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div>
+                        <p class="font-bold text-sm">${u.username || u.email}</p>
+                        <p class="text-[10px] text-slate-500">${u.email}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="approveSeller('${d.id}')" class="bg-green-600 hover:bg-green-700 text-white text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-check mr-1"></i>Approve</button>
+                        <button onclick="rejectSeller('${d.id}')" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-xmark mr-1"></i>Reject</button>
+                    </div>
+                </div>`;
+            }).join('');
+        });
+
+        window.approveSeller = async (uid) => {
+            if (!confirm("Approve this seller and assign them to your Main Branch?")) return;
+            await updateDoc(doc(db, "users", uid), {
+                status: "active",
+                branchId: defaultBranchId,
+                approvedBy: currentUid,
+                approvedAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            });
+            alert("Seller approved! They can now log in to the seller dashboard.");
+        };
+
+        window.rejectSeller = async (uid) => {
+            if (!confirm("Reject this seller? They will not be able to access your workspace. This does not delete their login account.")) return;
+            await updateDoc(doc(db, "users", uid), {
+                status: "rejected",
+                updatedAt: serverTimestamp()
+            });
+        };
+
+        // Active sellers (status == "active")
+        onSnapshot(query(collection(db, "users"), where("companyId", "==", companyId), where("role", "==", "seller"), where("status", "==", "active")), (snap) => {
+            const list = document.getElementById('activeSellersList');
+            if (snap.empty) {
+                list.innerHTML = '<p class="text-slate-500 text-sm italic">No active sellers yet.</p>';
+                return;
+            }
+            list.innerHTML = snap.docs.map(d => {
+                const u = d.data();
+                return `
+                <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3">
+                    <div>
+                        <p class="font-bold text-sm">${u.username || u.email}</p>
+                        <p class="text-[10px] text-slate-500">${u.email}</p>
+                    </div>
+                    <button onclick="suspendSeller('${d.id}')" class="bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-pause mr-1"></i>Suspend</button>
+                </div>`;
+            }).join('');
+        });
+
+        window.suspendSeller = async (uid) => {
+            if (!confirm("Suspend this seller? They will lose dashboard access immediately.")) return;
+            await updateDoc(doc(db, "users", uid), {
+                status: "suspended",
+                updatedAt: serverTimestamp()
+            });
+        };
+
         } // end initDashboard()
     </script>
 </body>
-            </html>
+                            </html>
