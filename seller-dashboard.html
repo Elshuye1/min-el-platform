@@ -641,9 +641,10 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, setDoc, getDoc,
-  serverTimestamp, query, orderBy, limit
+  serverTimestamp, query, orderBy, limit, where
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
@@ -658,15 +659,67 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+
+// --- SECURITY: real Firebase Auth + company/role check (replaces the old
+// "pick your name from a list" session, which was not authentication at all).
+// The name-picker further below is kept, but now only decides which staff
+// member on this branch's terminal is attributed to a sale — it no longer
+// controls access to the terminal itself.
+let companyId = null;
+let branchId = null;
+let currentUid = null;
+
+window.logout = () => { signOut(auth).then(() => window.location.href = "index.html"); };
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
+  try {
+    const profileSnap = await getDoc(doc(db, "users", user.uid));
+    if (!profileSnap.exists()) {
+      alert("No workspace profile found for this account.");
+      await signOut(auth);
+      window.location.href = "index.html";
+      return;
+    }
+    const profile = profileSnap.data();
+    if (profile.role !== 'seller' && profile.role !== 'owner') {
+      alert("This terminal is restricted to Sellers.");
+      await signOut(auth);
+      window.location.href = "index.html";
+      return;
+    }
+    if (profile.status !== 'active') {
+      alert("Your account is pending approval from your Owner.");
+      await signOut(auth);
+      window.location.href = "index.html";
+      return;
+    }
+    companyId = profile.companyId;
+    branchId = profile.branchId || null;
+    currentUid = user.uid;
+    initDashboard();
+  } catch (err) {
+    alert("Could not verify your account: " + err.message);
+    window.location.href = "index.html";
+  }
+});
+
+// Everything below only runs once we've confirmed an active, signed-in
+// Seller/Owner and have their companyId.
+function initDashboard() {
 
 let inventory = [];
 let cart = [];
 let selectedItem = null;
 
 // 1. LIVE INVENTORY SYNC
-onSnapshot(collection(db, "inventory"), (snapshot) => {
+onSnapshot(query(collection(db, "inventory"), where("companyId", "==", companyId)), (snapshot) => {
   const datalist = document.getElementById('inventory-datalist');
   datalist.innerHTML = '';
   inventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -817,6 +870,7 @@ window.completeSale = async () => {
         discount: item.discountTotal || 0,
         discountReason: item.discountReason || "",
         soldBy: soldBy,
+        companyId, branchId, createdBy: currentUid,
         timestamp: serverTimestamp()
       });
     }
@@ -839,6 +893,7 @@ window.handleWastage = async () => {
         itemName: name,
         qty: qty,
         reason: "Reported by Seller",
+        companyId, branchId, createdBy: currentUid,
         timestamp: serverTimestamp()
       });
       alert("Wastage logged.");
@@ -856,6 +911,7 @@ window.handleDebt = async () => {
       amount: Number(amount),
       amountPaid: 0,
       status: "unpaid",
+      companyId, branchId, createdBy: currentUid,
       timestamp: serverTimestamp()
     });
     alert(`Debt of $${amount} recorded for ${customer}`);
@@ -911,6 +967,7 @@ window.submitWastage = async () => {
     qty: qty,
     reason: purpose,
     note: note,
+    companyId, branchId, createdBy: currentUid,
     timestamp: serverTimestamp()
   });
   closeAllModals();
@@ -935,6 +992,7 @@ window.submitDebt = async () => {
     service,
     borrowDate,
     status: "unpaid",
+    companyId, branchId, createdBy: currentUid,
     timestamp: serverTimestamp()
   });
   closeAllModals();
@@ -949,6 +1007,7 @@ window.submitRequest = async () => {
   await addDoc(collection(db, "customerRequests"), {
     itemName,
     note,
+    companyId, branchId, createdBy: currentUid,
     timestamp: serverTimestamp()
   });
   closeAllModals();
@@ -973,6 +1032,7 @@ window.submitExpense = async () => {
     category,
     amount: Number(amount),
     note,
+    companyId, branchId, createdBy: currentUid,
     timestamp: serverTimestamp()
   });
   closeAllModals();
@@ -1007,6 +1067,7 @@ window.submitDeposit = async () => {
       amount: Number(amount),
       note,
       receiptUrl,
+      companyId, branchId, createdBy: currentUid,
       timestamp: serverTimestamp()
     });
     closeAllModals();
@@ -1041,7 +1102,7 @@ document.getElementById('storeListSearch')?.addEventListener('input', (e) => ren
 /* =========================================================
    OWNER'S LATEST INSPIRATION POST (bridges the HQ dashboard)
 ========================================================= */
-onSnapshot(query(collection(db, "inspirationPosts"), orderBy("timestamp", "desc"), limit(1)), (snap) => {
+onSnapshot(query(collection(db, "inspirationPosts"), where("companyId", "==", companyId), orderBy("timestamp", "desc"), limit(1)), (snap) => {
   const card = document.getElementById('ownerPostCard');
   if (snap.empty) { card.classList.add('hidden'); return; }
   const p = snap.docs[0].data();
@@ -1249,7 +1310,7 @@ function renderStockOverview() {
 }
 
 let salesRecords = [];
-onSnapshot(query(collection(db, "sales"), orderBy("timestamp", "desc")), (snapshot) => {
+onSnapshot(query(collection(db, "sales"), where("companyId", "==", companyId), orderBy("timestamp", "desc")), (snapshot) => {
   salesRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
   renderReports();
 });
@@ -1367,18 +1428,18 @@ let expenseRecords = [];
 let debtRecords = [];
 let depositRecords = [];
 
-onSnapshot(query(collection(db, "expenses"), orderBy("timestamp", "desc")), (snapshot) => {
+onSnapshot(query(collection(db, "expenses"), where("companyId", "==", companyId), orderBy("timestamp", "desc")), (snapshot) => {
   expenseRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
   renderCashFlow();
 });
 
-onSnapshot(query(collection(db, "debts"), orderBy("timestamp", "desc")), (snapshot) => {
+onSnapshot(query(collection(db, "debts"), where("companyId", "==", companyId), orderBy("timestamp", "desc")), (snapshot) => {
   debtRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
   renderCashFlow();
   renderDebtsPage();
 });
 
-onSnapshot(query(collection(db, "bankDeposits"), orderBy("timestamp", "desc")), (snapshot) => {
+onSnapshot(query(collection(db, "bankDeposits"), where("companyId", "==", companyId), orderBy("timestamp", "desc")), (snapshot) => {
   depositRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
   renderCashFlow();
 });
@@ -1571,6 +1632,7 @@ window.submitDebtPayment = async () => {
     customerName: d.customerName,
     amount: paymentAmount,
     note,
+    companyId, branchId, createdBy: currentUid,
     timestamp: serverTimestamp()
   });
 
@@ -1599,7 +1661,7 @@ function populateSellerDropdown(list) {
   else if (remembered && list.includes(remembered)) sel.value = remembered;
 }
 
-onSnapshot(query(collection(db, "sellers"), orderBy("name", "asc")), (snapshot) => {
+onSnapshot(query(collection(db, "sellers"), where("companyId", "==", companyId), orderBy("name", "asc")), (snapshot) => {
   const names = snapshot.docs.map(d => d.data().name);
   populateSellerDropdown(names);
 });
@@ -1617,7 +1679,7 @@ document.getElementById('activeSellerSelect').addEventListener('change', (e) => 
 window.submitNewSeller = async () => {
   const name = document.getElementById('newSellerName').value.trim();
   if (!name) return alert(currentLang === 'am' ? "ስም ያስገቡ" : "Enter a name");
-  await addDoc(collection(db, "sellers"), { name, timestamp: serverTimestamp() });
+  await addDoc(collection(db, "sellers"), { name, companyId, branchId, createdBy: currentUid, timestamp: serverTimestamp() });
   localStorage.setItem('minel_active_seller', name);
   closeAllModals();
   setTimeout(() => { document.getElementById('activeSellerSelect').value = name; }, 400);
@@ -1753,7 +1815,7 @@ window.sendAIMessage = async () => {
 /* =========================================================
    OWNER TEXT CHAT
 ========================================================= */
-onSnapshot(query(collection(db, "ownerMessages"), orderBy("timestamp", "asc")), (snapshot) => {
+onSnapshot(query(collection(db, "ownerMessages"), where("companyId", "==", companyId), orderBy("timestamp", "asc")), (snapshot) => {
   const win = document.getElementById('ownerChatWindow');
   win.innerHTML = '';
   snapshot.docs.forEach(d => {
@@ -1774,7 +1836,7 @@ window.sendOwnerMessage = async () => {
   const sender = document.getElementById('ownerSenderRole').value;
   if (!text) return;
   input.value = '';
-  await addDoc(collection(db, "ownerMessages"), { sender, text, timestamp: serverTimestamp() });
+  await addDoc(collection(db, "ownerMessages"), { sender, text, companyId, branchId, createdBy: currentUid, timestamp: serverTimestamp() });
 };
 
 /* =========================================================
@@ -1805,7 +1867,11 @@ window.startCall = async () => {
 
     const offerDescription = await pc.createOffer();
     await pc.setLocalDescription(offerDescription);
-    await setDoc(callDoc, { offer: { sdp: offerDescription.sdp, type: offerDescription.type } });
+    await setDoc(callDoc, {
+      companyId, branchId, createdBy: currentUid,
+      offer: { sdp: offerDescription.sdp, type: offerDescription.type },
+      createdAt: serverTimestamp()
+    });
 
     onSnapshot(callDoc, (snap) => {
       const data = snap.data();
@@ -1840,7 +1906,10 @@ window.joinCall = async () => {
 
     const answerDescription = await pc.createAnswer();
     await pc.setLocalDescription(answerDescription);
-    await updateDoc(callDoc, { answer: { type: answerDescription.type, sdp: answerDescription.sdp } });
+    await updateDoc(callDoc, {
+      answer: { type: answerDescription.type, sdp: answerDescription.sdp },
+      answeredAt: serverTimestamp()
+    });
 
     onSnapshot(offerCandidates, (snap) => {
       snap.docChanges().forEach((change) => {
@@ -1906,6 +1975,8 @@ window.renderInspiration = (shuffleTip) => {
   tipEl.innerText = tips[tIdx];
 };
 renderInspiration(false);
+
+} // end initDashboard()
 </script>
 </body>
-  </html>
+            </html>
