@@ -653,34 +653,60 @@
                 .catch(() => alert('Code: ' + window._inviteCode));
         };
 
-        // Pending sellers (status == "pending") — owner approves or rejects here,
-        // no more manual Firestore Console editing.
-        onSnapshot(query(collection(db, "users"), where("companyId", "==", companyId), where("role", "==", "seller"), where("status", "==", "pending")), (snap) => {
+        // Team roster: ONE listener, scoped only by companyId (a single equality
+        // filter needs no manual composite index — Firestore auto-indexes single
+        // fields). Pending vs. Active vs. everyone-else split happens right here
+        // in JS instead of inside the query, so this works with zero Firebase
+        // Console setup.
+        onSnapshot(query(collection(db, "users"), where("companyId", "==", companyId)), (snap) => {
+            const allSellers = snap.docs.filter(d => d.data().role === 'seller');
+            const pending = allSellers.filter(d => d.data().status === 'pending');
+            const active = allSellers.filter(d => d.data().status === 'active');
+
+            // --- Pending list ---
             const list = document.getElementById('pendingSellersList');
             const badge = document.getElementById('pendingBadge');
             const count = document.getElementById('pendingCount');
-            count.innerText = `${snap.size} waiting`;
-            if (snap.empty) {
+            count.innerText = `${pending.length} waiting`;
+            if (pending.length === 0) {
                 list.innerHTML = '<p class="text-slate-500 text-sm italic">No sellers waiting for approval.</p>';
                 badge.classList.add('hidden');
-                return;
+            } else {
+                badge.classList.remove('hidden');
+                badge.innerText = pending.length;
+                list.innerHTML = pending.map(d => {
+                    const u = d.data();
+                    return `
+                    <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4">
+                        <div>
+                            <p class="font-bold text-sm">${u.username || u.email}</p>
+                            <p class="text-[10px] text-slate-500">${u.email}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="approveSeller('${d.id}')" class="bg-green-600 hover:bg-green-700 text-white text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-check mr-1"></i>Approve</button>
+                            <button onclick="rejectSeller('${d.id}')" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-xmark mr-1"></i>Reject</button>
+                        </div>
+                    </div>`;
+                }).join('');
             }
-            badge.classList.remove('hidden');
-            badge.innerText = snap.size;
-            list.innerHTML = snap.docs.map(d => {
-                const u = d.data();
-                return `
-                <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4">
-                    <div>
-                        <p class="font-bold text-sm">${u.username || u.email}</p>
-                        <p class="text-[10px] text-slate-500">${u.email}</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="approveSeller('${d.id}')" class="bg-green-600 hover:bg-green-700 text-white text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-check mr-1"></i>Approve</button>
-                        <button onclick="rejectSeller('${d.id}')" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-xmark mr-1"></i>Reject</button>
-                    </div>
-                </div>`;
-            }).join('');
+
+            // --- Active team list ---
+            const activeList = document.getElementById('activeSellersList');
+            if (active.length === 0) {
+                activeList.innerHTML = '<p class="text-slate-500 text-sm italic">No active sellers yet.</p>';
+            } else {
+                activeList.innerHTML = active.map(d => {
+                    const u = d.data();
+                    return `
+                    <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3">
+                        <div>
+                            <p class="font-bold text-sm">${u.username || u.email}</p>
+                            <p class="text-[10px] text-slate-500">${u.email}</p>
+                        </div>
+                        <button onclick="suspendSeller('${d.id}')" class="bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-pause mr-1"></i>Suspend</button>
+                    </div>`;
+                }).join('');
+            }
         });
 
         window.approveSeller = async (uid) => {
@@ -702,26 +728,6 @@
                 updatedAt: serverTimestamp()
             });
         };
-
-        // Active sellers (status == "active")
-        onSnapshot(query(collection(db, "users"), where("companyId", "==", companyId), where("role", "==", "seller"), where("status", "==", "active")), (snap) => {
-            const list = document.getElementById('activeSellersList');
-            if (snap.empty) {
-                list.innerHTML = '<p class="text-slate-500 text-sm italic">No active sellers yet.</p>';
-                return;
-            }
-            list.innerHTML = snap.docs.map(d => {
-                const u = d.data();
-                return `
-                <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3">
-                    <div>
-                        <p class="font-bold text-sm">${u.username || u.email}</p>
-                        <p class="text-[10px] text-slate-500">${u.email}</p>
-                    </div>
-                    <button onclick="suspendSeller('${d.id}')" class="bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-pause mr-1"></i>Suspend</button>
-                </div>`;
-            }).join('');
-        });
 
         window.suspendSeller = async (uid) => {
             if (!confirm("Suspend this seller? They will lose dashboard access immediately.")) return;
