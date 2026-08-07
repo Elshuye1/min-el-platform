@@ -3,19 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Min-el | Business Hub</title>
+    <title>Min-el | Smart Business Management Platform</title>
+    <meta name="description" content="Manage sales, inventory, expenses, debts, reports and business operations with Min-el — one platform for Owners and Sellers.">
+    <meta name="theme-color" content="#0f172a">
+
+    <!-- Open Graph / social preview placeholders. Add real og-image.png / twitter-image.png to your repo root to enable these. -->
+    <meta property="og:title" content="Min-el | Smart Business Management Platform">
+    <meta property="og:description" content="Manage sales, inventory, expenses, debts and reports from one intelligent platform.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="twitter-image.png">
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232563eb'/%3E%3Ctext x='50' y='68' font-size='58' font-family='Arial,sans-serif' font-weight='900' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
-        
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #0f172a; 
-            color: white; 
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --accent: #22c55e;
+            --background: #0f172a;
+            --surface: rgba(255,255,255,0.05);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --border: rgba(255,255,255,0.1);
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --radius: 1.5rem;
+            --shadow: 0 20px 50px -15px rgba(37,99,235,0.35);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--background);
+            color: var(--text);
             -webkit-tap-highlight-color: transparent;
             top: 0 !important;
+            overflow-x: hidden;
         }
 
         .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); }
@@ -24,35 +54,82 @@
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .animate-slide-up { animation: slideUp 0.4s ease-out; }
 
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .reveal { opacity: 0; }
+        .reveal.in-view { animation: fadeInUp 0.6s ease-out forwards; }
+
+        @keyframes floatY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .float-anim { animation: floatY 5s ease-in-out infinite; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .animate-slide-up, .reveal, .float-anim { animation: none !important; }
+            .reveal { opacity: 1; }
+        }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
+
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
         /* Hide Google Translate Bar but keep functionality */
         .goog-te-banner-frame.skiptranslate, .goog-te-gadget { display: none !important; }
         .goog-text-highlight { background-color: transparent !important; box-shadow: none !important; }
+
+        /* Decorative hero blobs — pure CSS, no external images */
+        .blob {
+            position: absolute; border-radius: 999px; filter: blur(70px); opacity: 0.35; pointer-events: none; z-index: 0;
+        }
+        .grid-pattern {
+            background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* Button system */
+        .btn { border-radius: 1rem; font-weight: 700; transition: all 0.15s ease; }
+        .btn:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 10px 25px -8px rgba(37,99,235,0.6); }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-ghost { background: rgba(255,255,255,0.06); color: white; }
+        .btn-ghost:hover { background: rgba(255,255,255,0.12); }
+
+        .feature-card, .role-select-card { transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease; }
+        .feature-card:hover { transform: translateY(-4px); border-color: rgba(37,99,235,0.5); }
+
+        .role-select-card { cursor: pointer; }
+        .role-select-card[aria-pressed="true"] { border-color: var(--primary); background: rgba(37,99,235,0.12); }
+
+        /* Toast */
+        #toast-region { position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); z-index: 300; display: flex; flex-direction: column; gap: 0.5rem; width: min(360px, 92vw); }
+        .toast { padding: 0.9rem 1.1rem; border-radius: 1rem; font-size: 0.85rem; font-weight: 600; box-shadow: 0 15px 30px -10px rgba(0,0,0,0.5); animation: fadeInUp 0.3s ease-out; }
+        .toast-success { background: #14532d; color: #bbf7d0; border: 1px solid #22c55e55; }
+        .toast-error { background: #450a0a; color: #fecaca; border: 1px solid #ef444455; }
+        .toast-info { background: #1e293b; color: #dbeafe; border: 1px solid #2563eb55; }
+
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
     </style>
 </head>
-<body class="pb-24 md:pb-0"> 
-    
-    <div id="google_translate_element" style="display:none"></div>
+<body class="pb-24 md:pb-0">
 
+    <div id="google_translate_element" style="display:none"></div>
+    <div id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- ============ NAV ============ -->
     <nav class="sticky top-0 z-50 glass px-4 py-3 md:px-8">
         <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="switchTab('home')">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="switchTab('home')" role="button" tabindex="0" aria-label="Min-el home">
                 <div class="bg-blue-600 w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-500/30">M</div>
                 <h1 class="text-xl font-extrabold tracking-tighter">Min-el</h1>
             </div>
-            
-            <div class="flex items-center gap-4">
+
+            <div class="flex items-center gap-3">
                 <div class="relative group">
-                    <button class="glass px-3 py-2 rounded-xl text-[10px] font-bold flex items-center gap-2 hover:bg-white/10 transition">
+                    <button class="glass px-3 py-2 rounded-xl text-[10px] font-bold flex items-center gap-2 hover:bg-white/10 transition" aria-label="Change language">
                         <i class="fa fa-globe text-blue-400"></i>
-                        <span>Language / ቋንቋ</span>
+                        <span class="hidden sm:inline">Language / ቋንቋ</span>
                     </button>
-                    <select onchange="doGTranslate(this.value)" class="absolute inset-0 opacity-0 cursor-pointer">
+                    <select onchange="doGTranslate(this.value)" class="absolute inset-0 opacity-0 cursor-pointer" aria-label="Select language">
                         <option value="">Select Language</option>
                         <option value="en|am">Amharic (አማርኛ)</option>
                         <option value="en|en">English</option>
@@ -69,28 +146,115 @@
 
                 <div class="hidden md:flex items-center gap-6">
                     <button onclick="switchTab('home')" class="font-bold text-sm hover:text-blue-400">Home</button>
+                    <a href="#features" class="font-bold text-sm hover:text-blue-400">Features</a>
+                    <a href="#security" class="font-bold text-sm hover:text-blue-400">Security</a>
                     <button onclick="switchTab('policy')" class="font-bold text-sm hover:text-blue-400">Privacy</button>
-                    <button onclick="openModal('login')" class="font-bold text-sm hover:text-blue-400">Login</button>
-                    <button onclick="openModal('register')" class="bg-blue-600 px-6 py-2 rounded-full font-bold text-sm hover:bg-blue-500 transition">Get Started</button>
                 </div>
 
-                <div id="logged-in-status" class="md:hidden">
-                    <i class="fa fa-circle-user text-2xl text-blue-500"></i>
+                <!-- Logged-out state (desktop) -->
+                <div id="nav-auth-actions" class="hidden md:flex items-center gap-3">
+                    <button onclick="openModal('login')" class="font-bold text-sm hover:text-blue-400 px-2">Login</button>
+                    <a href="register.html" class="btn btn-primary px-6 py-2 text-sm">Get Started Free</a>
                 </div>
+
+                <!-- Logged-in state (desktop), hidden until onAuthStateChanged fills it in -->
+                <div id="nav-user-actions" class="hidden md:flex items-center gap-3 hidden">
+                    <a id="nav-dashboard-link" href="#" class="btn btn-ghost px-5 py-2 text-sm">
+                        <i class="fa fa-gauge-high mr-1"></i> Dashboard
+                    </a>
+                    <button onclick="logoutUser()" class="font-bold text-sm text-slate-400 hover:text-red-400 px-2">Logout</button>
+                </div>
+
+                <button id="logged-in-status" onclick="handleAvatarTap()" class="md:hidden" aria-label="Account">
+                    <i class="fa fa-circle-user text-2xl text-blue-500"></i>
+                </button>
             </div>
         </div>
     </nav>
 
-    <main id="home-tab" class="tab-content active container mx-auto px-4 py-6 md:py-12 lg:max-w-6xl">
-        <section class="mb-10">
-            <h2 class="text-3xl md:text-5xl font-black mb-2">Hello, <span class="text-blue-500">Entrepreneur</span></h2>
-            <p class="text-slate-400 text-sm md:text-lg">Manage your business and grow your soul.</p>
+    <!-- ============ HOME TAB ============ -->
+    <main id="home-tab" class="tab-content active">
+
+        <!-- HERO -->
+        <section class="relative overflow-hidden">
+            <div class="blob w-72 h-72 bg-blue-600 -top-10 -left-10"></div>
+            <div class="blob w-72 h-72 bg-green-500 top-40 right-0"></div>
+            <div class="absolute inset-0 grid-pattern opacity-40 pointer-events-none"></div>
+
+            <div class="container mx-auto px-4 pt-10 pb-16 md:py-24 lg:max-w-6xl relative z-10 grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 glass px-3 py-1.5 rounded-full text-[11px] font-bold text-blue-300 mb-6">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> Built for Ethiopian & global businesses
+                    </div>
+                    <h2 class="text-4xl md:text-5xl lg:text-6xl font-black leading-tight mb-4">
+                        Run Your Business <span class="text-blue-500">Smarter.</span>
+                    </h2>
+                    <p class="text-slate-400 text-base md:text-lg mb-8 max-w-md">
+                        Manage sales, inventory, sellers, expenses, debts and reports from one intelligent platform — built for owners and their teams.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-3 mb-8">
+                        <a href="register.html" class="btn btn-primary text-center px-8 py-4">Get Started Free</a>
+                        <a href="#features" class="btn btn-ghost text-center px-8 py-4">Explore Platform</a>
+                    </div>
+                    <div class="flex flex-wrap gap-x-6 gap-y-2 text-xs font-bold text-slate-400">
+                        <span><i class="fa fa-check-circle text-green-400 mr-1"></i> Secure</span>
+                        <span><i class="fa fa-check-circle text-green-400 mr-1"></i> Cloud Powered</span>
+                        <span><i class="fa fa-check-circle text-green-400 mr-1"></i> Real-time</span>
+                        <span><i class="fa fa-check-circle text-green-400 mr-1"></i> Multi-business ready</span>
+                    </div>
+                </div>
+
+                <!-- CSS-only dashboard preview (clearly a preview, not live data) -->
+                <div class="relative float-anim">
+                    <div class="glass rounded-[2rem] p-5 md:p-6 shadow-2xl">
+                        <div class="flex justify-between items-center mb-5">
+                            <p class="text-xs font-bold text-slate-400">Dashboard Preview</p>
+                            <span class="text-[9px] font-bold bg-white/10 px-2 py-1 rounded-md text-slate-400">SAMPLE DATA</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div class="bg-white/5 rounded-2xl p-4">
+                                <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Today's Sales</p>
+                                <p class="text-2xl font-black text-green-400">$1,240</p>
+                            </div>
+                            <div class="bg-white/5 rounded-2xl p-4">
+                                <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Inventory</p>
+                                <p class="text-2xl font-black text-blue-400">312</p>
+                            </div>
+                        </div>
+                        <div class="bg-white/5 rounded-2xl p-4 mb-4">
+                            <div class="flex justify-between text-[10px] font-bold text-slate-400 mb-2">
+                                <span>Revenue trend</span><span>7 days</span>
+                            </div>
+                            <div class="flex items-end gap-1.5 h-16">
+                                <div class="flex-1 bg-blue-600/70 rounded-t" style="height:40%"></div>
+                                <div class="flex-1 bg-blue-600/70 rounded-t" style="height:65%"></div>
+                                <div class="flex-1 bg-blue-600/70 rounded-t" style="height:50%"></div>
+                                <div class="flex-1 bg-blue-600/70 rounded-t" style="height:80%"></div>
+                                <div class="flex-1 bg-blue-600/70 rounded-t" style="height:60%"></div>
+                                <div class="flex-1 bg-green-500 rounded-t" style="height:95%"></div>
+                                <div class="flex-1 bg-blue-600/70 rounded-t" style="height:70%"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center bg-white/5 rounded-xl px-3 py-2 text-xs">
+                                <span class="text-slate-300">Sold: Sugar 1kg</span>
+                                <span class="font-bold text-green-400">+$4.50</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-white/5 rounded-xl px-3 py-2 text-xs">
+                                <span class="text-slate-300">Low stock: Cooking Oil</span>
+                                <span class="font-bold text-amber-400">3 left</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
-        <section class="mb-12">
+        <!-- QUICK TERMINALS (existing, preserved) -->
+        <section class="container mx-auto px-4 mb-16 lg:max-w-6xl">
             <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Quick Terminals</h3>
             <div class="flex overflow-x-auto gap-4 no-scrollbar pb-4 -mx-4 px-4 md:grid md:grid-cols-3 md:mx-0 md:px-0">
-                
+
                 <div id="owner-card" class="dashboard-item locked-card glass p-6 rounded-[2rem] min-w-[280px] md:min-w-0">
                     <div class="flex justify-between items-start mb-4">
                         <i class="fa fa-crown text-2xl text-blue-500"></i>
@@ -123,33 +287,189 @@
             </div>
         </section>
 
-        <section class="mb-12">
+        <!-- FEATURES -->
+        <section id="features" class="container mx-auto px-4 mb-16 lg:max-w-6xl scroll-mt-20">
+            <div class="text-center mb-10 reveal">
+                <h3 class="text-2xl md:text-3xl font-black mb-2">Everything your business needs</h3>
+                <p class="text-slate-400 text-sm md:text-base">One platform, built for real day-to-day operations.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
+                    <i class="fa fa-cash-register text-blue-400 text-xl mb-3"></i>
+                    <h4 class="font-bold mb-1">Sales Management</h4>
+                    <p class="text-slate-400 text-xs">Record every sale in real time from the seller terminal.</p>
+                </div>
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
+                    <i class="fa fa-boxes-stacked text-blue-400 text-xl mb-3"></i>
+                    <h4 class="font-bold mb-1">Inventory Management</h4>
+                    <p class="text-slate-400 text-xs">Track stock levels and get low-stock visibility.</p>
+                </div>
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
+                    <i class="fa fa-file-lines text-blue-400 text-xl mb-3"></i>
+                    <h4 class="font-bold mb-1">Business Reports</h4>
+                    <p class="text-slate-400 text-xs">See sales, expenses and profit trends over time.</p>
+                </div>
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
+                    <i class="fa fa-hand-holding-dollar text-blue-400 text-xl mb-3"></i>
+                    <h4 class="font-bold mb-1">Debt Management</h4>
+                    <p class="text-slate-400 text-xs">Track customer debts and log partial payments.</p>
+                </div>
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
+                    <i class="fa fa-receipt text-blue-400 text-xl mb-3"></i>
+                    <h4 class="font-bold mb-1">Expense Tracking</h4>
+                    <p class="text-slate-400 text-xs">Log expenses and bank deposits with receipt photos.</p>
+                </div>
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
+                    <i class="fa fa-users text-blue-400 text-xl mb-3"></i>
+                    <h4 class="font-bold mb-1">Seller Management</h4>
+                    <p class="text-slate-400 text-xs">Owners approve sellers and assign them to branches.</p>
+                </div>
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
+                    <i class="fa fa-bolt text-blue-400 text-xl mb-3"></i>
+                    <h4 class="font-bold mb-1">Real-time Updates</h4>
+                    <p class="text-slate-400 text-xs">Every dashboard updates live as your team works.</p>
+                </div>
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
+                    <i class="fa fa-comments text-blue-400 text-xl mb-3"></i>
+                    <h4 class="font-bold mb-1">Owner ↔ Seller Chat</h4>
+                    <p class="text-slate-400 text-xs">Direct messaging between owners and their sellers.</p>
+                </div>
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
+                    <i class="fa fa-language text-blue-400 text-xl mb-3"></i>
+                    <h4 class="font-bold mb-1">Multi-language</h4>
+                    <p class="text-slate-400 text-xs">Use the platform in English, Amharic and more.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- HOW IT WORKS -->
+        <section class="container mx-auto px-4 mb-16 lg:max-w-4xl">
+            <div class="text-center mb-10 reveal">
+                <h3 class="text-2xl md:text-3xl font-black mb-2">How it works</h3>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="glass rounded-[1.5rem] p-6 text-center reveal">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-black mx-auto mb-3">1</div>
+                    <h4 class="font-bold mb-1">Create your account</h4>
+                    <p class="text-slate-400 text-xs">Register as an Owner to start a business, or as a Seller with an invite code.</p>
+                </div>
+                <div class="glass rounded-[1.5rem] p-6 text-center reveal">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-black mx-auto mb-3">2</div>
+                    <h4 class="font-bold mb-1">Set up your business</h4>
+                    <p class="text-slate-400 text-xs">Owners add inventory and approve sellers joining their company.</p>
+                </div>
+                <div class="glass rounded-[1.5rem] p-6 text-center reveal">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-black mx-auto mb-3">3</div>
+                    <h4 class="font-bold mb-1">Start managing</h4>
+                    <p class="text-slate-400 text-xs">Record sales, track stock, and watch your reports update live.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI ADVISOR TEASER -->
+        <section class="container mx-auto px-4 mb-16 lg:max-w-5xl">
+            <div class="glass rounded-[2rem] p-8 md:p-10 grid md:grid-cols-2 gap-8 items-center reveal">
+                <div>
+                    <span class="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-1 rounded-md">AI ADVISOR</span>
+                    <h3 class="text-2xl md:text-3xl font-black mt-3 mb-3">Your business. With an AI advisor.</h3>
+                    <p class="text-slate-400 text-sm mb-4">Ask questions about your own business data, right from your dashboard.</p>
+                    <p class="text-xs font-bold text-slate-500">Available inside your dashboard.</p>
+                </div>
+                <div class="space-y-2">
+                    <div class="bg-white/5 rounded-xl px-4 py-3 text-xs text-slate-300">"How were my sales today?"</div>
+                    <div class="bg-white/5 rounded-xl px-4 py-3 text-xs text-slate-300">"Which products are selling fastest?"</div>
+                    <div class="bg-white/5 rounded-xl px-4 py-3 text-xs text-slate-300">"Which stock is running low?"</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECURITY (honest wording only) -->
+        <section id="security" class="container mx-auto px-4 mb-16 lg:max-w-5xl scroll-mt-20">
+            <div class="text-center mb-10 reveal">
+                <h3 class="text-2xl md:text-3xl font-black mb-2">Built for trust</h3>
+                <p class="text-slate-400 text-sm md:text-base max-w-xl mx-auto">Built with Firebase Authentication and Firestore's role-based access rules, so each business only sees its own data.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                <div class="glass rounded-2xl p-5 reveal"><i class="fa fa-lock text-blue-400 text-lg mb-2"></i><p class="text-xs font-bold">Secure Auth</p></div>
+                <div class="glass rounded-2xl p-5 reveal"><i class="fa fa-cloud text-blue-400 text-lg mb-2"></i><p class="text-xs font-bold">Cloud-based</p></div>
+                <div class="glass rounded-2xl p-5 reveal"><i class="fa fa-mobile-screen text-blue-400 text-lg mb-2"></i><p class="text-xs font-bold">Mobile-ready</p></div>
+                <div class="glass rounded-2xl p-5 reveal"><i class="fa fa-globe text-blue-400 text-lg mb-2"></i><p class="text-xs font-bold">Multilingual</p></div>
+            </div>
+        </section>
+
+        <!-- COMMUNITY SHARE (existing, preserved) -->
+        <section class="container mx-auto px-4 mb-16 lg:max-w-4xl">
             <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Community Share</h3>
             <div class="glass rounded-[2rem] p-4 mb-6">
                 <div class="flex items-center gap-3 mb-4">
-                    <img src="https://ui-avatars.com/api/?name=Me&background=random" class="w-10 h-10 rounded-full border-2 border-blue-600">
+                    <img src="https://ui-avatars.com/api/?name=Me&background=random" class="w-10 h-10 rounded-full border-2 border-blue-600" alt="Your avatar">
                     <textarea id="post-input" placeholder="What's happening in your business?" class="bg-transparent flex-1 resize-none outline-none text-sm py-2" rows="2"></textarea>
                 </div>
                 <div class="flex justify-between items-center border-t border-white/10 pt-4">
                     <div class="flex gap-4 text-slate-400 text-lg">
-                        <button class="hover:text-red-500"><i class="fa-brands fa-youtube"></i></button>
-                        <button class="hover:text-blue-500"><i class="fa-brands fa-facebook"></i></button>
-                        <button class="hover:text-pink-500"><i class="fa-brands fa-instagram"></i></button>
+                        <button class="hover:text-red-500" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></button>
+                        <button class="hover:text-blue-500" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></button>
+                        <button class="hover:text-pink-500" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></button>
                     </div>
-                    <button onclick="sharePost()" class="bg-blue-600 px-6 py-2 rounded-full font-bold text-sm">Post</button>
+                    <button onclick="sharePost()" class="btn btn-primary px-6 py-2 text-sm">Post</button>
                 </div>
             </div>
             <div id="feed-container" class="space-y-4"></div>
         </section>
+
+        <!-- FOOTER -->
+        <footer class="container mx-auto px-4 pb-10 lg:max-w-6xl">
+            <div class="glass rounded-[2rem] p-8 md:p-10">
+                <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+                    <div>
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="bg-blue-600 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm">M</div>
+                            <span class="font-extrabold">Min-el</span>
+                        </div>
+                        <p class="text-slate-500 text-xs">Smart business management for modern businesses.</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase mb-3">Platform</p>
+                        <ul class="space-y-2 text-xs text-slate-400">
+                            <li><a href="#features" class="hover:text-blue-400">Features</a></li>
+                            <li><a href="#security" class="hover:text-blue-400">Security</a></li>
+                            <li><a href="register.html" class="hover:text-blue-400">Get Started</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase mb-3">Solutions</p>
+                        <ul class="space-y-2 text-xs text-slate-400">
+                            <li>Retail</li>
+                            <li>Restaurants</li>
+                            <li>Pharmacies <span class="text-[9px] text-amber-400 font-bold">Coming Soon</span></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase mb-3">Company</p>
+                        <ul class="space-y-2 text-xs text-slate-400">
+                            <li><button onclick="switchTab('policy')" class="hover:text-blue-400">Privacy Policy</button></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <p class="text-xs text-slate-500">© <span id="footer-year"></span> Min-el. All rights reserved.</p>
+                    <div class="flex gap-4 text-slate-400 text-lg">
+                        <a href="#" class="hover:text-blue-400" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+                        <a href="#" class="hover:text-pink-400" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    </div>
+                </div>
+            </div>
+        </footer>
     </main>
 
+    <!-- ============ POLICY TAB (existing, preserved) ============ -->
     <main id="policy-tab" class="tab-content container mx-auto px-4 py-12 lg:max-w-4xl">
         <div class="glass p-8 md:p-12 rounded-[3rem]">
             <h2 class="text-3xl font-black mb-6">Privacy & Policy</h2>
             <div class="space-y-6 text-slate-300 text-sm leading-relaxed">
                 <section>
                     <h3 class="text-white font-bold text-lg mb-2">1. Data Protection</h3>
-                    <p>At Min-el, we protect your business inventory and sales data using industry-standard Firebase encryption.</p>
+                    <p>At Min-el, we protect your business inventory and sales data using Firebase Authentication and Firestore security rules that keep each company's data separate.</p>
                 </section>
                 <section>
                     <h3 class="text-white font-bold text-lg mb-2">2. Security</h3>
@@ -160,55 +480,59 @@
         </div>
     </main>
 
+    <!-- ============ MOBILE BOTTOM NAV (existing, preserved) ============ -->
     <div class="fixed bottom-0 left-0 right-0 glass h-20 md:hidden flex items-center justify-around px-6 z-50">
         <button onclick="switchTab('home')" class="flex flex-col items-center gap-1 text-blue-500">
             <i class="fa fa-house text-xl"></i>
             <span class="text-[10px] font-bold">Home</span>
         </button>
-        <button onclick="openModal('register')" class="flex flex-col items-center gap-1 text-slate-400">
+        <a href="register.html" class="flex flex-col items-center gap-1 text-slate-400">
             <i class="fa fa-user-plus text-xl"></i>
             <span class="text-[10px] font-bold">Join</span>
-        </button>
+        </a>
         <button onclick="switchTab('policy')" class="flex flex-col items-center gap-1 text-slate-400">
             <i class="fa fa-shield-halved text-xl"></i>
             <span class="text-[10px] font-bold">Policy</span>
         </button>
     </div>
 
-    <div id="auth-modal" class="hidden fixed inset-0 z-[200] flex items-end md:items-center justify-center">
+    <!-- ============ AUTH MODAL — LOGIN ONLY ============ -->
+    <!-- Registration now happens exclusively on register.html, which already
+         builds companies/branches/users correctly. This modal no longer
+         duplicates that logic (it used to, incompatibly — see chat notes). -->
+    <div id="auth-modal" class="hidden fixed inset-0 z-[200] flex items-end md:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="glass w-full md:max-w-md rounded-t-[3rem] md:rounded-[3rem] p-8 relative animate-slide-up h-[85vh] md:h-auto overflow-y-auto">
-            <h2 id="modal-title" class="text-3xl font-black mb-2 text-center text-white">Join Min-el</h2>
-            <p id="modal-subtitle" class="text-center text-slate-500 text-sm mb-8">Secure Access for Owners & Sellers</p>
+        <div class="glass w-full md:max-w-md rounded-t-[3rem] md:rounded-[3rem] p-8 relative animate-slide-up h-auto max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal()" class="absolute top-6 right-6 text-slate-500 hover:text-white" aria-label="Close">
+                <i class="fa fa-xmark text-lg"></i>
+            </button>
+            <h2 id="modal-title" class="text-3xl font-black mb-2 text-center text-white">Welcome Back</h2>
+            <p class="text-center text-slate-500 text-sm mb-8">Log in to your Min-el account</p>
 
             <form id="auth-form" class="space-y-4">
                 <div class="relative">
                     <i class="fa fa-envelope absolute left-4 top-4 text-slate-500"></i>
-                    <input type="email" id="auth-email" placeholder="Gmail Address" required class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-600 text-sm text-white">
+                    <input type="email" id="auth-email" placeholder="Email address" required autocomplete="email" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-600 text-sm text-white">
                 </div>
 
                 <div class="relative">
                     <i class="fa fa-lock absolute left-4 top-4 text-slate-500"></i>
-                    <input type="password" id="pass1" placeholder="Password" required class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-12 outline-none focus:ring-2 focus:ring-blue-600 text-sm text-white">
-                    <button type="button" onclick="togglePass('pass1')" class="absolute right-4 top-4 text-slate-500"><i class="fa fa-eye"></i></button>
+                    <input type="password" id="pass1" placeholder="Password" required autocomplete="current-password" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-12 outline-none focus:ring-2 focus:ring-blue-600 text-sm text-white">
+                    <button type="button" onclick="togglePass('pass1')" class="absolute right-4 top-4 text-slate-500" aria-label="Show password"><i class="fa fa-eye"></i></button>
                 </div>
 
-                <div id="role-container">
-                    <p class="text-[10px] font-bold text-slate-500 mb-2 ml-2">SELECT YOUR ROLE</p>
-                    <select id="user-role" class="w-full bg-slate-900 border border-white/10 rounded-2xl py-4 px-4 font-bold text-blue-400 text-sm">
-                        <option value="Owner">Business Owner</option>
-                        <option value="Seller">Branch Seller</option>
-                    </select>
-                </div>
-
-                <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black shadow-xl shadow-blue-500/20 active:scale-95 transition text-white">Verify & Enter</button>
+                <button type="submit" id="auth-submit-btn" class="btn btn-primary w-full py-4 disabled:opacity-60">Sign In</button>
             </form>
 
+            <p class="text-center text-xs text-slate-500 mt-4">
+                New here? <a href="register.html" class="text-blue-400 font-bold">Create an account</a>
+            </p>
+
             <div class="mt-8">
-                <p class="text-center text-xs font-bold text-slate-500 uppercase mb-4">Social Login</p>
+                <p class="text-center text-xs font-bold text-slate-500 uppercase mb-4">Or continue with</p>
                 <div class="flex justify-center gap-4">
-                    <button onclick="socialLogin('Google')" class="w-14 h-14 rounded-2xl glass flex items-center justify-center text-xl hover:text-red-500"><i class="fa-brands fa-google"></i></button>
-                    <button onclick="socialLogin('Facebook')" class="w-14 h-14 rounded-2xl glass flex items-center justify-center text-xl hover:text-blue-500"><i class="fa-brands fa-facebook"></i></button>
+                    <button onclick="socialLogin('Google')" class="w-14 h-14 rounded-2xl glass flex items-center justify-center text-xl hover:text-red-500" aria-label="Continue with Google"><i class="fa-brands fa-google"></i></button>
+                    <button onclick="socialLogin('Facebook')" class="w-14 h-14 rounded-2xl glass flex items-center justify-center text-xl hover:text-blue-500" aria-label="Continue with Facebook"><i class="fa-brands fa-facebook"></i></button>
                 </div>
             </div>
         </div>
@@ -216,8 +540,11 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import {
+            getAuth, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider,
+            signInWithEmailAndPassword, onAuthStateChanged, signOut
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
@@ -233,35 +560,49 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // ... Existing Firebase functions (loadInventory, openModal, closeModal, togglePass, auth-form onsubmit, socialLogin, onAuthStateChanged) ...
-        // I have kept all your provided logic inside this block untouched.
-        
+        // Kept from the original file (not currently used for UI, preserved per
+        // "do not remove a function just because it looks unused").
         function loadInventory() {
             const colRef = collection(db, "inventory");
             onSnapshot(colRef, (snapshot) => {
                 let items = [];
-                snapshot.docs.forEach((doc) => {
-                    items.push({ ...doc.data(), id: doc.id });
-                });
+                snapshot.docs.forEach((d) => items.push({ ...d.data(), id: d.id }));
             });
         }
 
-        window.currentMode = 'register';
-        window.openModal = function(type) {
-            window.currentMode = type;
-            document.getElementById('auth-modal').classList.remove('hidden');
-            const title = document.getElementById('modal-title');
-            const roleContainer = document.getElementById('role-container');
-            if(type === 'login') {
-                title.innerText = "Welcome Back";
-                roleContainer.classList.add('hidden');
-            } else {
-                title.innerText = "Join Min-el";
-                roleContainer.classList.remove('hidden');
-            }
+        // ---- Toast system -----------------------------------------------
+        window.toast = function(message, type = 'info') {
+            const region = document.getElementById('toast-region');
+            const el = document.createElement('div');
+            el.className = `toast toast-${type}`;
+            el.textContent = message;
+            region.appendChild(el);
+            setTimeout(() => el.remove(), 4500);
         };
 
+        // Turns raw Firebase error codes into human-readable messages.
+        function friendlyAuthError(err) {
+            const map = {
+                'auth/invalid-credential': 'Incorrect email or password.',
+                'auth/wrong-password': 'Incorrect email or password.',
+                'auth/user-not-found': 'No account found with that email.',
+                'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
+                'auth/network-request-failed': 'Network error — please check your connection.',
+                'auth/popup-closed-by-user': 'Sign-in was cancelled.'
+            };
+            return map[err.code] || err.message || 'Something went wrong. Please try again.';
+        }
+
+        // ---- Modal (login only) ------------------------------------------
+        window.openModal = function(type) {
+            document.getElementById('auth-modal').classList.remove('hidden');
+            document.getElementById('auth-email').focus();
+        };
         window.closeModal = function() { document.getElementById('auth-modal').classList.add('hidden'); };
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !document.getElementById('auth-modal').classList.contains('hidden')) closeModal();
+        });
 
         window.togglePass = function(id) {
             const el = document.getElementById(id);
@@ -270,50 +611,107 @@
 
         document.getElementById('auth-form').onsubmit = async (e) => {
             e.preventDefault();
-            const email = document.getElementById('auth-email').value;
+            const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('pass1').value;
-            const role = document.getElementById('user-role').value;
             const btn = document.getElementById('auth-submit-btn');
-            btn.innerText = "Processing...";
+            btn.disabled = true;
+            btn.innerText = "Signing in...";
             try {
-                if (window.currentMode === 'register') {
-                    const res = await createUserWithEmailAndPassword(auth, email, password);
-                    await setDoc(doc(db, "users", res.user.uid), { email: email, role: role, createdAt: new Date() });
-                } else {
-                    await signInWithEmailAndPassword(auth, email, password);
-                }
+                await signInWithEmailAndPassword(auth, email, password);
+                toast('Welcome back.', 'success');
                 closeModal();
-            } catch (err) { alert(err.message); } finally { btn.innerText = "Verify & Enter"; }
+            } catch (err) {
+                toast(friendlyAuthError(err), 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Sign In";
+            }
         };
 
+        // ---- Social login --------------------------------------------------
+        // Only completes sign-in for users who already have a /users profile
+        // (created via register.html). First-time social sign-ins can't safely
+        // create a company/profile from a popup alone, so we send them to
+        // register.html instead of writing incomplete data.
         window.socialLogin = async function(providerName) {
             const provider = providerName === 'Google' ? new GoogleAuthProvider() : new FacebookAuthProvider();
             try {
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (!userDoc.exists()) {
-                    const role = prompt("First time here! Are you an Owner or Seller?", "Seller");
-                    await setDoc(doc(db, "users", user.uid), { email: user.email, role: role, username: user.displayName });
+                const profileSnap = await getDoc(doc(db, "users", user.uid));
+                if (!profileSnap.exists()) {
+                    toast("Almost there — finish setting up your business to continue.", 'info');
+                    await signOut(auth);
+                    window.location.href = 'register.html';
+                    return;
                 }
+                toast('Welcome back.', 'success');
                 closeModal();
-            } catch (err) { alert(err.message); }
+            } catch (err) {
+                toast(friendlyAuthError(err), 'error');
+            }
+        };
+
+        window.logoutUser = async function() {
+            await signOut(auth);
+            toast('Logged out.', 'info');
+        };
+
+        // Remembers the signed-in user's role/dashboard so the mobile avatar
+        // button and desktop nav can route correctly.
+        let currentDashboardHref = null;
+
+        window.handleAvatarTap = function() {
+            if (currentDashboardHref) {
+                window.location.href = currentDashboardHref;
+            } else {
+                openModal('login');
+            }
         };
 
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                loadInventory();
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists()) {
-                    const role = userDoc.data().role;
-                    document.querySelectorAll('.dashboard-item').forEach(i => i.classList.add('locked-card'));
-                    if(role === 'Owner') {
-                        document.getElementById('owner-card').classList.remove('locked-card');
-                        document.getElementById('meet-card').classList.remove('locked-card');
-                    } else {
-                        document.getElementById('seller-card').classList.remove('locked-card');
-                    }
+            const authActions = document.getElementById('nav-auth-actions');
+            const userActions = document.getElementById('nav-user-actions');
+
+            if (!user) {
+                currentDashboardHref = null;
+                authActions.classList.remove('hidden');
+                userActions.classList.add('hidden');
+                document.querySelectorAll('.dashboard-item').forEach(i => i.classList.add('locked-card'));
+                return;
+            }
+
+            loadInventory();
+
+            try {
+                const profileSnap = await getDoc(doc(db, "users", user.uid));
+                if (!profileSnap.exists()) return; // mid-registration or orphaned auth account
+
+                const profile = profileSnap.data();
+                const role = (profile.role || '').toLowerCase();     // matches register.html's lowercase roles
+                const isActive = profile.status === 'active';
+
+                document.querySelectorAll('.dashboard-item').forEach(i => i.classList.add('locked-card'));
+
+                if (isActive && role === 'owner') {
+                    document.getElementById('owner-card').classList.remove('locked-card');
+                    document.getElementById('meet-card').classList.remove('locked-card');
+                    currentDashboardHref = 'owner-dashboard.html';
+                } else if (isActive && role === 'seller') {
+                    document.getElementById('seller-card').classList.remove('locked-card');
+                    currentDashboardHref = 'seller-dashboard.html';
+                } else if (role === 'seller' && !isActive) {
+                    toast('Your account is pending approval from your Owner.', 'info');
+                    currentDashboardHref = null;
                 }
+
+                if (currentDashboardHref) {
+                    authActions.classList.add('hidden');
+                    userActions.classList.remove('hidden');
+                    document.getElementById('nav-dashboard-link').href = currentDashboardHref;
+                }
+            } catch (err) {
+                console.error('Could not load profile:', err);
             }
         });
     </script>
@@ -348,7 +746,7 @@
 
         function sharePost() {
             const val = document.getElementById('post-input').value;
-            if(!val) return;
+            if (!val) return;
             const card = `
                 <div class="glass p-5 rounded-[2rem] border-white/5 animate-slide-up">
                     <p class="text-sm text-slate-300 mb-4">${val}</p>
@@ -360,6 +758,24 @@
                 </div>`;
             document.getElementById('feed-container').insertAdjacentHTML('afterbegin', card);
             document.getElementById('post-input').value = '';
+        }
+
+        document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+        // Lightweight scroll-reveal, respects prefers-reduced-motion via CSS above.
+        const revealEls = document.querySelectorAll('.reveal');
+        if ('IntersectionObserver' in window && revealEls.length) {
+            const io = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('in-view');
+                        io.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            revealEls.forEach(el => io.observe(el));
+        } else {
+            revealEls.forEach(el => el.classList.add('in-view'));
         }
     </script>
 </body>
