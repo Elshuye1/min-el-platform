@@ -81,7 +81,12 @@
                     <p class="text-[10px] text-gray-400 mt-1">Must include 8+ characters and symbols.</p>
                 </div>
 
-                <p id="reg-error" class="text-sm text-red-600 hidden"></p>
+                <!-- Error box: shows the failing step + raw Firebase error code so
+                     it's obvious whether this is an Auth problem or a Rules problem. -->
+                <div id="reg-error" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p id="reg-error-msg" class="font-semibold"></p>
+                    <p id="reg-error-code" class="text-xs text-red-500 mt-1 font-mono"></p>
+                </div>
 
                 <button id="reg-submit" type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-100 disabled:opacity-60">
                     Register & Create Workspace
@@ -136,85 +141,105 @@
             return code;
         }
 
-        function showError(msg) {
-            const el = document.getElementById('reg-error');
-            el.textContent = msg;
-            el.classList.remove('hidden');
+        // step = a short label for WHICH write failed, so the on-screen error
+        // tells you "creating company record" vs "creating your profile" etc,
+        // instead of one generic "Registration failed" for every possible cause.
+        function showError(step, err) {
+            console.error(`[register] failed at: ${step}`, err);
+            const msgEl = document.getElementById('reg-error-msg');
+            const codeEl = document.getElementById('reg-error-code');
+            msgEl.textContent = `Failed while ${step}: ${err.message || err}`;
+            codeEl.textContent = err.code ? `Error code: ${err.code}` : '';
+            document.getElementById('reg-error').classList.remove('hidden');
         }
         function clearError() {
             document.getElementById('reg-error').classList.add('hidden');
         }
 
         // ---- registration flows -------------------------------------------
+        // Each Firestore write is wrapped individually so a failure tells you
+        // exactly which step broke instead of a single generic error at the end.
         async function registerOwner({ uid, username, email, businessName }) {
-            const companyRef = doc(collection(db, 'companies')); // auto-id
+            const companyRef = doc(collection(db, 'companies'));
             const companyId = companyRef.id;
             const inviteCode = generateInviteCode();
             const now = serverTimestamp();
 
-            await setDoc(companyRef, {
-                name: businessName || `${username}'s Business`,
-                ownerUid: uid,
-                inviteCode,
-                plan: 'free',
-                currency: 'ETB',
-                createdAt: now,
-                updatedAt: now,
-                createdBy: uid
-            });
+            try {
+                await setDoc(companyRef, {
+                    name: businessName || `${username}'s Business`,
+                    ownerUid: uid,
+                    inviteCode,
+                    plan: 'free',
+                    currency: 'ETB',
+                    createdAt: now,
+                    updatedAt: now,
+                    createdBy: uid
+                });
+            } catch (err) { throw Object.assign(err, { step: 'creating your company record' }); }
 
-            // Public, minimal lookup doc so sellers can resolve a code -> companyId
-            // without needing read access to the company itself.
-            await setDoc(doc(db, 'inviteCodes', inviteCode), {
-                companyId,
-                createdAt: now
-            });
+            try {
+                await setDoc(doc(db, 'inviteCodes', inviteCode), {
+                    companyId,
+                    createdAt: now
+                });
+            } catch (err) { throw Object.assign(err, { step: 'creating the invite code' }); }
 
             const branchRef = doc(collection(db, 'branches'));
             const branchId = branchRef.id;
-            await setDoc(branchRef, {
-                companyId,
-                name: 'Main Branch',
-                isDefault: true,
-                createdAt: now,
-                updatedAt: now,
-                createdBy: uid
-            });
+            try {
+                await setDoc(branchRef, {
+                    companyId,
+                    name: 'Main Branch',
+                    isDefault: true,
+                    createdAt: now,
+                    updatedAt: now,
+                    createdBy: uid
+                });
+            } catch (err) { throw Object.assign(err, { step: 'creating your main branch' }); }
 
-            await setDoc(doc(db, 'users', uid), {
-                companyId,
-                branchId,
-                role: 'owner',
-                username,
-                email,
-                status: 'active',
-                createdAt: now,
-                updatedAt: now,
-                createdBy: uid
-            });
+            try {
+                await setDoc(doc(db, 'users', uid), {
+                    companyId,
+                    branchId,
+                    role: 'owner',
+                    username,
+                    email,
+                    status: 'active',
+                    createdAt: now,
+                    updatedAt: now,
+                    createdBy: uid
+                });
+            } catch (err) { throw Object.assign(err, { step: 'creating your owner profile' }); }
 
             return { companyId, redirect: 'owner-dashboard.html' };
         }
 
         async function registerSeller({ uid, username, email, inviteCode }) {
-            const codeDoc = await getDoc(doc(db, 'inviteCodes', inviteCode.trim().toUpperCase()));
+            let codeDoc;
+            try {
+                codeDoc = await getDoc(doc(db, 'inviteCodes', inviteCode.trim().toUpperCase()));
+            } catch (err) { throw Object.assign(err, { step: 'looking up the invite code' }); }
+
             if (!codeDoc.exists()) {
-                throw new Error('Invalid invite code. Please check with your Owner and try again.');
+                throw Object.assign(new Error('Invalid invite code. Please check with your Owner and try again.'), { step: 'looking up the invite code' });
             }
             const { companyId } = codeDoc.data();
             const now = serverTimestamp();
 
-            await setDoc(doc(db, 'users', uid), {
-                companyId,
-                branchId: null,          // Owner assigns a branch on approval (Phase 2)
-                role: 'seller',
-                username,
-                email,
-                status: 'pending',       // Owner must approve before dashboard access
-                createdAt: now,
-                updatedAt: now,
-                createdBy: uid
-            });
+            try {
+                await setDoc(doc(db, 'users', uid), {
+                    companyId,
+                    branchId: null,          // Owner assigns a branch on approval
+                    role: 'seller',
+                    username,
+                    email,
+                    status: 'pending',       // Owner must approve before dashboard access
+                    createdAt: now,
+                    updatedAt: now,
+                    createdBy: uid
+                });
+            } catch (err) { throw Object.assign(err, { step: 'creating your seller profile' }); }
 
             return { companyId, redirect: 'index.html' };
         }
@@ -233,11 +258,11 @@
             const inviteCode = document.getElementById('reg-invite-code').value.trim();
 
             if (!username || !email || !password) {
-                showError('Please fill in all required fields.');
+                showError('validating the form', new Error('Please fill in all required fields.'));
                 return;
             }
             if (role === 'seller' && !inviteCode) {
-                showError('Please enter the invite code from your Owner.');
+                showError('validating the form', new Error('Please enter the invite code from your Owner.'));
                 return;
             }
 
@@ -246,7 +271,9 @@
 
             let createdUser = null;
             try {
-                const cred = await createUserWithEmailAndPassword(auth, email, password);
+                const cred = await createUserWithEmailAndPassword(auth, email, password).catch(err => {
+                    throw Object.assign(err, { step: 'creating your login (Firebase Auth)' });
+                });
                 createdUser = cred.user;
 
                 const result = role === 'owner'
@@ -263,7 +290,7 @@
                 if (createdUser) {
                     try { await createdUser.delete(); } catch (_) { /* best-effort */ }
                 }
-                showError(err.message || 'Registration failed. Please try again.');
+                showError(err.step || 'registering', err);
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Register & Create Workspace';
@@ -272,4 +299,4 @@
     </script>
 
 </body>
-    </html>
+</html>
