@@ -272,16 +272,10 @@
     </nav>
 
     <script type="module">
-        // --- SECURITY (unchanged) ---
-        const MASTER_PIN = "528989";
-        if (sessionStorage.getItem('hq_auth') !== 'true') {
-            const p = prompt("Enter Master PIN:");
-            if (p === MASTER_PIN) sessionStorage.setItem('hq_auth', 'true');
-            else { alert("Access Denied"); window.location.href = "index.html"; }
-        }
-
+        // --- SECURITY: real Firebase Auth + company/role check (replaces the old hardcoded PIN) ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, getDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
@@ -292,9 +286,14 @@
             appId: "1:61590314630:web:f75dcd8296954d8c107b07"
         };
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        window.logout = () => { sessionStorage.clear(); location.reload(); };
+        // Every query/write below is scoped to this companyId once auth resolves.
+        let companyId = null;
+        let currentUid = null;
+
+        window.logout = () => { signOut(auth).then(() => window.location.href = "index.html"); };
 
         window.showSec = (id) => {
             document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
@@ -303,8 +302,46 @@
             if(event) event.currentTarget.classList.add('active');
         };
 
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = "index.html";
+                return;
+            }
+            try {
+                const profileSnap = await getDoc(doc(db, "users", user.uid));
+                if (!profileSnap.exists()) {
+                    alert("No workspace profile found for this account.");
+                    await signOut(auth);
+                    window.location.href = "index.html";
+                    return;
+                }
+                const profile = profileSnap.data();
+                if (profile.role !== 'owner') {
+                    alert("This dashboard is restricted to company Owners.");
+                    await signOut(auth);
+                    window.location.href = "index.html";
+                    return;
+                }
+                if (profile.status !== 'active') {
+                    alert("Your account is not active yet.");
+                    await signOut(auth);
+                    window.location.href = "index.html";
+                    return;
+                }
+                companyId = profile.companyId;
+                currentUid = user.uid;
+                initDashboard();
+            } catch (err) {
+                alert("Could not verify your account: " + err.message);
+                window.location.href = "index.html";
+            }
+        });
+
+        // Everything below only runs once we've confirmed an active Owner and have a companyId.
+        function initDashboard() {
+
         // --- INVENTORY SYNC (unchanged logic, additive stats appended) ---
-        onSnapshot(collection(db, "inventory"), (snap) => {
+        onSnapshot(query(collection(db, "inventory"), where("companyId", "==", companyId)), (snap) => {
             const list = document.getElementById('invList');
             let low = 0; list.innerHTML = '';
             let totalUnits = 0; let totalProducts = 0; const lowItems = [];
@@ -332,7 +369,7 @@
         });
 
         // --- SALES & PROFIT SYNC (unchanged logic) ---
-        onSnapshot(collection(db, "sales"), (snap) => {
+        onSnapshot(query(collection(db, "sales"), where("companyId", "==", companyId)), (snap) => {
             let rev = 0; let cost = 0;
             const feed = document.getElementById('miniSales'); feed.innerHTML = '';
             snap.forEach(d => {
@@ -353,7 +390,7 @@
         });
 
         // --- WASTAGE SYNC (unchanged logic, additive totals) ---
-        onSnapshot(collection(db, "wastage"), (snap) => {
+        onSnapshot(query(collection(db, "wastage"), where("companyId", "==", companyId)), (snap) => {
             const container = document.getElementById('wastageList');
             container.innerHTML = '';
             let wasteCount = 0;
@@ -373,7 +410,7 @@
         });
 
         // --- DEBT SYNC (unchanged logic, additive total) ---
-        onSnapshot(collection(db, "debts"), (snap) => {
+        onSnapshot(query(collection(db, "debts"), where("companyId", "==", companyId)), (snap) => {
             const container = document.getElementById('debtList');
             container.innerHTML = '';
             let totalDebt = 0; let debtCount = 0;
@@ -398,7 +435,7 @@
         });
 
         // --- CUSTOMER REQUESTS SYNC (additive: items sellers logged as wanted-but-not-stocked) ---
-        onSnapshot(query(collection(db, "customerRequests"), orderBy("timestamp", "desc")), (snap) => {
+        onSnapshot(query(collection(db, "customerRequests"), where("companyId", "==", companyId), orderBy("timestamp", "desc")), (snap) => {
             const container = document.getElementById('requestList');
             container.innerHTML = '';
             snap.forEach(d => {
@@ -423,7 +460,8 @@
                 name: document.getElementById('n').value,
                 cost: Number(document.getElementById('c').value),
                 stock: Number(document.getElementById('s').value),
-                sell: Number(document.getElementById('p').value)
+                sell: Number(document.getElementById('p').value),
+                companyId, createdBy: currentUid, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
             });
             e.target.reset(); alert("Product Added!");
         };
@@ -453,7 +491,7 @@
         /* =========================================================
            ADDITIVE: Live Sales Feed (dedicated tab, ordered, shows discounts)
         ========================================================= */
-        onSnapshot(query(collection(db, "sales"), orderBy("timestamp", "desc"), limit(50)), (snap) => {
+        onSnapshot(query(collection(db, "sales"), where("companyId", "==", companyId), orderBy("timestamp", "desc"), limit(50)), (snap) => {
             const el = document.getElementById('liveFeedList');
             const rows = [];
             snap.forEach(d => {
@@ -476,7 +514,7 @@
            ADDITIVE: Seller Chat (shares the "ownerMessages" collection
            used by the seller terminal, so both sides sync live)
         ========================================================= */
-        onSnapshot(query(collection(db, "ownerMessages"), orderBy("timestamp", "asc")), (snap) => {
+        onSnapshot(query(collection(db, "ownerMessages"), where("companyId", "==", companyId), orderBy("timestamp", "asc")), (snap) => {
             const win = document.getElementById('hqChatWindow');
             win.innerHTML = '';
             snap.forEach(d => {
@@ -494,13 +532,13 @@
             const text = input.value.trim();
             if (!text) return;
             input.value = '';
-            await addDoc(collection(db, "ownerMessages"), { sender: 'owner', text, timestamp: serverTimestamp() });
+            await addDoc(collection(db, "ownerMessages"), { sender: 'owner', text, companyId, createdBy: currentUid, timestamp: serverTimestamp() });
         };
 
         /* =========================================================
            ADDITIVE: Inspiration posts (owner publishes, sellers can display)
         ========================================================= */
-        onSnapshot(query(collection(db, "inspirationPosts"), orderBy("timestamp", "desc"), limit(30)), (snap) => {
+        onSnapshot(query(collection(db, "inspirationPosts"), where("companyId", "==", companyId), orderBy("timestamp", "desc"), limit(30)), (snap) => {
             const el = document.getElementById('inspireList');
             const rows = [];
             snap.forEach(d => {
@@ -524,7 +562,7 @@
             const text = document.getElementById('inspireText').value.trim();
             const ref = document.getElementById('inspireRef').value.trim();
             if (!text) return alert("Write a message first");
-            await addDoc(collection(db, "inspirationPosts"), { category, text, ref, timestamp: serverTimestamp() });
+            await addDoc(collection(db, "inspirationPosts"), { category, text, ref, companyId, createdBy: currentUid, timestamp: serverTimestamp() });
             document.getElementById('inspireText').value = '';
             document.getElementById('inspireRef').value = '';
         };
@@ -532,7 +570,7 @@
         /* =========================================================
            ADDITIVE: Charity — completes the previously empty tab
         ========================================================= */
-        onSnapshot(query(collection(db, "charity"), orderBy("timestamp", "desc")), (snap) => {
+        onSnapshot(query(collection(db, "charity"), where("companyId", "==", companyId), orderBy("timestamp", "desc")), (snap) => {
             const el = document.getElementById('charityList');
             const rows = []; let total = 0;
             snap.forEach(d => {
@@ -558,10 +596,12 @@
                 recipient: document.getElementById('charity-recipient').value,
                 amount: Number(document.getElementById('charity-amount').value),
                 note: document.getElementById('charity-note').value,
-                timestamp: serverTimestamp()
+                companyId, createdBy: currentUid, timestamp: serverTimestamp()
             });
             e.target.reset(); alert("Contribution logged!");
         };
+
+        } // end initDashboard()
     </script>
 </body>
-                            </html>
+            </html>
