@@ -10,6 +10,7 @@
         .auth-bg { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); min-h: screen; }
         .role-card:hover { border-color: #2563eb; background-color: #eff6ff; }
         .role-card.active { border-color: #2563eb; background-color: #eff6ff; ring: 2px; }
+        .field-hidden { display: none; }
     </style>
 </head>
 <body class="auth-bg flex items-center justify-center min-h-screen p-4">
@@ -31,7 +32,7 @@
             <h2 class="text-2xl font-bold mb-2">Create Account</h2>
             <p class="text-gray-500 mb-8">Choose your role to get started</p>
 
-            <form action="#" class="space-y-5">
+            <form id="register-form" class="space-y-5">
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <label class="cursor-pointer">
                         <input type="radio" name="role" value="owner" class="hidden peer" checked>
@@ -53,30 +54,222 @@
 
                 <div>
                     <label class="block text-sm font-semibold mb-1">Username</label>
-                    <input type="text" placeholder="Choose a unique name" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input id="reg-username" type="text" required placeholder="Choose a unique name" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <!-- Owner-only field -->
+                <div id="business-name-field">
+                    <label class="block text-sm font-semibold mb-1">Business Name</label>
+                    <input id="reg-business-name" type="text" placeholder="e.g. Selam Textiles" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <!-- Seller-only field -->
+                <div id="invite-code-field" class="field-hidden">
+                    <label class="block text-sm font-semibold mb-1">Company Invite Code</label>
+                    <input id="reg-invite-code" type="text" placeholder="Ask your Owner for this code" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none uppercase">
+                    <p class="text-[10px] text-gray-400 mt-1">Your account will be pending until the Owner approves you.</p>
                 </div>
 
                 <div>
                     <label class="block text-sm font-semibold mb-1">Email Address</label>
-                    <input type="email" placeholder="email@company.com" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input id="reg-email" type="email" required placeholder="email@company.com" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
 
                 <div>
                     <label class="block text-sm font-semibold mb-1">Password</label>
-                    <input type="password" placeholder="••••••••" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input id="reg-password" type="password" required minlength="8" placeholder="••••••••" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
                     <p class="text-[10px] text-gray-400 mt-1">Must include 8+ characters and symbols.</p>
                 </div>
 
-                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-100">
+                <p id="reg-error" class="text-sm text-red-600 hidden"></p>
+
+                <button id="reg-submit" type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-100 disabled:opacity-60">
                     Register & Create Workspace
                 </button>
 
                 <p class="text-center text-sm text-gray-500 mt-4">
-                    Already have an account? <a href="login.html" class="text-blue-600 font-bold">Log In</a>
+                    Already have an account? <a href="index.html" class="text-blue-600 font-bold">Log In</a>
                 </p>
             </form>
         </div>
     </div>
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import {
+            getFirestore, doc, setDoc, getDoc, collection, serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Same Firebase project used by index.html / owner-dashboard.html / seller-dashboard.html
+        const firebaseConfig = {
+            apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
+            authDomain: "min-eli.firebaseapp.com",
+            projectId: "min-eli",
+            storageBucket: "min-eli.firebasestorage.app",
+            messagingSenderId: "61590314630",
+            appId: "1:61590314630:web:f75dcd8296954d8c107b07"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // ---- role-based field toggling ---------------------------------------
+        const roleInputs = document.querySelectorAll('input[name="role"]');
+        const businessNameField = document.getElementById('business-name-field');
+        const inviteCodeField = document.getElementById('invite-code-field');
+
+        function updateFieldsForRole() {
+            const role = document.querySelector('input[name="role"]:checked').value;
+            businessNameField.classList.toggle('field-hidden', role !== 'owner');
+            inviteCodeField.classList.toggle('field-hidden', role !== 'seller');
+        }
+        roleInputs.forEach(r => r.addEventListener('change', updateFieldsForRole));
+        updateFieldsForRole();
+
+        // ---- helpers ----------------------------------------------------------
+        function generateInviteCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no confusing chars
+            let code = '';
+            for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            return code;
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('reg-error');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+        function clearError() {
+            document.getElementById('reg-error').classList.add('hidden');
+        }
+
+        // ---- registration flows -------------------------------------------
+        async function registerOwner({ uid, username, email, businessName }) {
+            const companyRef = doc(collection(db, 'companies')); // auto-id
+            const companyId = companyRef.id;
+            const inviteCode = generateInviteCode();
+            const now = serverTimestamp();
+
+            await setDoc(companyRef, {
+                name: businessName || `${username}'s Business`,
+                ownerUid: uid,
+                inviteCode,
+                plan: 'free',
+                currency: 'ETB',
+                createdAt: now,
+                updatedAt: now,
+                createdBy: uid
+            });
+
+            // Public, minimal lookup doc so sellers can resolve a code -> companyId
+            // without needing read access to the company itself.
+            await setDoc(doc(db, 'inviteCodes', inviteCode), {
+                companyId,
+                createdAt: now
+            });
+
+            const branchRef = doc(collection(db, 'branches'));
+            const branchId = branchRef.id;
+            await setDoc(branchRef, {
+                companyId,
+                name: 'Main Branch',
+                isDefault: true,
+                createdAt: now,
+                updatedAt: now,
+                createdBy: uid
+            });
+
+            await setDoc(doc(db, 'users', uid), {
+                companyId,
+                branchId,
+                role: 'owner',
+                username,
+                email,
+                status: 'active',
+                createdAt: now,
+                updatedAt: now,
+                createdBy: uid
+            });
+
+            return { companyId, redirect: 'owner-dashboard.html' };
+        }
+
+        async function registerSeller({ uid, username, email, inviteCode }) {
+            const codeDoc = await getDoc(doc(db, 'inviteCodes', inviteCode.trim().toUpperCase()));
+            if (!codeDoc.exists()) {
+                throw new Error('Invalid invite code. Please check with your Owner and try again.');
+            }
+            const { companyId } = codeDoc.data();
+            const now = serverTimestamp();
+
+            await setDoc(doc(db, 'users', uid), {
+                companyId,
+                branchId: null,          // Owner assigns a branch on approval (Phase 2)
+                role: 'seller',
+                username,
+                email,
+                status: 'pending',       // Owner must approve before dashboard access
+                createdAt: now,
+                updatedAt: now,
+                createdBy: uid
+            });
+
+            return { companyId, redirect: 'index.html' };
+        }
+
+        // ---- form submit ----------------------------------------------------
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearError();
+
+            const submitBtn = document.getElementById('reg-submit');
+            const role = document.querySelector('input[name="role"]:checked').value;
+            const username = document.getElementById('reg-username').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const businessName = document.getElementById('reg-business-name').value.trim();
+            const inviteCode = document.getElementById('reg-invite-code').value.trim();
+
+            if (!username || !email || !password) {
+                showError('Please fill in all required fields.');
+                return;
+            }
+            if (role === 'seller' && !inviteCode) {
+                showError('Please enter the invite code from your Owner.');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating your workspace...';
+
+            let createdUser = null;
+            try {
+                const cred = await createUserWithEmailAndPassword(auth, email, password);
+                createdUser = cred.user;
+
+                const result = role === 'owner'
+                    ? await registerOwner({ uid: createdUser.uid, username, email, businessName })
+                    : await registerSeller({ uid: createdUser.uid, username, email, inviteCode });
+
+                if (role === 'seller') {
+                    alert('Account created! Your Owner needs to approve you before you can log in to the seller dashboard.');
+                }
+                window.location.href = result.redirect;
+            } catch (err) {
+                // Roll back the auth account if workspace/profile creation failed,
+                // so the person isn't stuck with a half-created account they can't reuse.
+                if (createdUser) {
+                    try { await createdUser.delete(); } catch (_) { /* best-effort */ }
+                }
+                showError(err.message || 'Registration failed. Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Register & Create Workspace';
+            }
+        });
+    </script>
+
 </body>
-</html>
+    </html>
