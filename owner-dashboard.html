@@ -192,6 +192,7 @@
                     <p class="text-[11px] text-slate-500">Messages sync instantly with the seller's terminal</p>
                 </div>
                 <div id="hqChatWindow" class="p-5 space-y-3 h-[420px] overflow-y-auto"></div>
+                <p id="hqChatError" class="hidden text-[11px] font-bold text-center py-2 text-red-400"></p>
                 <div class="p-4 border-t border-white/5 flex gap-2">
                     <input id="hqChatInput" placeholder="Type a message to your seller..." class="flex-1 bg-white/5 rounded-2xl p-3 outline-none text-sm border border-white/10 focus:border-blue-500" onkeydown="if(event.key==='Enter'){sendHqMessage();}">
                     <button onclick="sendHqMessage()" class="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shrink-0 hover:bg-blue-700"><i class="fa fa-paper-plane"></i></button>
@@ -603,9 +604,10 @@
         });
         window.sendHqMessage = async () => {
             const input = document.getElementById('hqChatInput');
+            const errBox = document.getElementById('hqChatError');
             const text = input.value.trim();
             if (!text) return;
-            input.value = '';
+            errBox.classList.add('hidden');
             try {
                 await addDoc(collection(db, "ownerMessages"), {
                     sender: 'owner',
@@ -613,8 +615,11 @@
                     text, companyId, branchId: defaultBranchId, createdBy: currentUid,
                     timestamp: serverTimestamp()
                 });
+                input.value = ''; // only clear once we KNOW it actually sent
             } catch (err) {
-                alert("Could not send message: " + err.message);
+                console.error('[sendHqMessage] failed:', err);
+                errBox.textContent = `Message not sent: ${err.message || err} (code: ${err.code || 'unknown'})`;
+                errBox.classList.remove('hidden');
             }
         };
 
