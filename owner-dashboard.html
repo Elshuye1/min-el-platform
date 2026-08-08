@@ -707,6 +707,18 @@
                     </div>`;
                 }).join('');
             }
+        }, (err) => {
+            // Show the raw Firestore error directly on the page, so you don't
+            // need to open DevTools to tell me what's wrong.
+            console.error('[Team tab] users listener failed:', err);
+            const errBox = `
+                <div class="bg-red-950/60 border border-red-500/40 rounded-xl p-4 text-xs">
+                    <p class="font-bold text-red-300 mb-1">Team list failed to load</p>
+                    <p class="text-red-400">${err.message || err}</p>
+                    <p class="text-red-500/70 font-mono mt-1">Code: ${err.code || 'unknown'}</p>
+                </div>`;
+            document.getElementById('pendingSellersList').innerHTML = errBox;
+            document.getElementById('activeSellersList').innerHTML = errBox;
         });
 
         window.approveSeller = async (uid) => {
