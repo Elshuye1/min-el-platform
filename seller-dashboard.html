@@ -121,9 +121,7 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
           <h2 class="text-sm font-black uppercase tracking-widest" style="color:var(--muted)" data-i18n="new_transaction">New Transaction</h2>
           <div class="text-right">
             <label class="text-[9px] font-bold uppercase block" style="color:var(--muted)" data-i18n="cashier_label">Cashier on duty</label>
-            <select id="activeSellerSelect" class="text-[11px] font-black bg-[var(--bg)] rounded-lg px-2 py-1.5 outline-none border-2 border-transparent focus:border-[var(--green)]">
-              <option value="">Select seller...</option>
-            </select>
+            <p id="activeSellerDisplay" class="text-[11px] font-black" style="color:var(--green)">—</p>
           </div>
         </div>
         <div class="space-y-4">
@@ -437,10 +435,6 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
       </div>
       <div id="ownerChatWindow" class="chat-scroll p-5 space-y-3 h-[380px] overflow-y-auto"></div>
       <div class="p-4 border-t flex gap-2 items-center">
-        <select id="ownerSenderRole" class="text-[10px] font-black rounded-lg p-2 bg-[var(--bg)] outline-none">
-          <option value="seller">Seller</option>
-          <option value="owner">Manager</option>
-        </select>
         <input id="ownerInput" placeholder="Type a message..." class="flex-1 bg-[var(--bg)] rounded-2xl p-3 outline-none text-sm" onkeydown="if(event.key==='Enter'){sendOwnerMessage();}">
         <button onclick="sendOwnerMessage()" class="w-12 h-12 rounded-2xl bg-[var(--gold)] text-white flex items-center justify-center shrink-0"><i class="fa fa-paper-plane"></i></button>
       </div>
@@ -628,15 +622,6 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
     </div>
   </div>
 
-  <div id="sellerNameModal" class="modal-panel bg-white rounded-[2rem] p-6 w-full max-w-sm hidden">
-    <h3 class="font-black text-lg mb-1" data-i18n="add_seller_title">ADD CASHIER NAME</h3>
-    <p class="text-xs mb-4" style="color:var(--muted)" data-i18n="add_seller_desc">Add the names of everyone who sells in this shop, so every sale is tracked to a person.</p>
-    <input type="text" id="newSellerName" placeholder="Full name" class="w-full bg-[var(--bg)] rounded-xl p-3 outline-none text-sm">
-    <div class="flex gap-3 pt-4">
-      <button onclick="closeAllModals()" class="flex-1 bg-slate-100 py-3 rounded-xl font-bold text-xs uppercase">Cancel</button>
-      <button onclick="submitNewSeller()" class="flex-1 text-white py-3 rounded-xl font-bold text-xs uppercase" style="background:var(--green)" data-i18n="add_seller_btn">Add</button>
-    </div>
-  </div>
 </div>
 
 <script type="module">
@@ -644,7 +629,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, setDoc, getDoc,
-  serverTimestamp, query, orderBy, limit, where
+  serverTimestamp, query, orderBy, limit, where, increment
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
@@ -671,6 +656,7 @@ const storage = getStorage(app);
 let companyId = null;
 let branchId = null;
 let currentUid = null;
+let currentUsername = null;
 
 window.logout = () => { signOut(auth).then(() => window.location.href = "index.html"); };
 
@@ -703,6 +689,7 @@ onAuthStateChanged(auth, async (user) => {
     companyId = profile.companyId;
     branchId = profile.branchId || null;
     currentUid = user.uid;
+    currentUsername = profile.username || profile.email || 'Seller';
     initDashboard();
   } catch (err) {
     alert("Could not verify your account: " + err.message);
@@ -853,13 +840,12 @@ window.clearCart = () => { cart = []; renderCart(); };
 // 4. COMPLETE SALE
 window.completeSale = async () => {
   if (cart.length === 0) return;
-  const soldBy = document.getElementById('activeSellerSelect').value;
-  if (!soldBy) {
-    return alert(currentLang === 'am' ? "እባክዎ የሚሸጡትን ሰው ስም ይምረጡ (ካሺየር)" : "Please select who is selling (cashier on duty) before completing the sale.");
-  }
   try {
     for (const item of cart) {
-      await updateDoc(doc(db, "inventory", item.id), { stock: item.stock - item.buyQty });
+      // Atomic decrement — never trusts the cart's cached stock value, so
+      // this can't silently lose updates if the same product appears in
+      // two cart lines or if stock changed since the item was added.
+      await updateDoc(doc(db, "inventory", item.id), { stock: increment(-item.buyQty) });
       await addDoc(collection(db, "sales"), {
         itemName: item.name,
         qty: item.buyQty,
@@ -869,7 +855,7 @@ window.completeSale = async () => {
         originalPrice: item.originalPrice != null ? item.originalPrice : item.sell,
         discount: item.discountTotal || 0,
         discountReason: item.discountReason || "",
-        soldBy: soldBy,
+        soldBy: currentUsername,
         companyId, branchId, createdBy: currentUid,
         timestamp: serverTimestamp()
       });
@@ -888,7 +874,7 @@ window.handleWastage = async () => {
   const qty = parseInt(prompt(`How many ${name} are wasted/broken?`));
   if (qty > 0 && qty <= item.stock) {
     if (confirm(`Report ${qty} ${name} as wastage? This reduces stock.`)) {
-      await updateDoc(doc(db, "inventory", item.id), { stock: item.stock - qty });
+      await updateDoc(doc(db, "inventory", item.id), { stock: increment(-qty) });
       await addDoc(collection(db, "wastage"), {
         itemName: name,
         qty: qty,
@@ -1645,45 +1631,11 @@ window.submitDebtPayment = async () => {
 
 /* =========================================================
    CASHIER / SELLER ACCOUNTABILITY
-   Every seller picks their name before completing a sale, so
-   the manager can see exactly who sold what (shown in the
-   Daily Report). Names are stored in Firestore ("sellers")
-   and remembered on this device between visits.
+   Every sale is now automatically attributed to whoever is
+   actually logged in — no manual name picking, so a sale can
+   never be blocked or misattributed by an empty/wrong selection.
 ========================================================= */
-function populateSellerDropdown(list) {
-  const sel = document.getElementById('activeSellerSelect');
-  const current = sel.value;
-  sel.innerHTML = `<option value="">${currentLang === 'am' ? 'ሻጭ ይምረጡ...' : 'Select seller...'}</option>` +
-    list.map(n => `<option value="${n}">${n}</option>`).join('') +
-    `<option value="__add_new__">${currentLang === 'am' ? '+ አዲስ ሻጭ ጨምር' : '+ Add new seller'}</option>`;
-  const remembered = localStorage.getItem('minel_active_seller');
-  if (list.includes(current)) sel.value = current;
-  else if (remembered && list.includes(remembered)) sel.value = remembered;
-}
-
-onSnapshot(query(collection(db, "sellers"), where("companyId", "==", companyId), orderBy("name", "asc")), (snapshot) => {
-  const names = snapshot.docs.map(d => d.data().name);
-  populateSellerDropdown(names);
-});
-
-document.getElementById('activeSellerSelect').addEventListener('change', (e) => {
-  if (e.target.value === '__add_new__') {
-    document.getElementById('newSellerName').value = '';
-    openModal('sellerNameModal');
-    e.target.value = '';
-  } else if (e.target.value) {
-    localStorage.setItem('minel_active_seller', e.target.value);
-  }
-});
-
-window.submitNewSeller = async () => {
-  const name = document.getElementById('newSellerName').value.trim();
-  if (!name) return alert(currentLang === 'am' ? "ስም ያስገቡ" : "Enter a name");
-  await addDoc(collection(db, "sellers"), { name, companyId, branchId, createdBy: currentUid, timestamp: serverTimestamp() });
-  localStorage.setItem('minel_active_seller', name);
-  closeAllModals();
-  setTimeout(() => { document.getElementById('activeSellerSelect').value = name; }, 400);
-};
+document.getElementById('activeSellerDisplay').innerText = currentUsername;
 
 /* =========================================================
    AI ADVISOR (Anthropic API)
@@ -1821,7 +1773,7 @@ onSnapshot(query(collection(db, "ownerMessages"), where("companyId", "==", compa
   snapshot.docs.forEach(d => {
     const m = d.data();
     const isOwner = m.sender === 'owner';
-    const senderLabel = isOwner ? 'Manager' : 'Seller';
+    const senderLabel = isOwner ? 'Manager' : (m.senderName || 'Seller');
     win.innerHTML += `<div class="flex ${isOwner ? 'justify-start' : 'justify-end'}">
       <div class="${isOwner ? 'bubble-owner' : 'bubble-seller'} px-4 py-3 text-sm max-w-[80%]">
         <p class="text-[9px] font-black uppercase mb-1 opacity-60">${senderLabel}</p>${m.text || ''}
@@ -1833,10 +1785,20 @@ onSnapshot(query(collection(db, "ownerMessages"), where("companyId", "==", compa
 window.sendOwnerMessage = async () => {
   const input = document.getElementById('ownerInput');
   const text = input.value.trim();
-  const sender = document.getElementById('ownerSenderRole').value;
   if (!text) return;
   input.value = '';
-  await addDoc(collection(db, "ownerMessages"), { sender, text, companyId, branchId, createdBy: currentUid, timestamp: serverTimestamp() });
+  // Always sent as 'seller' — a seller can never impersonate the Manager in
+  // chat. senderName carries the real logged-in username for display.
+  try {
+    await addDoc(collection(db, "ownerMessages"), {
+      sender: 'seller',
+      senderName: currentUsername,
+      text, companyId, branchId, createdBy: currentUid,
+      timestamp: serverTimestamp()
+    });
+  } catch (err) {
+    alert("Could not send message: " + err.message);
+  }
 };
 
 /* =========================================================
