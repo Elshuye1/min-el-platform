@@ -434,6 +434,7 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
         <p class="text-[11px]" style="color:var(--muted)" data-i18n="owner_chat_desc">Send updates or questions directly to the shop manager</p>
       </div>
       <div id="ownerChatWindow" class="chat-scroll p-5 space-y-3 h-[380px] overflow-y-auto"></div>
+      <p id="ownerChatError" class="hidden text-[11px] font-bold text-center py-2" style="color:var(--red)"></p>
       <div class="p-4 border-t flex gap-2 items-center">
         <input id="ownerInput" placeholder="Type a message..." class="flex-1 bg-[var(--bg)] rounded-2xl p-3 outline-none text-sm" onkeydown="if(event.key==='Enter'){sendOwnerMessage();}">
         <button onclick="sendOwnerMessage()" class="w-12 h-12 rounded-2xl bg-[var(--gold)] text-white flex items-center justify-center shrink-0"><i class="fa fa-paper-plane"></i></button>
@@ -1784,9 +1785,11 @@ onSnapshot(query(collection(db, "ownerMessages"), where("companyId", "==", compa
 
 window.sendOwnerMessage = async () => {
   const input = document.getElementById('ownerInput');
+  const errBox = document.getElementById('ownerChatError');
   const text = input.value.trim();
   if (!text) return;
-  input.value = '';
+  errBox.classList.add('hidden');
+
   // Always sent as 'seller' — a seller can never impersonate the Manager in
   // chat. senderName carries the real logged-in username for display.
   try {
@@ -1796,8 +1799,12 @@ window.sendOwnerMessage = async () => {
       text, companyId, branchId, createdBy: currentUid,
       timestamp: serverTimestamp()
     });
+    input.value = ''; // only clear once we KNOW it actually sent
   } catch (err) {
-    alert("Could not send message: " + err.message);
+    console.error('[sendOwnerMessage] failed:', err);
+    errBox.textContent = `Message not sent: ${err.message || err} (code: ${err.code || 'unknown'})`;
+    errBox.classList.remove('hidden');
+    // text stays in the input — nothing is lost on failure
   }
 };
 
