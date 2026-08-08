@@ -274,6 +274,19 @@
             </div>
 
             <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase">Current Plan</p>
+                        <h3 id="team-plan-name" class="text-xl font-black mt-1 capitalize">Free</h3>
+                    </div>
+                    <button id="upgrade-btn" onclick="upgradeToPremium()" class="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-bold px-5 py-3 rounded-xl transition shadow-lg shadow-blue-500/20">
+                        <i class="fa fa-crown mr-1"></i> Upgrade to Premium
+                    </button>
+                </div>
+                <p id="upgrade-note" class="text-[11px] text-slate-500 mt-3 hidden"></p>
+            </div>
+
+            <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-black font-display"><i class="fa fa-user-clock text-yellow-400 mr-2"></i>Pending Sellers</h3>
                     <span id="pendingCount" class="bg-red-500/10 text-red-400 text-[10px] font-black px-3 py-1 rounded-full border border-red-500/20">0 waiting</span>
@@ -310,6 +323,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
@@ -322,6 +336,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const functions = getFunctions(app);
 
         // Every query/write below is scoped to this companyId once auth resolves.
         let companyId = null;
@@ -329,6 +344,28 @@
         let defaultBranchId = null;
 
         window.logout = () => { signOut(auth).then(() => window.location.href = "index.html"); };
+
+        // Redirects to Chapa's hosted checkout. The actual charge, verification,
+        // and plan activation all happen server-side in the chapaWebhook Cloud
+        // Function — this only ever starts the process.
+        window.upgradeToPremium = async () => {
+            const btn = document.getElementById('upgrade-btn');
+            const note = document.getElementById('upgrade-note');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> Starting checkout...';
+            note.classList.add('hidden');
+            try {
+                const initiate = httpsCallable(functions, 'initiateChapaPayment');
+                const result = await initiate({ plan: 'premium', returnUrl: window.location.href });
+                window.location.href = result.data.checkoutUrl;
+            } catch (err) {
+                console.error('Upgrade failed:', err);
+                note.textContent = err.message || 'Could not start checkout. Please try again.';
+                note.classList.remove('hidden');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-crown mr-1"></i> Upgrade to Premium';
+            }
+        };
 
         window.showSec = (id) => {
             document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
@@ -556,9 +593,10 @@
             snap.forEach(d => {
                 const m = d.data();
                 const isOwner = m.sender === 'owner';
+                const senderLabel = isOwner ? 'Manager' : (m.senderName || 'Seller');
                 win.innerHTML += `<div class="flex ${isOwner ? 'justify-end' : 'justify-start'}">
                     <div class="${isOwner ? 'bg-blue-600' : 'bg-white/10'} px-4 py-3 rounded-2xl text-sm max-w-[75%]">
-                        <p class="text-[9px] font-black uppercase mb-1 opacity-60">${m.sender}</p>${m.text || ''}
+                        <p class="text-[9px] font-black uppercase mb-1 opacity-60">${senderLabel}</p>${m.text || ''}
                     </div></div>`;
             });
             win.scrollTop = win.scrollHeight;
@@ -568,7 +606,16 @@
             const text = input.value.trim();
             if (!text) return;
             input.value = '';
-            await addDoc(collection(db, "ownerMessages"), { sender: 'owner', text, companyId, createdBy: currentUid, timestamp: serverTimestamp() });
+            try {
+                await addDoc(collection(db, "ownerMessages"), {
+                    sender: 'owner',
+                    senderName: 'Manager',
+                    text, companyId, branchId: defaultBranchId, createdBy: currentUid,
+                    timestamp: serverTimestamp()
+                });
+            } catch (err) {
+                alert("Could not send message: " + err.message);
+            }
         };
 
         /* =========================================================
@@ -637,13 +684,26 @@
             e.target.reset(); alert("Contribution logged!");
         };
 
-        // --- TEAM: company info, invite code, seller approval ---
-        getDoc(doc(db, "companies", companyId)).then(snap => {
+        // --- TEAM: company info, invite code, plan status, seller approval ---
+        // Live listener (not a one-time fetch) so the plan badge updates
+        // automatically once chapaWebhook activates premium — no reload needed
+        // when the Owner returns from the Chapa checkout page.
+        onSnapshot(doc(db, "companies", companyId), (snap) => {
             if (!snap.exists()) return;
             const c = snap.data();
             document.getElementById('team-company-name').innerText = c.name || 'Your Business';
             document.getElementById('team-invite-code').innerText = c.inviteCode || '------';
             window._inviteCode = c.inviteCode || '';
+
+            const planEl = document.getElementById('team-plan-name');
+            const upgradeBtn = document.getElementById('upgrade-btn');
+            const plan = c.plan || 'free';
+            planEl.innerText = plan;
+            if (plan === 'premium') {
+                upgradeBtn.innerHTML = '<i class="fa fa-check mr-1"></i> Premium Active';
+                upgradeBtn.disabled = true;
+                upgradeBtn.classList.add('opacity-60', 'cursor-default');
+            }
         });
 
         window.copyInviteCode = () => {
