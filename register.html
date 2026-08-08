@@ -66,7 +66,8 @@
                 <!-- Seller-only field -->
                 <div id="invite-code-field" class="field-hidden">
                     <label class="block text-sm font-semibold mb-1">Company Invite Code</label>
-                    <input id="reg-invite-code" type="text" placeholder="Ask your Owner for this code" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none uppercase">
+                    <input id="reg-invite-code" type="text" placeholder="Ask your Owner for this code" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none uppercase" autocomplete="off">
+                    <p id="invite-preview" class="text-xs mt-2 hidden"></p>
                     <p class="text-[10px] text-gray-400 mt-1">Your account will be pending until the Owner approves you.</p>
                 </div>
 
@@ -133,6 +134,48 @@
         roleInputs.forEach(r => r.addEventListener('change', updateFieldsForRole));
         updateFieldsForRole();
 
+        // ---- live invite-code preview ------------------------------------
+        // Shows which business a code belongs to AS THE SELLER TYPES, before
+        // they've even created an account. This is what actually prevents the
+        // "registered under the wrong company" problem — the seller sees the
+        // business name and can catch a stale/mistyped code themselves,
+        // instead of it silently going unnoticed until an Owner has to fix it
+        // by hand in Firestore.
+        let inviteLookupTimer = null;
+        let verifiedCompanyId = null; // set only when the shown code truly resolved
+
+        document.getElementById('reg-invite-code').addEventListener('input', (e) => {
+            const raw = e.target.value.trim().toUpperCase();
+            const preview = document.getElementById('invite-preview');
+            verifiedCompanyId = null;
+            clearTimeout(inviteLookupTimer);
+
+            if (!raw) {
+                preview.classList.add('hidden');
+                return;
+            }
+
+            inviteLookupTimer = setTimeout(async () => {
+                try {
+                    const codeDoc = await getDoc(doc(db, 'inviteCodes', raw));
+                    preview.classList.remove('hidden');
+                    if (codeDoc.exists()) {
+                        const data = codeDoc.data();
+                        verifiedCompanyId = data.companyId;
+                        preview.className = 'text-xs mt-2 font-semibold text-green-600';
+                        preview.textContent = `✓ You'll be joining: ${data.name || 'this business'}`;
+                    } else {
+                        preview.className = 'text-xs mt-2 font-semibold text-red-600';
+                        preview.textContent = '✗ Code not found — double-check with your Owner.';
+                    }
+                } catch (err) {
+                    preview.classList.remove('hidden');
+                    preview.className = 'text-xs mt-2 font-semibold text-red-600';
+                    preview.textContent = 'Could not check this code right now.';
+                }
+            }, 450); // debounce so it doesn't fire on every keystroke
+        });
+
         // ---- helpers ----------------------------------------------------------
         function generateInviteCode() {
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no confusing chars
@@ -181,6 +224,7 @@
             try {
                 await setDoc(doc(db, 'inviteCodes', inviteCode), {
                     companyId,
+                    name: businessName || `${username}'s Business`,
                     createdAt: now
                 });
             } catch (err) { throw Object.assign(err, { step: 'creating the invite code' }); }
@@ -263,6 +307,10 @@
             }
             if (role === 'seller' && !inviteCode) {
                 showError('validating the form', new Error('Please enter the invite code from your Owner.'));
+                return;
+            }
+            if (role === 'seller' && !verifiedCompanyId) {
+                showError('validating the form', new Error('Please wait for the code to be verified (you should see the business name appear below the field) before registering.'));
                 return;
             }
 
