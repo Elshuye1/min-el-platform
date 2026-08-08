@@ -77,16 +77,18 @@
                                 <p class="text-[10px] text-gray-400">Full access, no cost</p>
                             </div>
                         </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="plan" value="premium" class="hidden peer">
-                            <div class="role-card border-2 rounded-xl p-3 text-center transition peer-checked:border-blue-600 peer-checked:bg-blue-50 relative">
-                                <span class="absolute -top-2 -right-2 text-[8px] font-bold bg-amber-400 text-amber-900 px-1.5 py-0.5 rounded-full">SOON</span>
-                                <p class="font-bold text-sm">Premium</p>
-                                <p class="text-[10px] text-gray-400">Join the waitlist</p>
+                        <!-- Locked until payments are actually live — not selectable,
+                             not a working button, just an honest preview. -->
+                        <div class="relative opacity-60 cursor-not-allowed" title="Premium isn't available yet">
+                            <input type="radio" name="plan" value="premium" class="hidden" disabled>
+                            <div class="border-2 rounded-xl p-3 text-center border-gray-200">
+                                <span class="absolute -top-2 -right-2 text-[8px] font-bold bg-amber-400 text-amber-900 px-1.5 py-0.5 rounded-full">COMING SOON</span>
+                                <p class="font-bold text-sm text-gray-500">Premium</p>
+                                <p class="text-[10px] text-gray-400">Not available yet</p>
                             </div>
-                        </label>
+                        </div>
                     </div>
-                    <p id="plan-note" class="text-[10px] text-gray-400 mt-2 hidden">Premium billing is launching soon. You'll get full free access now, and we'll notify you the moment it's ready — no interruption.</p>
+                    <p class="text-[10px] text-gray-400 mt-2">Premium is launching soon. For now, every account gets full access on the Free plan.</p>
                 </div>
 
                 <!-- Seller-only field -->
@@ -205,7 +207,6 @@
         const businessNameField = document.getElementById('business-name-field');
         const inviteCodeField = document.getElementById('invite-code-field');
         const planField = document.getElementById('plan-field');
-        const planNote = document.getElementById('plan-note');
 
         function updateFieldsForRole() {
             const role = document.querySelector('input[name="role"]:checked').value;
@@ -215,12 +216,6 @@
         }
         roleInputs.forEach(r => r.addEventListener('change', updateFieldsForRole));
         updateFieldsForRole();
-
-        document.querySelectorAll('input[name="plan"]').forEach(p => {
-            p.addEventListener('change', () => {
-                planNote.classList.toggle('hidden', p.value !== 'premium' || !p.checked);
-            });
-        });
 
         // ---- live invite-code preview ------------------------------------
         // Shows which business a code belongs to AS THE SELLER TYPES, before
@@ -474,4 +469,4 @@
     </script>
 
 </body>
-                                                                                          </html>
+    </html>
