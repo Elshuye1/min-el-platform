@@ -29,6 +29,7 @@
         </div>
 
         <div class="md:w-7/12 p-10">
+            <div id="register-view">
             <h2 class="text-2xl font-bold mb-2">Create Account</h2>
             <p class="text-gray-500 mb-8">Choose your role to get started</p>
 
@@ -61,6 +62,31 @@
                 <div id="business-name-field">
                     <label class="block text-sm font-semibold mb-1">Business Name</label>
                     <input id="reg-business-name" type="text" placeholder="e.g. Selam Textiles" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <!-- Owner-only: plan interest. Both options give the exact same
+                     working dashboard today — Premium isn't billed or unlocked
+                     yet, this just records interest for when payment launches. -->
+                <div id="plan-field">
+                    <label class="block text-sm font-semibold mb-2">Choose a Plan</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="plan" value="free" class="hidden peer" checked>
+                            <div class="role-card border-2 rounded-xl p-3 text-center transition peer-checked:border-blue-600 peer-checked:bg-blue-50">
+                                <p class="font-bold text-sm">Free</p>
+                                <p class="text-[10px] text-gray-400">Full access, no cost</p>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="plan" value="premium" class="hidden peer">
+                            <div class="role-card border-2 rounded-xl p-3 text-center transition peer-checked:border-blue-600 peer-checked:bg-blue-50 relative">
+                                <span class="absolute -top-2 -right-2 text-[8px] font-bold bg-amber-400 text-amber-900 px-1.5 py-0.5 rounded-full">SOON</span>
+                                <p class="font-bold text-sm">Premium</p>
+                                <p class="text-[10px] text-gray-400">Join the waitlist</p>
+                            </div>
+                        </label>
+                    </div>
+                    <p id="plan-note" class="text-[10px] text-gray-400 mt-2 hidden">Premium billing is launching soon. You'll get full free access now, and we'll notify you the moment it's ready — no interruption.</p>
                 </div>
 
                 <!-- Seller-only field -->
@@ -97,6 +123,59 @@
                     Already have an account? <a href="index.html" class="text-blue-600 font-bold">Log In</a>
                 </p>
             </form>
+            </div>
+
+            <!-- Shown only to a newly-registered Owner, right before redirecting
+                 to the dashboard. Skippable — businessType/currency are optional
+                 polish, not required for the account to work. Saves straight to
+                 the companies/{companyId} doc, which the Firestore rules already
+                 let the Owner update. -->
+            <div id="onboarding-view" class="hidden">
+                <div class="text-center mb-6">
+                    <div class="bg-blue-600 w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-2xl mx-auto mb-4">M</div>
+                    <h2 class="text-2xl font-bold mb-1">Welcome to Min-el, <span id="onboarding-username"></span>!</h2>
+                    <p class="text-gray-500 text-sm">A couple of quick details to tailor your dashboard. You can change these anytime.</p>
+                </div>
+
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Business Type</label>
+                        <select id="onboarding-business-type" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">Select one (optional)</option>
+                            <option value="retail">Retail</option>
+                            <option value="restaurant">Restaurant</option>
+                            <option value="pharmacy">Pharmacy</option>
+                            <option value="electronics">Electronics</option>
+                            <option value="spare_parts">Spare Parts</option>
+                            <option value="printing">Printing</option>
+                            <option value="wholesale">Wholesale</option>
+                            <option value="service">Service Business</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Currency</label>
+                        <select id="onboarding-currency" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="ETB">ETB — Ethiopian Birr</option>
+                            <option value="USD">USD — US Dollar</option>
+                            <option value="EUR">EUR — Euro</option>
+                            <option value="KES">KES — Kenyan Shilling</option>
+                            <option value="NGN">NGN — Nigerian Naira</option>
+                            <option value="GBP">GBP — British Pound</option>
+                        </select>
+                    </div>
+
+                    <p id="onboarding-error" class="text-sm text-red-600 hidden"></p>
+
+                    <button id="onboarding-continue" type="button" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-100 disabled:opacity-60">
+                        Continue to Dashboard
+                    </button>
+                    <button id="onboarding-skip" type="button" class="w-full text-gray-500 font-semibold py-2 text-sm hover:text-gray-700">
+                        Skip for now
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -104,7 +183,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import {
-            getFirestore, doc, setDoc, getDoc, collection, serverTimestamp
+            getFirestore, doc, setDoc, updateDoc, getDoc, collection, serverTimestamp
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // Same Firebase project used by index.html / owner-dashboard.html / seller-dashboard.html
@@ -125,14 +204,23 @@
         const roleInputs = document.querySelectorAll('input[name="role"]');
         const businessNameField = document.getElementById('business-name-field');
         const inviteCodeField = document.getElementById('invite-code-field');
+        const planField = document.getElementById('plan-field');
+        const planNote = document.getElementById('plan-note');
 
         function updateFieldsForRole() {
             const role = document.querySelector('input[name="role"]:checked').value;
             businessNameField.classList.toggle('field-hidden', role !== 'owner');
             inviteCodeField.classList.toggle('field-hidden', role !== 'seller');
+            planField.classList.toggle('field-hidden', role !== 'owner');
         }
         roleInputs.forEach(r => r.addEventListener('change', updateFieldsForRole));
         updateFieldsForRole();
+
+        document.querySelectorAll('input[name="plan"]').forEach(p => {
+            p.addEventListener('change', () => {
+                planNote.classList.toggle('hidden', p.value !== 'premium' || !p.checked);
+            });
+        });
 
         // ---- live invite-code preview ------------------------------------
         // Shows which business a code belongs to AS THE SELLER TYPES, before
@@ -202,7 +290,7 @@
         // ---- registration flows -------------------------------------------
         // Each Firestore write is wrapped individually so a failure tells you
         // exactly which step broke instead of a single generic error at the end.
-        async function registerOwner({ uid, username, email, businessName }) {
+        async function registerOwner({ uid, username, email, businessName, planPreference }) {
             const companyRef = doc(collection(db, 'companies'));
             const companyId = companyRef.id;
             const inviteCode = generateInviteCode();
@@ -213,7 +301,8 @@
                     name: businessName || `${username}'s Business`,
                     ownerUid: uid,
                     inviteCode,
-                    plan: 'free',
+                    plan: 'free',                    // what they actually have access to right now
+                    planPreference: planPreference,  // 'free' or 'premium' — what they'd choose once billing exists
                     currency: 'ETB',
                     createdAt: now,
                     updatedAt: now,
@@ -289,6 +378,38 @@
         }
 
         // ---- form submit ----------------------------------------------------
+        // ---- onboarding (Owner only) ---------------------------------------
+        function showOnboarding({ username, companyId, redirect }) {
+            document.getElementById('register-view').classList.add('hidden');
+            document.getElementById('onboarding-view').classList.remove('hidden');
+            document.getElementById('onboarding-username').textContent = username;
+
+            const continueBtn = document.getElementById('onboarding-continue');
+            const skipBtn = document.getElementById('onboarding-skip');
+            const errEl = document.getElementById('onboarding-error');
+
+            continueBtn.onclick = async () => {
+                continueBtn.disabled = true;
+                continueBtn.textContent = 'Saving...';
+                const businessType = document.getElementById('onboarding-business-type').value;
+                const currency = document.getElementById('onboarding-currency').value;
+                try {
+                    // Only write fields that actually changed from the default,
+                    // so skipping business type doesn't overwrite anything.
+                    const updates = { currency, updatedAt: serverTimestamp() };
+                    if (businessType) updates.businessType = businessType;
+                    await updateDoc(doc(db, 'companies', companyId), updates);
+                    window.location.href = redirect;
+                } catch (err) {
+                    errEl.textContent = "Couldn't save that just now, but your account is ready — continuing to your dashboard.";
+                    errEl.classList.remove('hidden');
+                    setTimeout(() => { window.location.href = redirect; }, 1800);
+                }
+            };
+
+            skipBtn.onclick = () => { window.location.href = redirect; };
+        }
+
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             clearError();
@@ -300,6 +421,8 @@
             const password = document.getElementById('reg-password').value;
             const businessName = document.getElementById('reg-business-name').value.trim();
             const inviteCode = document.getElementById('reg-invite-code').value.trim();
+            const planPreferenceEl = document.querySelector('input[name="plan"]:checked');
+            const planPreference = planPreferenceEl ? planPreferenceEl.value : 'free';
 
             if (!username || !email || !password) {
                 showError('validating the form', new Error('Please fill in all required fields.'));
@@ -325,13 +448,17 @@
                 createdUser = cred.user;
 
                 const result = role === 'owner'
-                    ? await registerOwner({ uid: createdUser.uid, username, email, businessName })
+                    ? await registerOwner({ uid: createdUser.uid, username, email, businessName, planPreference })
                     : await registerSeller({ uid: createdUser.uid, username, email, inviteCode });
 
                 if (role === 'seller') {
                     alert('Account created! Your Owner needs to approve you before you can log in to the seller dashboard.');
+                    window.location.href = result.redirect;
+                } else {
+                    // Owner: show the quick onboarding step before heading to
+                    // the dashboard, instead of redirecting immediately.
+                    showOnboarding({ username, companyId: result.companyId, redirect: result.redirect });
                 }
-                window.location.href = result.redirect;
             } catch (err) {
                 // Roll back the auth account if workspace/profile creation failed,
                 // so the person isn't stuck with a half-created account they can't reuse.
@@ -347,4 +474,4 @@
     </script>
 
 </body>
-</html>
+                                                                                          </html>
