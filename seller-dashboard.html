@@ -630,9 +630,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, setDoc, getDoc,
-  serverTimestamp, query, orderBy, limit, where, increment
+  serverTimestamp, query, orderBy, limit, where, increment, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
 
 // Firebase Config (Using your provided IDs)
 const firebaseConfig = {
@@ -648,6 +649,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+const functions = getFunctions(app);
 
 // --- SECURITY: real Firebase Auth + company/role check (replaces the old
 // "pick your name from a list" session, which was not authentication at all).
@@ -803,12 +805,22 @@ window.addToCart = () => {
 
 function renderCart() {
   const container = document.getElementById('cartItems');
-  const emptyMsg = document.getElementById('empty-msg');
   container.innerHTML = "";
   let total = 0;
 
   if (cart.length === 0) {
-    container.appendChild(emptyMsg);
+    // Built fresh every time instead of reattaching a captured element
+    // reference — once the cart goes non-empty and back to empty across
+    // renders, a captured reference becomes a permanently detached node
+    // (removed by the innerHTML reset above with nothing left pointing to
+    // it), and appendChild(null) on the next empty render throws exactly
+    // the "parameter 1 is not of type 'Node'" crash seen after a sale.
+    const emptyText = currentLang === 'am' ? i18n.basket_empty.am : i18n.basket_empty.en;
+    container.innerHTML = `
+      <div id="empty-msg" class="text-center py-12">
+        <i class="fa fa-shopping-basket text-4xl mb-4 block" style="color:#e6ddc9"></i>
+        <p class="text-xs font-bold uppercase tracking-widest italic" style="color:var(--muted)">${emptyText}</p>
+      </div>`;
     document.getElementById('totalDisplay').innerText = "$0.00";
     return;
   }
@@ -1100,10 +1112,10 @@ onSnapshot(query(collection(db, "inspirationPosts"), where("companyId", "==", co
 });
 
 /* =========================================================
-   TABS  (Reports tab is password protected — see REPORTS SECURITY below)
+   TABS  (Reports tab is optionally PIN-protected — see REPORTS SECURITY below)
 ========================================================= */
 window.switchTab = (tab) => {
-  if (tab === 'reports' && !reportsUnlocked) {
+  if (tab === 'reports' && companyReportsPin && !reportsUnlocked) {
     pendingTab = 'reports';
     document.getElementById('reportsPasswordInput').value = '';
     document.getElementById('pwError').classList.add('hidden');
@@ -1122,17 +1134,24 @@ window.switchOwnerTab = (t) => {
 };
 
 /* =========================================================
-   REPORTS SECURITY: manager password gate (341617)
-   Session-only unlock — protects daily/weekly/monthly profit,
-   tithe, and cash-flow figures from being seen by every seller.
+   REPORTS SECURITY: Owner-set PIN gate (optional)
+   The PIN now lives on companies/{companyId}.reportsPin, set by
+   the Owner from their dashboard — never hardcoded, never shared
+   across companies. If the Owner hasn't set one, Reports opens
+   directly with no gate at all (safe default: never silently
+   blocks a seller with a code nobody told them).
 ========================================================= */
-const REPORTS_PASSWORD = "341617";
+let companyReportsPin = null; // fetched live below, once companyId is known
 let reportsUnlocked = false;
 let pendingTab = null;
 
+onSnapshot(doc(db, "companies", companyId), (snap) => {
+  companyReportsPin = snap.exists() ? (snap.data().reportsPin || null) : null;
+});
+
 window.submitReportsPassword = () => {
   const val = document.getElementById('reportsPasswordInput').value.trim();
-  if (val === REPORTS_PASSWORD) {
+  if (val === companyReportsPin) {
     reportsUnlocked = true;
     closeAllModals();
     const target = pendingTab || 'reports';
@@ -1593,41 +1612,62 @@ window.openDebtPaymentModal = (debtId) => {
 
 window.submitDebtPayment = async () => {
   if (!activePaymentDebtId) return;
-  const d = debtRecords.find(x => x.id === activePaymentDebtId);
-  if (!d) return;
-  const total = Number(d.amount) || 0;
-  const paidSoFar = Number(d.amountPaid) || 0;
-  const remaining = Math.max(total - paidSoFar, 0);
   const paymentAmount = Number(document.getElementById('pay-amount').value);
   const note = document.getElementById('pay-note').value.trim();
 
   if (!paymentAmount || paymentAmount <= 0) return alert(currentLang === 'am' ? "ትክክለኛ የክፍያ መጠን ያስገቡ" : "Enter a valid payment amount");
-  if (paymentAmount > remaining + 0.009) return alert(currentLang === 'am' ? "የክፍያ መጠኑ ከቀረው ዕዳ መብለጥ አይችልም" : "Payment cannot exceed the remaining debt");
 
-  const newPaid = paidSoFar + paymentAmount;
-  const newRemaining = Math.max(total - newPaid, 0);
-  const nowPaidOff = newRemaining <= 0.009;
+  const debtRef = doc(db, "debts", activePaymentDebtId);
 
-  await updateDoc(doc(db, "debts", d.id), {
-    amountPaid: newPaid,
-    status: nowPaidOff ? "paid" : "partial",
-    lastPaymentAt: serverTimestamp()
-  });
+  try {
+    // A real transaction: reads the TRUE current amountPaid straight from the
+    // server at the moment we write, not from a local cache that might be a
+    // few seconds stale. If two payments come in close together (e.g. the
+    // Owner and Seller both recording one at the same time), Firestore
+    // automatically retries this block so neither payment gets lost.
+    const outcome = await runTransaction(db, async (tx) => {
+      const snap = await tx.get(debtRef);
+      if (!snap.exists()) throw new Error('This debt record no longer exists.');
+      const d = snap.data();
+      const total = Number(d.amount) || 0;
+      const paidSoFar = Number(d.amountPaid) || 0;
+      const remaining = Math.max(total - paidSoFar, 0);
 
-  await addDoc(collection(db, "debtPayments"), {
-    debtId: d.id,
-    customerName: d.customerName,
-    amount: paymentAmount,
-    note,
-    companyId, branchId, createdBy: currentUid,
-    timestamp: serverTimestamp()
-  });
+      if (paymentAmount > remaining + 0.009) {
+        throw new Error(currentLang === 'am' ? "የክፍያ መጠኑ ከቀረው ዕዳ መብለጥ አይችልም" : "Payment cannot exceed the remaining debt");
+      }
 
-  closeAllModals();
-  activePaymentDebtId = null;
-  alert(nowPaidOff
-    ? (currentLang === 'am' ? `${d.customerName} ዕዳቸውን ሙሉ በሙሉ ከፍለዋል! ከዝርዝሩ ተነስተዋል።` : `${d.customerName} has fully paid their debt! Removed from the active list.`)
-    : (currentLang === 'am' ? `የ$${paymentAmount.toFixed(2)} ክፍያ ተመዝግቧል። የቀረ፦ $${newRemaining.toFixed(2)}` : `Payment of $${paymentAmount.toFixed(2)} recorded. Remaining: $${newRemaining.toFixed(2)}`));
+      const newPaid = paidSoFar + paymentAmount;
+      const newRemaining = Math.max(total - newPaid, 0);
+      const nowPaidOff = newRemaining <= 0.009;
+
+      tx.update(debtRef, {
+        amountPaid: newPaid,
+        status: nowPaidOff ? "paid" : "partial",
+        lastPaymentAt: serverTimestamp()
+      });
+
+      return { nowPaidOff, newRemaining, customerName: d.customerName };
+    });
+
+    await addDoc(collection(db, "debtPayments"), {
+      debtId: activePaymentDebtId,
+      customerName: outcome.customerName,
+      amount: paymentAmount,
+      note,
+      companyId, branchId, createdBy: currentUid,
+      timestamp: serverTimestamp()
+    });
+
+    closeAllModals();
+    activePaymentDebtId = null;
+    alert(outcome.nowPaidOff
+      ? (currentLang === 'am' ? `${outcome.customerName} ዕዳቸውን ሙሉ በሙሉ ከፍለዋል! ከዝርዝሩ ተነስተዋል።` : `${outcome.customerName} has fully paid their debt! Removed from the active list.`)
+      : (currentLang === 'am' ? `የ$${paymentAmount.toFixed(2)} ክፍያ ተመዝግቧል። የቀረ፦ $${outcome.newRemaining.toFixed(2)}` : `Payment of $${paymentAmount.toFixed(2)} recorded. Remaining: $${outcome.newRemaining.toFixed(2)}`));
+  } catch (err) {
+    console.error('[submitDebtPayment] failed:', err);
+    alert((currentLang === 'am' ? "ስህተት፦ " : "Error: ") + (err.message || err));
+  }
 };
 
 /* =========================================================
@@ -1711,13 +1751,11 @@ window.startNewAIChat = () => {
   renderAISuggestions();
 };
 
-// Miny calls a small Firebase Cloud Function ("aiAdvisor") instead of the
-// Anthropic API directly. A browser can't safely call api.anthropic.com on its
-// own — there's no API key to send, and even with one, exposing it in client
-// code lets anyone steal it. The Cloud Function keeps the real key on the
-// server. See the "aiAdvisor Cloud Function" file for the code to deploy.
-const AI_ADVISOR_ENDPOINT = "https://us-central1-min-eli.cloudfunctions.net/aiAdvisor";
-
+// Miny calls the "aiAdvisor" Cloud Function via httpsCallable, which
+// automatically attaches your Firebase Auth token — the function verifies
+// who you are and looks up YOUR company's real data server-side. A browser
+// can never safely call api.anthropic.com directly (no way to keep an API
+// key secret in client code), so this Cloud Function is the only path.
 window.sendAIMessage = async () => {
   const input = document.getElementById('aiInput');
   const sendBtn = document.getElementById('aiSendBtn');
@@ -1735,28 +1773,24 @@ window.sendAIMessage = async () => {
   appendAIMessage('ai', '<span class="dot-typing"><span>.</span><span>.</span><span>.</span></span>', loadingId);
 
   try {
-    const response = await fetch(AI_ADVISOR_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: text,
-        history: aiHistory,
-        lang: currentLang
-      })
-    });
-    if (!response.ok) throw new Error("Server responded with " + response.status);
-    const data = await response.json();
-    const reply = data.reply || (currentLang === 'am' ? "ይቅርታ፣ መልስ ማምጣት አልቻልኩም።" : "Sorry, I couldn't get a response.");
+    const askAdvisor = httpsCallable(functions, 'aiAdvisor');
+    const result = await askAdvisor({ message: text, history: aiHistory, lang: currentLang });
+    const reply = result.data.reply || (currentLang === 'am' ? "ይቅርታ፣ መልስ ማምጣት አልቻልኩም።" : "Sorry, I couldn't get a response.");
     document.getElementById(loadingId)?.remove();
     appendAIMessage('ai', reply, null, true);
     aiHistory.push({ role: "user", content: text });
     aiHistory.push({ role: "assistant", content: reply });
     if (aiHistory.length > 20) aiHistory = aiHistory.slice(-20); // keep the request small
   } catch (e) {
+    console.error('[sendAIMessage] failed:', e);
     document.getElementById(loadingId)?.remove();
-    appendAIMessage('ai', currentLang === 'am'
-      ? "ይቅርታ፣ ከረዳቱ ጋር መገናኘት አልተቻለም። የበይነመረብ ግንኙነትዎን ያረጋግጡ ወይም ትንሽ ቆይተው ይሞክሩ።"
-      : "Sorry, I couldn't reach the advisor service. Check your connection or try again shortly.");
+    // 'not-found'/'internal' here usually means the aiAdvisor function isn't
+    // deployed yet, not a real connectivity problem — be honest about that
+    // instead of implying the user's internet is at fault.
+    const notDeployed = e.code === 'functions/not-found' || e.code === 'not-found';
+    appendAIMessage('ai', notDeployed
+      ? (currentLang === 'am' ? "የAI ረዳት ገና አልተዘጋጀም። ባለቤትዎ ይህን ባህሪ እያዘጋጀ ነው።" : "AI Advisor isn't set up yet — the business owner is still getting this feature ready.")
+      : (currentLang === 'am' ? "ይቅርታ፣ ከረዳቱ ጋር መገናኘት አልተቻለም። እባክዎ ትንሽ ቆይተው ይሞክሩ።" : "Sorry, something went wrong reaching the advisor. Please try again shortly."));
   } finally {
     input.disabled = false;
     sendBtn.disabled = false;
