@@ -148,6 +148,7 @@
                     <button onclick="switchTab('home')" class="font-bold text-sm hover:text-blue-400">Home</button>
                     <a href="#features" class="font-bold text-sm hover:text-blue-400">Features</a>
                     <a href="#security" class="font-bold text-sm hover:text-blue-400">Security</a>
+                    <a href="#pricing" class="font-bold text-sm hover:text-blue-400">Pricing</a>
                     <button onclick="switchTab('policy')" class="font-bold text-sm hover:text-blue-400">Privacy</button>
                 </div>
 
@@ -158,7 +159,7 @@
                 </div>
 
                 <!-- Logged-in state (desktop), hidden until onAuthStateChanged fills it in -->
-                <div id="nav-user-actions" class="hidden md:flex items-center gap-3 hidden">
+                <div id="nav-user-actions" class="hidden md:flex items-center gap-3" style="display:none">
                     <a id="nav-dashboard-link" href="#" class="btn btn-ghost px-5 py-2 text-sm">
                         <i class="fa fa-gauge-high mr-1"></i> Dashboard
                     </a>
@@ -397,6 +398,64 @@
             </div>
         </section>
 
+        <!-- PRICING -->
+        <section id="pricing" class="container mx-auto px-4 mb-16 lg:max-w-6xl scroll-mt-20">
+            <div class="text-center mb-10 reveal">
+                <h3 class="text-2xl md:text-3xl font-black mb-2">Simple pricing</h3>
+                <p class="text-slate-400 text-sm md:text-base">Start free. Upgrade later as your business grows.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col border-2 border-blue-600/50">
+                    <span class="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-1 rounded-md w-fit mb-3">CURRENT PLAN</span>
+                    <h4 class="font-black text-lg mb-1">Free</h4>
+                    <p class="text-3xl font-black mb-3">$0<span class="text-xs font-normal text-slate-500">/mo</span></p>
+                    <ul class="text-xs text-slate-400 space-y-2 mb-6 flex-1">
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>1 business, 1 branch</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Unlimited sellers</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Sales, inventory &amp; reports</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Real-time sync</li>
+                    </ul>
+                    <a href="register.html" class="btn btn-primary text-center py-3 text-sm">Get Started Free</a>
+                </div>
+
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col opacity-70">
+                    <span class="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-2 py-1 rounded-md w-fit mb-3">COMING SOON</span>
+                    <h4 class="font-black text-lg mb-1">Pro</h4>
+                    <p class="text-3xl font-black mb-3">—</p>
+                    <ul class="text-xs text-slate-400 space-y-2 mb-6 flex-1">
+                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Multiple branches</li>
+                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Advanced reports</li>
+                        <li><i class="fa fa-check text-slate-600 mr-2"></i>AI Advisor</li>
+                    </ul>
+                    <button disabled class="btn btn-ghost text-center py-3 text-sm cursor-not-allowed">Coming Soon</button>
+                </div>
+
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col opacity-70">
+                    <span class="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-2 py-1 rounded-md w-fit mb-3">COMING SOON</span>
+                    <h4 class="font-black text-lg mb-1">Business</h4>
+                    <p class="text-3xl font-black mb-3">—</p>
+                    <ul class="text-xs text-slate-400 space-y-2 mb-6 flex-1">
+                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Everything in Pro</li>
+                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Priority support</li>
+                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Custom roles</li>
+                    </ul>
+                    <button disabled class="btn btn-ghost text-center py-3 text-sm cursor-not-allowed">Coming Soon</button>
+                </div>
+
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col opacity-70">
+                    <span class="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-2 py-1 rounded-md w-fit mb-3">COMING SOON</span>
+                    <h4 class="font-black text-lg mb-1">Enterprise</h4>
+                    <p class="text-3xl font-black mb-3">Talk to us</p>
+                    <ul class="text-xs text-slate-400 space-y-2 mb-6 flex-1">
+                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Everything in Business</li>
+                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Dedicated onboarding</li>
+                        <li><i class="fa fa-check text-slate-600 mr-2"></i>SLA</li>
+                    </ul>
+                    <button disabled class="btn btn-ghost text-center py-3 text-sm cursor-not-allowed">Coming Soon</button>
+                </div>
+            </div>
+        </section>
+
         <!-- COMMUNITY SHARE (existing, preserved) -->
         <section class="container mx-auto px-4 mb-16 lg:max-w-4xl">
             <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Community Share</h3>
@@ -433,6 +492,7 @@
                         <ul class="space-y-2 text-xs text-slate-400">
                             <li><a href="#features" class="hover:text-blue-400">Features</a></li>
                             <li><a href="#security" class="hover:text-blue-400">Security</a></li>
+                            <li><a href="#pricing" class="hover:text-blue-400">Pricing</a></li>
                             <li><a href="register.html" class="hover:text-blue-400">Get Started</a></li>
                         </ul>
                     </div>
@@ -669,14 +729,29 @@
             }
         };
 
+        // Tailwind's `hidden` class can't reliably be toggled via classList here,
+        // because these elements also carry `md:flex` for responsive layout —
+        // on desktop widths md:flex always wins over hidden regardless of which
+        // class is present, so classList.add/remove('hidden') was silently a
+        // no-op on desktop. Setting style.display directly always wins over
+        // any class-based rule, at any screen size, which is what we need for
+        // an auth-state toggle that must work everywhere.
+        function showAuthActions() {
+            document.getElementById('nav-auth-actions').style.display = '';
+            document.getElementById('nav-user-actions').style.display = 'none';
+        }
+        function showUserActions() {
+            document.getElementById('nav-auth-actions').style.display = 'none';
+            document.getElementById('nav-user-actions').style.display = '';
+        }
+
         onAuthStateChanged(auth, async (user) => {
             const authActions = document.getElementById('nav-auth-actions');
             const userActions = document.getElementById('nav-user-actions');
 
             if (!user) {
                 currentDashboardHref = null;
-                authActions.classList.remove('hidden');
-                userActions.classList.add('hidden');
+                showAuthActions();
                 document.querySelectorAll('.dashboard-item').forEach(i => i.classList.add('locked-card'));
                 return;
             }
@@ -706,8 +781,7 @@
                 }
 
                 if (currentDashboardHref) {
-                    authActions.classList.add('hidden');
-                    userActions.classList.remove('hidden');
+                    showUserActions();
                     document.getElementById('nav-dashboard-link').href = currentDashboardHref;
                 }
             } catch (err) {
@@ -779,4 +853,4 @@
         }
     </script>
 </body>
-</html>
+                            </html>
