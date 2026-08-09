@@ -288,6 +288,16 @@
             </div>
 
             <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
+                <h3 class="text-lg font-black font-display mb-1"><i class="fa fa-lock text-blue-400 mr-2"></i>Reports PIN</h3>
+                <p class="text-[11px] text-slate-500 mb-4">Optional. If set, your sellers must enter this PIN to view the Reports tab (profit, cash flow). Leave blank and save to remove the lock entirely.</p>
+                <div class="flex gap-3">
+                    <input id="reports-pin-input" type="text" inputmode="numeric" maxlength="12" placeholder="e.g. 4821" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-500">
+                    <button onclick="saveReportsPin()" id="reports-pin-save" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-3 rounded-xl transition">Save</button>
+                </div>
+                <p id="reports-pin-status" class="text-[11px] text-slate-500 mt-2"></p>
+            </div>
+
+            <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-black font-display"><i class="fa fa-user-clock text-yellow-400 mr-2"></i>Pending Sellers</h3>
                     <span id="pendingCount" class="bg-red-500/10 text-red-400 text-[10px] font-black px-3 py-1 rounded-full border border-red-500/20">0 waiting</span>
@@ -709,7 +719,35 @@
                 upgradeBtn.disabled = true;
                 upgradeBtn.classList.add('opacity-60', 'cursor-default');
             }
+
+            const pinStatus = document.getElementById('reports-pin-status');
+            const pinInput = document.getElementById('reports-pin-input');
+            if (c.reportsPin) {
+                pinStatus.innerHTML = `<i class="fa fa-check-circle text-green-400 mr-1"></i>PIN is set — sellers must enter <span class="font-mono font-bold text-slate-300">${c.reportsPin}</span> to view Reports.`;
+            } else {
+                pinStatus.innerHTML = `<i class="fa fa-circle-info mr-1"></i>No PIN set — Reports is open to all sellers.`;
+            }
+            // Don't overwrite what the Owner is actively typing.
+            if (document.activeElement !== pinInput) pinInput.value = c.reportsPin || '';
         });
+
+        window.saveReportsPin = async () => {
+            const btn = document.getElementById('reports-pin-save');
+            const pin = document.getElementById('reports-pin-input').value.trim();
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            try {
+                await updateDoc(doc(db, "companies", companyId), {
+                    reportsPin: pin || null,
+                    updatedAt: serverTimestamp()
+                });
+            } catch (err) {
+                alert('Could not save: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+            }
+        };
 
         window.copyInviteCode = () => {
             if (!window._inviteCode) return;
