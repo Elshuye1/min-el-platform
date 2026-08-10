@@ -112,7 +112,7 @@
 </head>
 <body class="pb-24 md:pb-0">
 
-    <div id="google_translate_element" style="display:none"></div>
+    <div id="google_translate_element" style="position:absolute; width:1px; height:1px; overflow:hidden; left:-9999px; top:-9999px;"></div>
     <div id="toast-region" aria-live="polite" aria-atomic="true"></div>
 
     <!-- ============ NAV ============ -->
@@ -149,6 +149,7 @@
                     <a href="#features" class="font-bold text-sm hover:text-blue-400">Features</a>
                     <a href="#security" class="font-bold text-sm hover:text-blue-400">Security</a>
                     <a href="#pricing" class="font-bold text-sm hover:text-blue-400">Pricing</a>
+                    <button onclick="switchTab('about')" class="font-bold text-sm hover:text-blue-400">About</button>
                     <button onclick="switchTab('policy')" class="font-bold text-sm hover:text-blue-400">Privacy</button>
                 </div>
 
@@ -292,53 +293,112 @@
         <section id="features" class="container mx-auto px-4 mb-16 lg:max-w-6xl scroll-mt-20">
             <div class="text-center mb-10 reveal">
                 <h3 class="text-2xl md:text-3xl font-black mb-2">Everything your business needs</h3>
-                <p class="text-slate-400 text-sm md:text-base">One platform, built for real day-to-day operations.</p>
+                <p class="text-slate-400 text-sm md:text-base">One platform, built for real day-to-day operations. Badges show which plan unlocks each feature.</p>
             </div>
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
-                    <i class="fa fa-cash-register text-blue-400 text-xl mb-3"></i>
-                    <h4 class="font-bold mb-1">Sales Management</h4>
-                    <p class="text-slate-400 text-xs">Record every sale in real time from the seller terminal.</p>
+
+            <div class="space-y-10">
+                <div>
+                    <h4 class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-4">Sales &amp; POS</h4>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-cash-register text-blue-400 text-xl"></i><span class="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md">FREE</span></div>
+                            <h4 class="font-bold text-sm mb-1">Sales Terminal</h4>
+                            <p class="text-slate-400 text-xs">Record every sale in real time from the seller terminal.</p>
+                        </div>
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-bolt text-blue-400 text-xl"></i><span class="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md">FREE</span></div>
+                            <h4 class="font-bold text-sm mb-1">Live Sales Feed</h4>
+                            <p class="text-slate-400 text-xs">Every dashboard updates live as your team rings up sales.</p>
+                        </div>
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-code-branch text-purple-300 text-xl"></i><span class="text-[9px] font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-md">PRO</span></div>
+                            <h4 class="font-bold text-sm mb-1">Multiple Branches</h4>
+                            <p class="text-slate-400 text-xs">Run sales across several branches under one company.</p>
+                        </div>
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-video text-amber-300 text-xl"></i><span class="text-[9px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md">BUSINESS</span></div>
+                            <h4 class="font-bold text-sm mb-1">Video Meetings</h4>
+                            <p class="text-slate-400 text-xs">Face-to-face calls between owners and branch staff.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
-                    <i class="fa fa-boxes-stacked text-blue-400 text-xl mb-3"></i>
-                    <h4 class="font-bold mb-1">Inventory Management</h4>
-                    <p class="text-slate-400 text-xs">Track stock levels and get low-stock visibility.</p>
+
+                <div>
+                    <h4 class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-4">Inventory &amp; Money</h4>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-boxes-stacked text-blue-400 text-xl"></i><span class="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md">FREE</span></div>
+                            <h4 class="font-bold text-sm mb-1">Inventory Tracking</h4>
+                            <p class="text-slate-400 text-xs">Stock levels, cost and selling price, low-stock visibility.</p>
+                        </div>
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-file-lines text-blue-400 text-xl"></i><span class="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md">FREE</span></div>
+                            <h4 class="font-bold text-sm mb-1">Business Reports</h4>
+                            <p class="text-slate-400 text-xs">See sales, expenses and profit trends over time.</p>
+                        </div>
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-hand-holding-dollar text-purple-300 text-xl"></i><span class="text-[9px] font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-md">PRO</span></div>
+                            <h4 class="font-bold text-sm mb-1">Debt Management</h4>
+                            <p class="text-slate-400 text-xs">Track customer debts and log partial payments.</p>
+                        </div>
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-receipt text-purple-300 text-xl"></i><span class="text-[9px] font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-md">PRO</span></div>
+                            <h4 class="font-bold text-sm mb-1">Expense Tracking</h4>
+                            <p class="text-slate-400 text-xs">Log expenses and bank deposits with receipt photos.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
-                    <i class="fa fa-file-lines text-blue-400 text-xl mb-3"></i>
-                    <h4 class="font-bold mb-1">Business Reports</h4>
-                    <p class="text-slate-400 text-xs">See sales, expenses and profit trends over time.</p>
+
+                <div>
+                    <h4 class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-4">Team &amp; Communication</h4>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-users text-blue-400 text-xl"></i><span class="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md">FREE</span></div>
+                            <h4 class="font-bold text-sm mb-1">Seller Management</h4>
+                            <p class="text-slate-400 text-xs">Owners approve sellers and assign them to branches.</p>
+                        </div>
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-comments text-purple-300 text-xl"></i><span class="text-[9px] font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-md">PRO</span></div>
+                            <h4 class="font-bold text-sm mb-1">Owner ↔ Seller Chat</h4>
+                            <p class="text-slate-400 text-xs">Direct messaging between owners and their sellers.</p>
+                        </div>
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-language text-blue-400 text-xl"></i><span class="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md">FREE</span></div>
+                            <h4 class="font-bold text-sm mb-1">Multi-language</h4>
+                            <p class="text-slate-400 text-xs">Use the platform in English, Amharic and more.</p>
+                        </div>
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-headset text-amber-300 text-xl"></i><span class="text-[9px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md">BUSINESS</span></div>
+                            <h4 class="font-bold text-sm mb-1">Priority Support</h4>
+                            <p class="text-slate-400 text-xs">Faster response times when something needs attention.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
-                    <i class="fa fa-hand-holding-dollar text-blue-400 text-xl mb-3"></i>
-                    <h4 class="font-bold mb-1">Debt Management</h4>
-                    <p class="text-slate-400 text-xs">Track customer debts and log partial payments.</p>
-                </div>
-                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
-                    <i class="fa fa-receipt text-blue-400 text-xl mb-3"></i>
-                    <h4 class="font-bold mb-1">Expense Tracking</h4>
-                    <p class="text-slate-400 text-xs">Log expenses and bank deposits with receipt photos.</p>
-                </div>
-                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
-                    <i class="fa fa-users text-blue-400 text-xl mb-3"></i>
-                    <h4 class="font-bold mb-1">Seller Management</h4>
-                    <p class="text-slate-400 text-xs">Owners approve sellers and assign them to branches.</p>
-                </div>
-                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
-                    <i class="fa fa-bolt text-blue-400 text-xl mb-3"></i>
-                    <h4 class="font-bold mb-1">Real-time Updates</h4>
-                    <p class="text-slate-400 text-xs">Every dashboard updates live as your team works.</p>
-                </div>
-                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
-                    <i class="fa fa-comments text-blue-400 text-xl mb-3"></i>
-                    <h4 class="font-bold mb-1">Owner ↔ Seller Chat</h4>
-                    <p class="text-slate-400 text-xs">Direct messaging between owners and their sellers.</p>
-                </div>
-                <div class="feature-card glass rounded-[1.5rem] p-6 reveal">
-                    <i class="fa fa-language text-blue-400 text-xl mb-3"></i>
-                    <h4 class="font-bold mb-1">Multi-language</h4>
-                    <p class="text-slate-400 text-xs">Use the platform in English, Amharic and more.</p>
+
+                <div>
+                    <h4 class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-4">Trust &amp; Giving Back</h4>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-shield-halved text-blue-400 text-xl"></i><span class="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md">FREE</span></div>
+                            <h4 class="font-bold text-sm mb-1">Isolated Workspace</h4>
+                            <p class="text-slate-400 text-xs">Your company's data is never visible to any other business.</p>
+                        </div>
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-hand-holding-heart text-blue-400 text-xl"></i><span class="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md">FREE</span></div>
+                            <h4 class="font-bold text-sm mb-1">10% Charity Ledger</h4>
+                            <p class="text-slate-400 text-xs">A running record of what your business gives back.</p>
+                        </div>
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-cloud text-blue-400 text-xl"></i><span class="text-[9px] font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-md">FREE</span></div>
+                            <h4 class="font-bold text-sm mb-1">Cloud-based &amp; Realtime</h4>
+                            <p class="text-slate-400 text-xs">Access from anywhere; changes sync instantly to your team.</p>
+                        </div>
+                        <div class="feature-card glass rounded-[1.5rem] p-5 reveal">
+                            <div class="flex justify-between items-start mb-3"><i class="fa fa-user-shield text-amber-300 text-xl"></i><span class="text-[9px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md">BUSINESS</span></div>
+                            <h4 class="font-bold text-sm mb-1">Custom Roles</h4>
+                            <p class="text-slate-400 text-xs">Finer-grained permissions as your team grows.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -400,15 +460,16 @@
 
         <!-- PRICING -->
         <section id="pricing" class="container mx-auto px-4 mb-16 lg:max-w-6xl scroll-mt-20">
-            <div class="text-center mb-10 reveal">
+            <div class="text-center mb-4 reveal">
                 <h3 class="text-2xl md:text-3xl font-black mb-2">Simple pricing</h3>
-                <p class="text-slate-400 text-sm md:text-base">Start free. Upgrade later as your business grows.</p>
+                <p class="text-slate-400 text-sm md:text-base">Start free. Try any paid plan for 12 days, no card required.</p>
             </div>
+            <p id="plan-status-banner" class="hidden text-center text-xs font-bold mb-8"></p>
             <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col border-2 border-blue-600/50">
-                    <span class="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-1 rounded-md w-fit mb-3">CURRENT PLAN</span>
+                    <span class="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-1 rounded-md w-fit mb-3">FREE FOREVER</span>
                     <h4 class="font-black text-lg mb-1">Free</h4>
-                    <p class="text-3xl font-black mb-3">$0<span class="text-xs font-normal text-slate-500">/mo</span></p>
+                    <p class="text-3xl font-black mb-3">0 ETB<span class="text-xs font-normal text-slate-500">/mo</span></p>
                     <ul class="text-xs text-slate-400 space-y-2 mb-6 flex-1">
                         <li><i class="fa fa-check text-green-400 mr-2"></i>1 business, 1 branch</li>
                         <li><i class="fa fa-check text-green-400 mr-2"></i>Unlimited sellers</li>
@@ -418,42 +479,45 @@
                     <a href="register.html" class="btn btn-primary text-center py-3 text-sm">Get Started Free</a>
                 </div>
 
-                <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col opacity-70">
-                    <span class="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-2 py-1 rounded-md w-fit mb-3">COMING SOON</span>
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col">
+                    <span class="text-[10px] font-bold bg-purple-500/20 text-purple-300 px-2 py-1 rounded-md w-fit mb-3">12-DAY FREE TRIAL</span>
                     <h4 class="font-black text-lg mb-1">Pro</h4>
-                    <p class="text-3xl font-black mb-3">—</p>
+                    <p class="text-3xl font-black mb-3">499 ETB<span class="text-xs font-normal text-slate-500">/mo</span></p>
                     <ul class="text-xs text-slate-400 space-y-2 mb-6 flex-1">
-                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Multiple branches</li>
-                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Advanced reports</li>
-                        <li><i class="fa fa-check text-slate-600 mr-2"></i>AI Advisor</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Everything in Free</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Up to 3 branches</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Debt &amp; expense tracking</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Owner ↔ Seller chat</li>
                     </ul>
-                    <button disabled class="btn btn-ghost text-center py-3 text-sm cursor-not-allowed">Coming Soon</button>
+                    <button onclick="startTrial('pro', 499)" data-plan-btn="pro" class="btn btn-primary text-center py-3 text-sm">Start 12-Day Trial</button>
                 </div>
 
-                <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col opacity-70">
-                    <span class="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-2 py-1 rounded-md w-fit mb-3">COMING SOON</span>
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col">
+                    <span class="text-[10px] font-bold bg-purple-500/20 text-purple-300 px-2 py-1 rounded-md w-fit mb-3">12-DAY FREE TRIAL</span>
                     <h4 class="font-black text-lg mb-1">Business</h4>
-                    <p class="text-3xl font-black mb-3">—</p>
+                    <p class="text-3xl font-black mb-3">1,499 ETB<span class="text-xs font-normal text-slate-500">/mo</span></p>
                     <ul class="text-xs text-slate-400 space-y-2 mb-6 flex-1">
-                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Everything in Pro</li>
-                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Priority support</li>
-                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Custom roles</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Everything in Pro</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Unlimited branches</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Video meetings</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Priority support</li>
                     </ul>
-                    <button disabled class="btn btn-ghost text-center py-3 text-sm cursor-not-allowed">Coming Soon</button>
+                    <button onclick="startTrial('business', 1499)" data-plan-btn="business" class="btn btn-primary text-center py-3 text-sm">Start 12-Day Trial</button>
                 </div>
 
-                <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col opacity-70">
-                    <span class="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-2 py-1 rounded-md w-fit mb-3">COMING SOON</span>
+                <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col opacity-90">
+                    <span class="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-2 py-1 rounded-md w-fit mb-3">CUSTOM</span>
                     <h4 class="font-black text-lg mb-1">Enterprise</h4>
                     <p class="text-3xl font-black mb-3">Talk to us</p>
                     <ul class="text-xs text-slate-400 space-y-2 mb-6 flex-1">
-                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Everything in Business</li>
-                        <li><i class="fa fa-check text-slate-600 mr-2"></i>Dedicated onboarding</li>
-                        <li><i class="fa fa-check text-slate-600 mr-2"></i>SLA</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Everything in Business</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Dedicated onboarding</li>
+                        <li><i class="fa fa-check text-green-400 mr-2"></i>Custom SLA</li>
                     </ul>
-                    <button disabled class="btn btn-ghost text-center py-3 text-sm cursor-not-allowed">Coming Soon</button>
+                    <button onclick="contactSales()" class="btn btn-ghost text-center py-3 text-sm">Contact Sales</button>
                 </div>
             </div>
+            <p class="text-center text-[11px] text-slate-500 mt-6">Trials unlock automatically — no payment needed. Card payments via Chapa are being finalized; you'll be prompted to add billing before your trial ends.</p>
         </section>
 
         <!-- COMMUNITY SHARE (existing, preserved) -->
@@ -507,6 +571,7 @@
                     <div>
                         <p class="text-[10px] font-bold text-slate-500 uppercase mb-3">Company</p>
                         <ul class="space-y-2 text-xs text-slate-400">
+                            <li><button onclick="switchTab('about')" class="hover:text-blue-400">About Us</button></li>
                             <li><button onclick="switchTab('policy')" class="hover:text-blue-400">Privacy Policy</button></li>
                         </ul>
                     </div>
@@ -522,23 +587,107 @@
         </footer>
     </main>
 
-    <!-- ============ POLICY TAB (existing, preserved) ============ -->
-    <main id="policy-tab" class="tab-content container mx-auto px-4 py-12 lg:max-w-4xl">
+    <!-- ============ ABOUT TAB ============ -->
+    <main id="about-tab" class="tab-content container mx-auto px-4 py-12 lg:max-w-4xl">
         <div class="glass p-8 md:p-12 rounded-[3rem]">
-            <h2 class="text-3xl font-black mb-6">Privacy & Policy</h2>
+            <span class="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-1 rounded-md w-fit">OUR STORY</span>
+            <h2 class="text-3xl font-black mt-4 mb-6">About Min-el</h2>
             <div class="space-y-6 text-slate-300 text-sm leading-relaxed">
                 <section>
-                    <h3 class="text-white font-bold text-lg mb-2">1. Data Protection</h3>
-                    <p>At Min-el, we protect your business inventory and sales data using Firebase Authentication and Firestore security rules that keep each company's data separate.</p>
+                    <h3 class="text-white font-bold text-lg mb-2">Why we built this</h3>
+                    <p>Most small and mid-sized businesses run their operations across a scatter of notebooks, spreadsheets, and messaging apps — sales in one place, stock counts in another, debts remembered rather than recorded. Min-el exists to bring all of that into a single, secure workspace that works the way an owner actually runs a shop: fast at the counter, honest in the books, and connected across every branch and every seller.</p>
                 </section>
                 <section>
-                    <h3 class="text-white font-bold text-lg mb-2">2. Security</h3>
-                    <p>Our terminals are role-based to ensure high-level security for your finances.</p>
+                    <h3 class="text-white font-bold text-lg mb-2">Built for Ethiopian business, ready for the world</h3>
+                    <p>Min-el started with Ethiopian retailers in mind — multilingual from day one, priced in Birr, and built around a tradition many businesses here already practice: giving back. Every sale recorded through Min-el automatically tracks a 10% charitable tithe, so generosity is part of the ledger, not an afterthought. The same architecture that isolates each company's data also means Min-el scales cleanly to businesses anywhere.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-lg mb-2">How we think about trust</h3>
+                    <p>Every company on Min-el gets its own isolated workspace, enforced at the database level — not just hidden behind a login screen. Sellers only gain access once their Owner approves them. We built the security model first, and every feature since has had to fit inside it.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-lg mb-2">Where we're headed</h3>
+                    <p>Multi-branch reporting, an AI advisor that understands your own sales data, and deeper payment integrations are actively in progress. Min-el is a young, growing platform — feedback from the businesses using it directly shapes what gets built next.</p>
+                </section>
+            </div>
+            <div class="flex flex-wrap gap-3 mt-10">
+                <a href="register.html" class="btn btn-primary px-8 py-3 text-sm">Start your workspace</a>
+                <button onclick="switchTab('home')" class="btn btn-ghost px-8 py-3 text-sm">Back to Home</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- ============ POLICY TAB ============ -->
+    <main id="policy-tab" class="tab-content container mx-auto px-4 py-12 lg:max-w-4xl">
+        <div class="glass p-8 md:p-12 rounded-[3rem]">
+            <span class="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-1 rounded-md w-fit">LEGAL</span>
+            <h2 class="text-3xl font-black mt-4 mb-2">Privacy &amp; Policy</h2>
+            <p class="text-slate-500 text-xs mb-8">Last updated: <span id="policy-updated-date"></span>. This policy explains what Min-el collects, why, and how it's protected. It is written in plain language and is not a substitute for legal advice.</p>
+            <div class="space-y-7 text-slate-300 text-sm leading-relaxed">
+                <section>
+                    <h3 class="text-white font-bold text-base mb-2">1. Who this policy covers</h3>
+                    <p>This policy applies to anyone using the Min-el platform — Owners, Sellers, and visitors browsing this site before creating an account. "We," "us," and "Min-el" refer to the operator of this platform. "You" refers to the person or business using it.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-base mb-2">2. Information we collect</h3>
+                    <ul class="list-disc list-inside space-y-1.5 ml-1">
+                        <li><span class="font-semibold text-white">Account information:</span> name, email address, and password (stored securely by Firebase Authentication — we never see or store your raw password).</li>
+                        <li><span class="font-semibold text-white">Business data:</span> inventory, sales, expenses, debts, wastage records, and anything else you or your team enter into your workspace.</li>
+                        <li><span class="font-semibold text-white">Team &amp; company data:</span> business name, branch details, invite codes, and the role/status of each team member.</li>
+                        <li><span class="font-semibold text-white">Usage data:</span> basic technical information such as browser type and general activity within the platform, used only to keep the service reliable.</li>
+                        <li><span class="font-semibold text-white">Billing information:</span> if you subscribe to a paid plan, payment is processed by our payment partner (Chapa); Min-el stores the outcome of a transaction (plan, status, date) but never your card or mobile-money credentials directly.</li>
+                    </ul>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-base mb-2">3. How we use your information</h3>
+                    <p>We use your information to operate your workspace, keep your business data synced in real time across your team, send you account-related notices (like a seller approval or a trial expiring), and improve the reliability and security of the platform. We do not sell your business data to third parties, and we do not use your sales or inventory data to advertise to you or anyone else.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-base mb-2">4. Company isolation &amp; data separation</h3>
+                    <p>Every business on Min-el operates in its own isolated workspace. This isolation is enforced by Firestore security rules at the database level — meaning access control isn't just a matter of what the interface shows you, it's checked on every single read and write. One company's data is never readable by another company's account, by design.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-base mb-2">5. Third-party services we rely on</h3>
+                    <ul class="list-disc list-inside space-y-1.5 ml-1">
+                        <li><span class="font-semibold text-white">Firebase (Google Cloud):</span> authentication, database (Firestore), and file storage.</li>
+                        <li><span class="font-semibold text-white">Google Translate:</span> optional, on-demand page translation. If you use it, the visible page text is sent to Google's translation service to be translated; this is unrelated to your account or business data.</li>
+                        <li><span class="font-semibold text-white">Chapa:</span> payment processing for paid plans. Chapa handles your card or mobile-money details directly under its own privacy and security practices.</li>
+                    </ul>
+                    <p class="mt-2">Each of these providers has its own privacy policy governing how it handles data on our behalf.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-base mb-2">6. Data retention</h3>
+                    <p>We keep your account and business data for as long as your account is active. If you close your account, we will delete or anonymize your personal account information within a reasonable period, except where we're required to retain records for legal, tax, or fraud-prevention purposes.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-base mb-2">7. Security</h3>
+                    <p>Access to the platform requires authentication through Firebase Authentication. Data in transit is encrypted (HTTPS). Company data is scoped and access-controlled through database-level security rules, and every sensitive action (sales, approvals, payments) is recorded with who made it and when.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-base mb-2">8. Your rights and choices</h3>
+                    <p>You can review and update most of your account information directly from your dashboard. You may request a copy of your data, or request that your account and associated data be deleted, by contacting us. Depending on your location, you may have additional rights under local data protection law; we honor requests to the extent required by applicable law.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-base mb-2">9. Children's privacy</h3>
+                    <p>Min-el is a business tool and is not directed at children. We do not knowingly collect information from anyone under the age of 18.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-base mb-2">10. Cookies &amp; local storage</h3>
+                    <p>We use minimal, functional storage — for example, remembering your selected display language, or keeping you signed in. We don't use third-party advertising trackers.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-base mb-2">11. Changes to this policy</h3>
+                    <p>We may update this policy as the platform evolves. Meaningful changes will be reflected by updating the "Last updated" date above.</p>
+                </section>
+                <section>
+                    <h3 class="text-white font-bold text-base mb-2">12. Contact</h3>
+                    <p>Questions about this policy or your data can be sent to our support team from within your dashboard, or via the contact details provided on this site.</p>
                 </section>
             </div>
             <button onclick="switchTab('home')" class="mt-10 bg-white/10 px-8 py-3 rounded-xl font-bold">Back to Home</button>
         </div>
     </main>
+
 
     <!-- ============ MOBILE BOTTOM NAV (existing, preserved) ============ -->
     <div class="fixed bottom-0 left-0 right-0 glass h-20 md:hidden flex items-center justify-around px-6 z-50">
@@ -604,7 +753,7 @@
             getAuth, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider,
             signInWithEmailAndPassword, onAuthStateChanged, signOut
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
@@ -720,6 +869,8 @@
         // Remembers the signed-in user's role/dashboard so the mobile avatar
         // button and desktop nav can route correctly.
         let currentDashboardHref = null;
+        let currentCompanyId = null;
+        let currentRole = null;
 
         window.handleAvatarTap = function() {
             if (currentDashboardHref) {
@@ -745,14 +896,104 @@
             document.getElementById('nav-user-actions').style.display = '';
         }
 
+        // ---- Pricing: 12-day trial + subscription status ------------------
+        const PLAN_LABELS = { pro: 'Pro', business: 'Business', enterprise: 'Enterprise' };
+
+        function setPlanBanner(text, kind) {
+            const el = document.getElementById('plan-status-banner');
+            if (!text) { el.classList.add('hidden'); return; }
+            el.textContent = text;
+            el.className = 'text-center text-xs font-bold mb-8 ' + (kind === 'success' ? 'text-green-400' : kind === 'warn' ? 'text-amber-400' : 'text-slate-400');
+        }
+
+        function updateTrialButtons(subscription) {
+            document.querySelectorAll('[data-plan-btn]').forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('cursor-not-allowed', 'opacity-60');
+                btn.textContent = 'Start 12-Day Trial';
+            });
+            if (!subscription) { setPlanBanner('', null); return; }
+
+            const now = new Date();
+            const trialEnds = subscription.trialEndsAt && subscription.trialEndsAt.toDate ? subscription.trialEndsAt.toDate() : null;
+
+            if (subscription.status === 'trialing' && trialEnds && trialEnds > now) {
+                const daysLeft = Math.max(1, Math.ceil((trialEnds - now) / 86400000));
+                setPlanBanner(`You're on a ${PLAN_LABELS[subscription.plan] || subscription.plan} trial — ${daysLeft} day${daysLeft === 1 ? '' : 's'} left.`, 'warn');
+                const btn = document.querySelector(`[data-plan-btn="${subscription.plan}"]`);
+                if (btn) { btn.disabled = true; btn.classList.add('cursor-not-allowed', 'opacity-60'); btn.textContent = 'Trial Active'; }
+            } else if (subscription.status === 'active') {
+                setPlanBanner(`Your workspace is on the ${PLAN_LABELS[subscription.plan] || subscription.plan} plan.`, 'success');
+            } else if (subscription.status === 'trialing' && trialEnds && trialEnds <= now) {
+                setPlanBanner(`Your ${PLAN_LABELS[subscription.plan] || subscription.plan} trial has ended. Upgrade from your dashboard's Billing section to keep those features.`, 'warn');
+            } else {
+                setPlanBanner('', null);
+            }
+        }
+
+        function loadPlanStatus(companyId) {
+            onSnapshot(doc(db, "subscriptions", companyId), (snap) => {
+                updateTrialButtons(snap.exists() ? snap.data() : null);
+            }, () => { /* no subscription doc yet, or rules not deployed — fail quietly */ });
+        }
+
+        window.startTrial = async function(planId, priceEtb) {
+            if (!auth.currentUser) {
+                sessionStorage.setItem('minel_pending_plan', planId);
+                toast('Log in or create a free account first — we\'ll pick this plan right back up.', 'info');
+                openModal('login');
+                return;
+            }
+            if (currentRole !== 'owner') {
+                toast('Only the business Owner can change the plan.', 'error');
+                return;
+            }
+            if (!currentCompanyId) {
+                toast('Could not find your company. Please refresh and try again.', 'error');
+                return;
+            }
+            const btn = document.querySelector(`[data-plan-btn="${planId}"]`);
+            if (btn) { btn.disabled = true; btn.textContent = 'Starting trial...'; }
+            try {
+                const trialEndsAt = new Date(Date.now() + 12 * 24 * 60 * 60 * 1000); // 12-day trial
+                await setDoc(doc(db, "subscriptions", currentCompanyId), {
+                    companyId: currentCompanyId,
+                    plan: planId,
+                    priceEtb: priceEtb,
+                    status: 'trialing',
+                    trialEndsAt: trialEndsAt,
+                    startedAt: serverTimestamp(),
+                    startedBy: auth.currentUser.uid,
+                    paymentProvider: 'chapa',
+                    paymentStatus: 'trial_no_payment'
+                }, { merge: true });
+                await setDoc(doc(db, "companies", currentCompanyId), {
+                    plan: planId,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+                toast(`${PLAN_LABELS[planId]} trial started — 12 days, no payment needed.`, 'success');
+                sessionStorage.removeItem('minel_pending_plan');
+            } catch (err) {
+                toast(err.message || 'Could not start your trial. Please try again.', 'error');
+                if (btn) { btn.disabled = false; btn.textContent = 'Start 12-Day Trial'; }
+            }
+        };
+
+        window.contactSales = function() {
+            toast('Reach out from your dashboard\'s Billing section, or email us directly — we\'ll set up Enterprise pricing with you.', 'info');
+        };
+
         onAuthStateChanged(auth, async (user) => {
             const authActions = document.getElementById('nav-auth-actions');
             const userActions = document.getElementById('nav-user-actions');
 
             if (!user) {
                 currentDashboardHref = null;
+                currentCompanyId = null;
+                currentRole = null;
                 showAuthActions();
                 document.querySelectorAll('.dashboard-item').forEach(i => i.classList.add('locked-card'));
+                updateTrialButtons(null);
                 return;
             }
 
@@ -765,6 +1006,19 @@
                 const profile = profileSnap.data();
                 const role = (profile.role || '').toLowerCase();     // matches register.html's lowercase roles
                 const isActive = profile.status === 'active';
+                currentRole = role;
+                currentCompanyId = profile.companyId || null;
+
+                if (currentCompanyId && role === 'owner') {
+                    loadPlanStatus(currentCompanyId);
+                }
+
+                // Resume a plan selection made before the person logged in.
+                const pendingPlan = sessionStorage.getItem('minel_pending_plan');
+                if (pendingPlan && role === 'owner') {
+                    const priceMap = { pro: 499, business: 1499 };
+                    if (priceMap[pendingPlan]) window.startTrial(pendingPlan, priceMap[pendingPlan]);
+                }
 
                 document.querySelectorAll('.dashboard-item').forEach(i => i.classList.add('locked-card'));
 
@@ -797,18 +1051,48 @@
                 layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
                 autoDisplay: false
             }, 'google_translate_element');
+            // Re-apply whatever language the person picked last time (persisted
+            // below) once the widget has actually finished initializing, so a
+            // reload or another page on the site doesn't silently fall back to English.
+            var saved = localStorage.getItem('minel_lang');
+            if (saved) doGTranslate(saved, /*silent*/ true, /*attempt*/ 0);
         }
 
-        function doGTranslate(lang_pair) {
-            if (lang_pair.value) lang_pair = lang_pair.value;
-            if (lang_pair == '') return;
+        function doGTranslate(lang_pair, silent, attempt) {
+            if (lang_pair && lang_pair.value !== undefined) lang_pair = lang_pair.value;
+            if (!lang_pair) return;
+            attempt = attempt || 0;
+
             var lang = lang_pair.split('|')[1];
             var teCombo = document.querySelector('.goog-te-combo');
+
             if (teCombo == null || teCombo.innerHTML == null) {
-                setTimeout(function() { doGTranslate(lang_pair); }, 500);
-            } else {
-                teCombo.value = lang;
-                teCombo.dispatchEvent(new Event('change'));
+                // Google's widget can take a moment to inject its own <select>.
+                // Retry for up to ~10s, then give up with a visible message
+                // instead of failing silently forever.
+                if (attempt >= 20) {
+                    if (!silent && typeof toast === 'function') {
+                        toast('Translation service is unavailable right now. Please try again in a moment.', 'error');
+                    }
+                    return;
+                }
+                setTimeout(function() { doGTranslate(lang_pair, silent, attempt + 1); }, 500);
+                return;
+            }
+
+            teCombo.value = lang;
+            // THE ACTUAL FIX: Google's injected combo listens for a *bubbling*
+            // change event. `new Event('change')` without `{ bubbles: true }`
+            // does not bubble, so the listener never sees it and the page
+            // silently never translates — this was the root cause of
+            // "select a language and nothing happens."
+            teCombo.dispatchEvent(new Event('change', { bubbles: true }));
+
+            // Remember the choice so it's re-applied automatically next time.
+            localStorage.setItem('minel_lang', lang_pair);
+
+            if (!silent && typeof toast === 'function') {
+                toast('Language updated.', 'success');
             }
         }
 
@@ -835,6 +1119,10 @@
         }
 
         document.getElementById('footer-year').textContent = new Date().getFullYear();
+        var policyDateEl = document.getElementById('policy-updated-date');
+        if (policyDateEl) {
+            policyDateEl.textContent = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
 
         // Lightweight scroll-reveal, respects prefers-reduced-motion via CSS above.
         const revealEls = document.querySelectorAll('.reveal');
@@ -853,4 +1141,4 @@
         }
     </script>
 </body>
-                            </html>
+    </html>
