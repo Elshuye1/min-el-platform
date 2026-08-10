@@ -192,7 +192,6 @@
                     <p class="text-[11px] text-slate-500">Messages sync instantly with the seller's terminal</p>
                 </div>
                 <div id="hqChatWindow" class="p-5 space-y-3 h-[420px] overflow-y-auto"></div>
-                <p id="hqChatError" class="hidden text-[11px] font-bold text-center py-2 text-red-400"></p>
                 <div class="p-4 border-t border-white/5 flex gap-2">
                     <input id="hqChatInput" placeholder="Type a message to your seller..." class="flex-1 bg-white/5 rounded-2xl p-3 outline-none text-sm border border-white/10 focus:border-blue-500" onkeydown="if(event.key==='Enter'){sendHqMessage();}">
                     <button onclick="sendHqMessage()" class="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shrink-0 hover:bg-blue-700"><i class="fa fa-paper-plane"></i></button>
@@ -275,26 +274,15 @@
             </div>
 
             <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-[10px] text-slate-500 font-bold uppercase">Current Plan</p>
-                        <h3 id="team-plan-name" class="text-xl font-black mt-1 capitalize">Free</h3>
-                    </div>
-                    <button id="upgrade-btn" onclick="upgradeToPremium()" class="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-bold px-5 py-3 rounded-xl transition shadow-lg shadow-blue-500/20">
-                        <i class="fa fa-crown mr-1"></i> Upgrade to Premium
-                    </button>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-black font-display"><i class="fa fa-credit-card text-purple-400 mr-2"></i>Billing</h3>
+                    <span id="billing-plan-badge" class="bg-blue-500/10 text-blue-400 text-[10px] font-black px-3 py-1 rounded-full border border-blue-500/20">FREE</span>
                 </div>
-                <p id="upgrade-note" class="text-[11px] text-slate-500 mt-3 hidden"></p>
-            </div>
-
-            <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
-                <h3 class="text-lg font-black font-display mb-1"><i class="fa fa-lock text-blue-400 mr-2"></i>Reports PIN</h3>
-                <p class="text-[11px] text-slate-500 mb-4">Optional. If set, your sellers must enter this PIN to view the Reports tab (profit, cash flow). Leave blank and save to remove the lock entirely.</p>
-                <div class="flex gap-3">
-                    <input id="reports-pin-input" type="text" inputmode="numeric" maxlength="12" placeholder="e.g. 4821" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-500">
-                    <button onclick="saveReportsPin()" id="reports-pin-save" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-3 rounded-xl transition">Save</button>
+                <p id="billing-status-text" class="text-sm text-slate-400">You're on the Free plan.</p>
+                <div id="billing-actions" class="flex flex-wrap gap-2 mt-4">
+                    <a href="index.html#pricing" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition"><i class="fa fa-arrow-up mr-1"></i> Upgrade Plan</a>
+                    <button onclick="payWithChapa()" class="bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold px-4 py-2 rounded-lg transition"><i class="fa fa-money-bill-wave mr-1"></i> Pay with Chapa</button>
                 </div>
-                <p id="reports-pin-status" class="text-[11px] text-slate-500 mt-2"></p>
             </div>
 
             <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
@@ -334,7 +322,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
@@ -347,7 +334,6 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const functions = getFunctions(app);
 
         // Every query/write below is scoped to this companyId once auth resolves.
         let companyId = null;
@@ -355,28 +341,6 @@
         let defaultBranchId = null;
 
         window.logout = () => { signOut(auth).then(() => window.location.href = "index.html"); };
-
-        // Redirects to Chapa's hosted checkout. The actual charge, verification,
-        // and plan activation all happen server-side in the chapaWebhook Cloud
-        // Function — this only ever starts the process.
-        window.upgradeToPremium = async () => {
-            const btn = document.getElementById('upgrade-btn');
-            const note = document.getElementById('upgrade-note');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> Starting checkout...';
-            note.classList.add('hidden');
-            try {
-                const initiate = httpsCallable(functions, 'initiateChapaPayment');
-                const result = await initiate({ plan: 'premium', returnUrl: window.location.href });
-                window.location.href = result.data.checkoutUrl;
-            } catch (err) {
-                console.error('Upgrade failed:', err);
-                note.textContent = err.message || 'Could not start checkout. Please try again.';
-                note.classList.remove('hidden');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa fa-crown mr-1"></i> Upgrade to Premium';
-            }
-        };
 
         window.showSec = (id) => {
             document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
@@ -604,33 +568,19 @@
             snap.forEach(d => {
                 const m = d.data();
                 const isOwner = m.sender === 'owner';
-                const senderLabel = isOwner ? 'Manager' : (m.senderName || 'Seller');
                 win.innerHTML += `<div class="flex ${isOwner ? 'justify-end' : 'justify-start'}">
                     <div class="${isOwner ? 'bg-blue-600' : 'bg-white/10'} px-4 py-3 rounded-2xl text-sm max-w-[75%]">
-                        <p class="text-[9px] font-black uppercase mb-1 opacity-60">${senderLabel}</p>${m.text || ''}
+                        <p class="text-[9px] font-black uppercase mb-1 opacity-60">${m.sender}</p>${m.text || ''}
                     </div></div>`;
             });
             win.scrollTop = win.scrollHeight;
         });
         window.sendHqMessage = async () => {
             const input = document.getElementById('hqChatInput');
-            const errBox = document.getElementById('hqChatError');
             const text = input.value.trim();
             if (!text) return;
-            errBox.classList.add('hidden');
-            try {
-                await addDoc(collection(db, "ownerMessages"), {
-                    sender: 'owner',
-                    senderName: 'Manager',
-                    text, companyId, branchId: defaultBranchId, createdBy: currentUid,
-                    timestamp: serverTimestamp()
-                });
-                input.value = ''; // only clear once we KNOW it actually sent
-            } catch (err) {
-                console.error('[sendHqMessage] failed:', err);
-                errBox.textContent = `Message not sent: ${err.message || err} (code: ${err.code || 'unknown'})`;
-                errBox.classList.remove('hidden');
-            }
+            input.value = '';
+            await addDoc(collection(db, "ownerMessages"), { sender: 'owner', text, companyId, createdBy: currentUid, timestamp: serverTimestamp() });
         };
 
         /* =========================================================
@@ -699,55 +649,14 @@
             e.target.reset(); alert("Contribution logged!");
         };
 
-        // --- TEAM: company info, invite code, plan status, seller approval ---
-        // Live listener (not a one-time fetch) so the plan badge updates
-        // automatically once chapaWebhook activates premium — no reload needed
-        // when the Owner returns from the Chapa checkout page.
-        onSnapshot(doc(db, "companies", companyId), (snap) => {
+        // --- TEAM: company info, invite code, seller approval ---
+        getDoc(doc(db, "companies", companyId)).then(snap => {
             if (!snap.exists()) return;
             const c = snap.data();
             document.getElementById('team-company-name').innerText = c.name || 'Your Business';
             document.getElementById('team-invite-code').innerText = c.inviteCode || '------';
             window._inviteCode = c.inviteCode || '';
-
-            const planEl = document.getElementById('team-plan-name');
-            const upgradeBtn = document.getElementById('upgrade-btn');
-            const plan = c.plan || 'free';
-            planEl.innerText = plan;
-            if (plan === 'premium') {
-                upgradeBtn.innerHTML = '<i class="fa fa-check mr-1"></i> Premium Active';
-                upgradeBtn.disabled = true;
-                upgradeBtn.classList.add('opacity-60', 'cursor-default');
-            }
-
-            const pinStatus = document.getElementById('reports-pin-status');
-            const pinInput = document.getElementById('reports-pin-input');
-            if (c.reportsPin) {
-                pinStatus.innerHTML = `<i class="fa fa-check-circle text-green-400 mr-1"></i>PIN is set — sellers must enter <span class="font-mono font-bold text-slate-300">${c.reportsPin}</span> to view Reports.`;
-            } else {
-                pinStatus.innerHTML = `<i class="fa fa-circle-info mr-1"></i>No PIN set — Reports is open to all sellers.`;
-            }
-            // Don't overwrite what the Owner is actively typing.
-            if (document.activeElement !== pinInput) pinInput.value = c.reportsPin || '';
         });
-
-        window.saveReportsPin = async () => {
-            const btn = document.getElementById('reports-pin-save');
-            const pin = document.getElementById('reports-pin-input').value.trim();
-            btn.disabled = true;
-            btn.textContent = 'Saving...';
-            try {
-                await updateDoc(doc(db, "companies", companyId), {
-                    reportsPin: pin || null,
-                    updatedAt: serverTimestamp()
-                });
-            } catch (err) {
-                alert('Could not save: ' + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Save';
-            }
-        };
 
         window.copyInviteCode = () => {
             if (!window._inviteCode) return;
@@ -756,72 +665,103 @@
                 .catch(() => alert('Code: ' + window._inviteCode));
         };
 
-        // Team roster: ONE listener, scoped only by companyId (a single equality
-        // filter needs no manual composite index — Firestore auto-indexes single
-        // fields). Pending vs. Active vs. everyone-else split happens right here
-        // in JS instead of inside the query, so this works with zero Firebase
-        // Console setup.
-        onSnapshot(query(collection(db, "users"), where("companyId", "==", companyId)), (snap) => {
-            const allSellers = snap.docs.filter(d => d.data().role === 'seller');
-            const pending = allSellers.filter(d => d.data().status === 'pending');
-            const active = allSellers.filter(d => d.data().status === 'active');
+        // --- BILLING: current plan + trial countdown ---
+        const PLAN_LABELS = { free: 'FREE', pro: 'PRO', business: 'BUSINESS', enterprise: 'ENTERPRISE' };
 
-            // --- Pending list ---
+        onSnapshot(doc(db, "subscriptions", companyId), (snap) => {
+            const badge = document.getElementById('billing-plan-badge');
+            const text = document.getElementById('billing-status-text');
+            if (!snap.exists()) {
+                badge.innerText = 'FREE';
+                text.innerText = "You're on the Free plan.";
+                return;
+            }
+            const sub = snap.data();
+            const label = PLAN_LABELS[sub.plan] || sub.plan.toUpperCase();
+            badge.innerText = label;
+
+            const trialEnds = sub.trialEndsAt && sub.trialEndsAt.toDate ? sub.trialEndsAt.toDate() : null;
+            const now = new Date();
+
+            if (sub.status === 'trialing' && trialEnds && trialEnds > now) {
+                const daysLeft = Math.max(1, Math.ceil((trialEnds - now) / 86400000));
+                text.innerText = `${label} trial — ${daysLeft} day${daysLeft === 1 ? '' : 's'} left. Pay anytime to keep it after the trial ends.`;
+            } else if (sub.status === 'trialing' && trialEnds && trialEnds <= now) {
+                text.innerText = `Your ${label} trial has ended. Pay with Chapa to keep these features, or you'll drop back to Free.`;
+            } else if (sub.status === 'active') {
+                text.innerText = `You're on the ${label} plan.`;
+            } else {
+                text.innerText = `Plan: ${label}`;
+            }
+        }, () => { /* subscriptions doc/rules not set up yet — stay on Free display */ });
+
+        // Calls a Firebase Cloud Function that initializes a Chapa transaction
+        // and returns a checkout URL. Requires the `initializeChapaPayment`
+        // function to be deployed with a real Chapa secret key — see
+        // CHAPA_SETUP.md. Fails gracefully with a clear message until then.
+        window.payWithChapa = async () => {
+            const btn = event.currentTarget;
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> Connecting...';
+            try {
+                const subSnap = await getDoc(doc(db, "subscriptions", companyId));
+                const plan = subSnap.exists() ? subSnap.data().plan : null;
+                const priceEtb = subSnap.exists() ? subSnap.data().priceEtb : null;
+                if (!plan || plan === 'free') {
+                    alert('Choose a plan first from the Pricing page, then come back here to pay.');
+                    return;
+                }
+                const FUNCTION_URL = 'https://us-central1-min-eli.cloudfunctions.net/initializeChapaPayment';
+                const res = await fetch(FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ companyId, plan, priceEtb, email: auth.currentUser.email, uid: currentUid })
+                });
+                if (!res.ok) throw new Error('Payment service is not set up yet.');
+                const data = await res.json();
+                if (data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                } else {
+                    throw new Error(data.message || 'Could not start checkout.');
+                }
+            } catch (err) {
+                alert("Online payment isn't fully set up yet, so you can't pay directly here. Your trial still works normally — see CHAPA_SETUP.md for enabling live payments, or contact support.");
+                console.error('Chapa init failed:', err);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = original;
+            }
+        };
+
+        // Pending sellers (status == "pending") — owner approves or rejects here,
+        // no more manual Firestore Console editing.
+        onSnapshot(query(collection(db, "users"), where("companyId", "==", companyId), where("role", "==", "seller"), where("status", "==", "pending")), (snap) => {
             const list = document.getElementById('pendingSellersList');
             const badge = document.getElementById('pendingBadge');
             const count = document.getElementById('pendingCount');
-            count.innerText = `${pending.length} waiting`;
-            if (pending.length === 0) {
+            count.innerText = `${snap.size} waiting`;
+            if (snap.empty) {
                 list.innerHTML = '<p class="text-slate-500 text-sm italic">No sellers waiting for approval.</p>';
                 badge.classList.add('hidden');
-            } else {
-                badge.classList.remove('hidden');
-                badge.innerText = pending.length;
-                list.innerHTML = pending.map(d => {
-                    const u = d.data();
-                    return `
-                    <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4">
-                        <div>
-                            <p class="font-bold text-sm">${u.username || u.email}</p>
-                            <p class="text-[10px] text-slate-500">${u.email}</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="approveSeller('${d.id}')" class="bg-green-600 hover:bg-green-700 text-white text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-check mr-1"></i>Approve</button>
-                            <button onclick="rejectSeller('${d.id}')" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-xmark mr-1"></i>Reject</button>
-                        </div>
-                    </div>`;
-                }).join('');
+                return;
             }
-
-            // --- Active team list ---
-            const activeList = document.getElementById('activeSellersList');
-            if (active.length === 0) {
-                activeList.innerHTML = '<p class="text-slate-500 text-sm italic">No active sellers yet.</p>';
-            } else {
-                activeList.innerHTML = active.map(d => {
-                    const u = d.data();
-                    return `
-                    <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3">
-                        <div>
-                            <p class="font-bold text-sm">${u.username || u.email}</p>
-                            <p class="text-[10px] text-slate-500">${u.email}</p>
-                        </div>
-                        <button onclick="suspendSeller('${d.id}')" class="bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-pause mr-1"></i>Suspend</button>
-                    </div>`;
-                }).join('');
-            }
-        }, (err) => {
-            // Show the raw Firestore error directly on the page, so you don't
-            // need to open DevTools to tell me what's wrong.
-            console.error('[Team tab] users listener failed:', err);
-            const errBox = `
-                <div class="bg-red-950/60 border border-red-500/40 rounded-xl p-4 text-xs">
-                    <p class="font-bold text-red-300 mb-1">Team list failed to load</p>
-                    <p class="text-red-400">${err.message || err}</p>
-                    <p class="text-red-500/70 font-mono mt-1">Code: ${err.code || 'unknown'}</p>
+            badge.classList.remove('hidden');
+            badge.innerText = snap.size;
+            list.innerHTML = snap.docs.map(d => {
+                const u = d.data();
+                return `
+                <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div>
+                        <p class="font-bold text-sm">${u.username || u.email}</p>
+                        <p class="text-[10px] text-slate-500">${u.email}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="approveSeller('${d.id}')" class="bg-green-600 hover:bg-green-700 text-white text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-check mr-1"></i>Approve</button>
+                        <button onclick="rejectSeller('${d.id}')" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-xmark mr-1"></i>Reject</button>
+                    </div>
                 </div>`;
-            document.getElementById('pendingSellersList').innerHTML = errBox;
-            document.getElementById('activeSellersList').innerHTML = errBox;
+            }).join('');
         });
 
         window.approveSeller = async (uid) => {
@@ -844,6 +784,26 @@
             });
         };
 
+        // Active sellers (status == "active")
+        onSnapshot(query(collection(db, "users"), where("companyId", "==", companyId), where("role", "==", "seller"), where("status", "==", "active")), (snap) => {
+            const list = document.getElementById('activeSellersList');
+            if (snap.empty) {
+                list.innerHTML = '<p class="text-slate-500 text-sm italic">No active sellers yet.</p>';
+                return;
+            }
+            list.innerHTML = snap.docs.map(d => {
+                const u = d.data();
+                return `
+                <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3">
+                    <div>
+                        <p class="font-bold text-sm">${u.username || u.email}</p>
+                        <p class="text-[10px] text-slate-500">${u.email}</p>
+                    </div>
+                    <button onclick="suspendSeller('${d.id}')" class="bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-pause mr-1"></i>Suspend</button>
+                </div>`;
+            }).join('');
+        });
+
         window.suspendSeller = async (uid) => {
             if (!confirm("Suspend this seller? They will lose dashboard access immediately.")) return;
             await updateDoc(doc(db, "users", uid), {
@@ -855,4 +815,4 @@
         } // end initDashboard()
     </script>
 </body>
-                            </html>
+    </html>
