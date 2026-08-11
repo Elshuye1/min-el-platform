@@ -1,0 +1,179 @@
+rules_version = '2';
+
+// =============================================================================
+// Min-el Firestore Security Rules
+// =============================================================================
+// STARTING POINT, NOT A GUARANTEE — this is written from what the client code
+// in seller-dashboard.html / owner-dashboard.html / register.html / index.html
+// actually reads and writes, discovered by grepping every collection(db,...)
+// and doc(db,...) call in those files. I do not have your original rules (you
+// said none exist yet), so review every `allow` line against your real access
+// patterns before deploying — especially anywhere marked "ADJUST ME".
+//
+// Deploy with: firebase deploy --only firestore:rules
+//
+// Core idea: almost nothing should ever be writable directly by a browser.
+// Sensitive writes (subscriptions, invite-code creation, PIN gating) go
+// through functions/index.js instead — Cloud Functions using the Admin SDK
+// bypass these rules entirely, which is intentional and exactly the point.
+// =============================================================================
+
+function isSignedIn() {
+  return request.auth != null;
+}
+
+// The caller's own users/{uid} profile. Never trust a companyId/role the
+// client sends in a request body — only trust what's stored against their uid.
+function callerProfile() {
+  return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+}
+
+function callerCompanyId() {
+  return callerProfile().companyId;
+}
+
+function isMember(companyId) {
+  return isSignedIn() && callerCompanyId() == companyId;
+}
+
+function isOwner(companyId) {
+  return isMember(companyId) && callerProfile().role == 'owner';
+}
+
+// True only in the ~30 minutes after a correct PIN check ran inside the
+// verifyReportsPin Cloud Function (functions/index.js), and only for the
+// specific company that was verified against. This is what makes the PIN
+// actually protect the DATA, not just which UI tab is visible — without this
+// check here, a seller's browser could still read sales/wastage/debtPayments
+// directly regardless of whether the Reports tab shows or not.
+function reportsUnlocked(companyId) {
+  return isSignedIn()
+    && request.auth.token.reportsUnlockedCompany == companyId
+    && request.auth.token.reportsUnlockedUntil is number
+    && request.auth.token.reportsUnlockedUntil > request.time.toMillis();
+}
+
+// Owners always see their own numbers; PIN gate only ever applies to sellers.
+function canReadReports(companyId) {
+  return isOwner(companyId) || reportsUnlocked(companyId);
+}
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- users -----------------------------------------------------------
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isMember(resource.data.companyId));
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() && request.auth.uid == uid
+                    && request.resource.data.companyId == resource.data.companyId
+                    && request.resource.data.role == resource.data.role;
+      allow delete: if false;
+    }
+
+    // ---- companies ---------------------------------------------------------
+    match /companies/{companyId} {
+      allow read: if isMember(companyId);
+      allow update: if isOwner(companyId)
+                    && !("reportsPin" in request.resource.data.diff(resource.data).affectedKeys())
+                    && !("plan" in request.resource.data.diff(resource.data).affectedKeys());
+      allow create, delete: if false;
+    }
+
+    // ---- inviteCodes -------------------------------------------------------
+    match /inviteCodes/{code} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // ---- branches ------------------------------------------------------
+    match /branches/{branchId} {
+      allow read: if isMember(resource.data.companyId);
+      allow create: if isSignedIn();
+      allow update: if isOwner(resource.data.companyId);
+      allow delete: if false;
+    }
+
+    // ---- inventory -----------------------------------------------------
+    match /inventory/{itemId} {
+      allow read: if isMember(resource.data.companyId);
+      allow create, update: if isMember(request.resource.data.companyId);
+      allow delete: if isOwner(resource.data.companyId);
+    }
+
+    // ---- sales — the core "reports" data --------------------------------
+    match /sales/{saleId} {
+      allow read: if canReadReports(resource.data.companyId);
+      allow create: if isMember(request.resource.data.companyId)
+                    && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ---- wastage ---------------------------------------------------------
+    match /wastage/{id} {
+      allow read: if canReadReports(resource.data.companyId);
+      allow create: if isMember(request.resource.data.companyId)
+                    && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ---- debts / debtPayments ---------------------------------------------
+    match /debts/{id} {
+      allow read: if isMember(resource.data.companyId);
+      allow create, update: if isMember(request.resource.data.companyId);
+      allow delete: if isOwner(resource.data.companyId);
+    }
+    match /debtPayments/{id} {
+      allow read: if canReadReports(resource.data.companyId);
+      allow create: if isMember(request.resource.data.companyId)
+                    && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ---- expenses / bankDeposits — financial, gate like reports ----------
+    match /expenses/{id} {
+      allow read: if canReadReports(resource.data.companyId);
+      allow create: if isMember(request.resource.data.companyId);
+      allow update, delete: if isOwner(resource.data.companyId);
+    }
+    match /bankDeposits/{id} {
+      allow read: if canReadReports(resource.data.companyId);
+      allow create: if isMember(request.resource.data.companyId);
+      allow update, delete: if isOwner(resource.data.companyId);
+    }
+
+    // ---- subscriptions & pendingPayments — server-only writes ------------
+    match /subscriptions/{companyId} {
+      allow read: if isMember(companyId);
+      allow write: if false;
+    }
+    match /pendingPayments/{txRef} {
+      allow read: if isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == resource.data.companyId;
+      allow write: if false;
+    }
+
+    // ---- social/misc — not financially sensitive, ADJUST ME as needed ----
+    match /inspirationPosts/{id} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.createdBy == request.auth.uid;
+    }
+    match /customerRequests/{id} {
+      allow read, create: if isSignedIn();
+      allow update, delete: if false;
+    }
+    match /ownerMessages/{id} {
+      allow read: if isMember(resource.data.companyId);
+      allow create: if isMember(request.resource.data.companyId);
+      allow update, delete: if false;
+    }
+    match /calls/{id} {
+      allow read, write: if isMember(resource.data.companyId);
+    }
+    match /charity/{id} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+  }
+}
