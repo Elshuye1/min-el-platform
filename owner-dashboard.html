@@ -73,7 +73,7 @@
         <section id="sec-overview" class="space-y-10">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="glass p-5 rounded-3xl border-b-4 border-blue-500">
-                    <p class="text-[10px] text-slate-500 font-bold uppercase">Revenue</p>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase">Revenue (30d)</p>
                     <h3 id="stat-rev" class="text-xl font-black mt-1 font-display">$0.00</h3>
                 </div>
                 <div class="glass p-5 rounded-3xl border-b-4 border-green-500">
@@ -225,7 +225,7 @@
         <section id="sec-reports" class="hidden glass p-10 rounded-[3rem]">
             <h3 class="text-2xl font-black mb-8 italic text-blue-400 font-display">Financial Performance</h3>
             <div class="space-y-6 max-w-lg">
-                <div class="flex justify-between border-b border-white/5 pb-2"><span>Gross Revenue</span><span id="r-gross">$0.00</span></div>
+                <div class="flex justify-between border-b border-white/5 pb-2"><span>Gross Revenue (30d)</span><span id="r-gross">$0.00</span></div>
                 <div class="flex justify-between border-b border-white/5 pb-2 text-red-400"><span>Stock Cost</span><span id="r-cost">$0.00</span></div>
                 <div class="flex justify-between text-2xl font-black pt-4 text-green-400 font-display"><span>Net Profit</span><span id="r-profit">$0.00</span></div>
                 <button onclick="window.print()" class="w-full bg-white/5 border border-white/10 py-4 rounded-2xl font-bold mt-6 hover:bg-white/10 transition">Download Report</button>
@@ -321,7 +321,8 @@
         // --- SECURITY: real Firebase Auth + company/role check (replaces the old hardcoded PIN) ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
@@ -416,8 +417,24 @@
             updateAlerts(lowItems);
         });
 
-        // --- SALES & PROFIT SYNC (unchanged logic) ---
-        onSnapshot(query(collection(db, "sales"), where("companyId", "==", companyId)), (snap) => {
+        // --- SALES & PROFIT SYNC ---
+        // Fixed: this used to be `where("companyId","==",companyId)` with NO
+        // date bound and NO limit — it downloaded every sale ever recorded,
+        // every single time this page loaded. At 20,000+ sales that's 20,000+
+        // reads per page open (real Firebase billing cost) and can freeze the
+        // browser tab entirely. We now scope it to the last 30 days and cap
+        // it at 3000 docs as a hard safety ceiling. For true all-time
+        // lifetime totals, keep a running aggregate (e.g. a Cloud Function
+        // that increments companies/{id}.lifetimeRevenue on every sale write)
+        // instead of ever re-summing the full collection client-side.
+        const THIRTY_DAYS_AGO = Timestamp.fromDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+        onSnapshot(query(
+            collection(db, "sales"),
+            where("companyId", "==", companyId),
+            where("timestamp", ">=", THIRTY_DAYS_AGO),
+            orderBy("timestamp", "desc"),
+            limit(3000)
+        ), (snap) => {
             let rev = 0; let cost = 0;
             const feed = document.getElementById('miniSales'); feed.innerHTML = '';
             snap.forEach(d => {
@@ -697,8 +714,8 @@
 
         // Calls a Firebase Cloud Function that initializes a Chapa transaction
         // and returns a checkout URL. Requires the `initializeChapaPayment`
-        // function to be deployed with a real Chapa secret key — see
-        // CHAPA_SETUP.md. Fails gracefully with a clear message until then.
+        // function to be deployed with a real Chapa SECRET key stored via
+        // Firebase Secret Manager — see functions/README.md.
         window.payWithChapa = async () => {
             const btn = event.currentTarget;
             const original = btn.innerHTML;
@@ -707,26 +724,28 @@
             try {
                 const subSnap = await getDoc(doc(db, "subscriptions", companyId));
                 const plan = subSnap.exists() ? subSnap.data().plan : null;
-                const priceEtb = subSnap.exists() ? subSnap.data().priceEtb : null;
                 if (!plan || plan === 'free') {
                     alert('Choose a plan first from the Pricing page, then come back here to pay.');
                     return;
                 }
-                const FUNCTION_URL = 'https://us-central1-min-eli.cloudfunctions.net/initializeChapaPayment';
-                const res = await fetch(FUNCTION_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ companyId, plan, priceEtb, email: auth.currentUser.email, uid: currentUid })
-                });
-                if (!res.ok) throw new Error('Payment service is not set up yet.');
-                const data = await res.json();
+                // Fixed: this used to be a raw fetch() with NO auth header at
+                // all — anyone could POST directly to the URL and trigger a
+                // payment link under any companyId they typed in, with no
+                // server-side check whatsoever. httpsCallable() (the Firebase
+                // SDK's callable-function wrapper) automatically attaches and
+                // verifies the caller's ID token; the Cloud Function itself
+                // additionally confirms the token's uid actually owns
+                // companyId before calling Chapa (see functions/index.js).
+                const functions = getFunctions();
+                const initPayment = httpsCallable(functions, 'initializeChapaPayment');
+                const { data } = await initPayment({ planId: plan });
                 if (data.checkout_url) {
                     window.location.href = data.checkout_url;
                 } else {
                     throw new Error(data.message || 'Could not start checkout.');
                 }
             } catch (err) {
-                alert("Online payment isn't fully set up yet, so you can't pay directly here. Your trial still works normally — see CHAPA_SETUP.md for enabling live payments, or contact support.");
+                alert("Online payment isn't fully set up yet, so you can't pay directly here. Your trial still works normally — see functions/README.md for enabling live payments, or contact support.");
                 console.error('Chapa init failed:', err);
             } finally {
                 btn.disabled = false;
