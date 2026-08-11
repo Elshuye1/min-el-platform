@@ -754,6 +754,7 @@
             signInWithEmailAndPassword, onAuthStateChanged, signOut
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
@@ -937,6 +938,14 @@
             }, () => { /* no subscription doc yet, or rules not deployed — fail quietly */ });
         }
 
+        // Fixed: this used to write trialEndsAt/plan/status straight to
+        // Firestore from the browser via setDoc — anyone could open DevTools
+        // and grant themselves any plan for free, forever, with no trial
+        // limit. Trial/plan creation now happens entirely inside the
+        // startTrial Cloud Function, which checks the caller is really the
+        // owner of currentCompanyId and computes trialEndsAt itself; the
+        // browser only tells it *which* plan was picked, never the dates or
+        // status.
         window.startTrial = async function(planId, priceEtb) {
             if (!auth.currentUser) {
                 sessionStorage.setItem('minel_pending_plan', planId);
@@ -955,22 +964,9 @@
             const btn = document.querySelector(`[data-plan-btn="${planId}"]`);
             if (btn) { btn.disabled = true; btn.textContent = 'Starting trial...'; }
             try {
-                const trialEndsAt = new Date(Date.now() + 12 * 24 * 60 * 60 * 1000); // 12-day trial
-                await setDoc(doc(db, "subscriptions", currentCompanyId), {
-                    companyId: currentCompanyId,
-                    plan: planId,
-                    priceEtb: priceEtb,
-                    status: 'trialing',
-                    trialEndsAt: trialEndsAt,
-                    startedAt: serverTimestamp(),
-                    startedBy: auth.currentUser.uid,
-                    paymentProvider: 'chapa',
-                    paymentStatus: 'trial_no_payment'
-                }, { merge: true });
-                await setDoc(doc(db, "companies", currentCompanyId), {
-                    plan: planId,
-                    updatedAt: serverTimestamp()
-                }, { merge: true });
+                const functions = getFunctions();
+                const startTrialFn = httpsCallable(functions, 'startTrial');
+                await startTrialFn({ companyId: currentCompanyId, planId });
                 toast(`${PLAN_LABELS[planId]} trial started — 12 days, no payment needed.`, 'success');
                 sessionStorage.removeItem('minel_pending_plan');
             } catch (err) {
@@ -1103,7 +1099,13 @@
         }
 
         function sharePost() {
-            const val = document.getElementById('post-input').value;
+            const inputEl = document.getElementById('post-input');
+            const feedEl = document.getElementById('feed-container');
+            // Defensive guard: this used to crash with an unhandled TypeError
+            // if either element was missing from the DOM (e.g. removed during
+            // a future redesign). Fail quietly instead of breaking the page.
+            if (!inputEl || !feedEl) { console.warn('sharePost: required elements missing'); return; }
+            const val = inputEl.value;
             if (!val) return;
             const card = `
                 <div class="glass p-5 rounded-[2rem] border-white/5 animate-slide-up">
@@ -1114,8 +1116,8 @@
                         <button class="flex items-center gap-2 hover:text-white"><i class="fa-solid fa-share"></i> Share</button>
                     </div>
                 </div>`;
-            document.getElementById('feed-container').insertAdjacentHTML('afterbegin', card);
-            document.getElementById('post-input').value = '';
+            feedEl.insertAdjacentHTML('afterbegin', card);
+            inputEl.value = '';
         }
 
         document.getElementById('footer-year').textContent = new Date().getFullYear();
