@@ -1,0 +1,19 @@
+{
+  "name": "min-el-functions",
+  "description": "Server-side security fixes for Min-el: reports PIN check, trial creation, and Chapa payments.",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log",
+    "shell": "firebase functions:shell"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.1.0",
+    "firebase-functions": "^5.0.0"
+  },
+  "private": true
+}
