@@ -630,7 +630,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, setDoc, getDoc,
-  serverTimestamp, query, orderBy, limit, where, increment, runTransaction
+  serverTimestamp, query, orderBy, limit, where, increment, runTransaction, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
@@ -767,7 +767,18 @@ document.getElementById('salePriceInput').addEventListener('input', updateDiscou
 window.addToCart = () => {
   const qty = parseInt(document.getElementById('qty').value);
   if (!selectedItem || qty <= 0) return alert("Select an item first");
-  if (qty > selectedItem.stock) return alert("Insufficient Stock!");
+
+  // Fix: must check against stock still available AFTER what's already
+  // sitting in the cart for this item (across all price-lines), not just
+  // the newly entered qty. Previously "qty > selectedItem.stock" let you
+  // add 4 (max 5), then add 4 more, silently creating negative inventory.
+  const alreadyInCart = cart.filter(c => c.id === selectedItem.id).reduce((sum, c) => sum + c.buyQty, 0);
+  if (alreadyInCart + qty > selectedItem.stock) {
+    const remaining = Math.max(0, selectedItem.stock - alreadyInCart);
+    return alert(currentLang === 'am'
+      ? `በቂ ስቶክ የለም! የቀረ፦ ${remaining} (${alreadyInCart} ቀድሞ በቅርጫት ውስጥ ነው)`
+      : `Insufficient Stock! Only ${remaining} left to add (${alreadyInCart} already in cart).`);
+  }
 
   const enteredPrice = parseFloat(document.getElementById('salePriceInput').value);
   const sellPrice = isNaN(enteredPrice) ? selectedItem.sell : enteredPrice;
@@ -851,15 +862,24 @@ window.removeItem = (i) => { cart.splice(i, 1); renderCart(); };
 window.clearCart = () => { cart = []; renderCart(); };
 
 // 4. COMPLETE SALE
+// Fixed: previously looped one item at a time with separate awaits. If the
+// network dropped mid-loop, items already processed stayed decremented AND
+// billed, and clicking retry re-decremented/re-billed them again. A
+// writeBatch() makes the whole sale one atomic unit — either every item's
+// stock decrement + sale record is written, or (on any failure) NONE of
+// them are, so a retry after a failure is always safe.
 window.completeSale = async () => {
   if (cart.length === 0) return;
+  const saveButton = document.querySelector('[onclick="completeSale()"]');
+  if (saveButton) { saveButton.disabled = true; saveButton.classList.add('opacity-50'); }
   try {
+    const batch = writeBatch(db);
     for (const item of cart) {
-      // Atomic decrement — never trusts the cart's cached stock value, so
-      // this can't silently lose updates if the same product appears in
-      // two cart lines or if stock changed since the item was added.
-      await updateDoc(doc(db, "inventory", item.id), { stock: increment(-item.buyQty) });
-      await addDoc(collection(db, "sales"), {
+      const invRef = doc(db, "inventory", item.id);
+      batch.update(invRef, { stock: increment(-item.buyQty) });
+
+      const saleRef = doc(collection(db, "sales")); // pre-generate ID for the batch
+      batch.set(saleRef, {
         itemName: item.name,
         qty: item.buyQty,
         costPrice: item.cost, // Crucial for owner profit calculations
@@ -873,9 +893,14 @@ window.completeSale = async () => {
         timestamp: serverTimestamp()
       });
     }
+    await batch.commit(); // all-or-nothing
     alert("Success: Inventory Synced!");
     clearCart();
-  } catch (e) { alert("Error: " + e.message); }
+  } catch (e) {
+    alert((currentLang === 'am' ? "ስህተት፦ " : "Error: ") + e.message + (currentLang === 'am' ? " — ምንም ነገር አልተቀየረም፣ በደህና እንደገና ይሞክሩ።" : " — nothing was changed, it's safe to retry."));
+  } finally {
+    if (saveButton) { saveButton.disabled = false; saveButton.classList.remove('opacity-50'); }
+  }
 };
 
 // 5. WASTAGE
@@ -960,8 +985,15 @@ window.submitWastage = async () => {
   if (!(qty > 0 && qty <= item.stock)) return alert("Enter a valid quantity");
   if (!purpose) return alert("Please choose a purpose / reason");
 
-  await updateDoc(doc(db, "inventory", item.id), { stock: item.stock - qty });
-  await addDoc(collection(db, "wastage"), {
+  // Fixed: was `item.stock - qty` — a stale client-side subtraction that
+  // overwrites whatever the real stock is at write time. If a sale happens
+  // on another device between this page loading and this write, that sale's
+  // decrement gets erased. increment(-qty) is atomic on Firestore's side —
+  // it always applies against the current value, never a cached one.
+  const batch = writeBatch(db);
+  batch.update(doc(db, "inventory", item.id), { stock: increment(-qty) });
+  const wastageRef = doc(collection(db, "wastage"));
+  batch.set(wastageRef, {
     itemName: name,
     qty: qty,
     reason: purpose,
@@ -969,6 +1001,7 @@ window.submitWastage = async () => {
     companyId, branchId, createdBy: currentUid,
     timestamp: serverTimestamp()
   });
+  await batch.commit();
   closeAllModals();
   alert("Wastage logged.");
 };
@@ -1134,33 +1167,52 @@ window.switchOwnerTab = (t) => {
 };
 
 /* =========================================================
-   REPORTS SECURITY: Owner-set PIN gate (optional)
-   The PIN now lives on companies/{companyId}.reportsPin, set by
-   the Owner from their dashboard — never hardcoded, never shared
-   across companies. If the Owner hasn't set one, Reports opens
-   directly with no gate at all (safe default: never silently
-   blocks a seller with a code nobody told them).
+   REPORTS SECURITY: Owner-set PIN gate
+   Fixed: the PIN used to be fetched into companyReportsPin and
+   compared in this file — anyone could read it or flip
+   reportsUnlocked=true from DevTools. The PIN check now happens
+   inside the verifyReportsPin Cloud Function; the real PIN value
+   never reaches this file at all. See functions/index.js.
+   NOTE: this still only gates the Reports TAB. The report data
+   underneath (sales/wastage/debts) is fetched by onSnapshot
+   listeners elsewhere in this file that load unconditionally —
+   for the PIN to protect the actual DATA, not just the UI, your
+   Firestore security rules must also require the reportsUnlocked
+   custom claim this function sets. See functions/README.md.
 ========================================================= */
-let companyReportsPin = null; // fetched live below, once companyId is known
+let companyHasReportsPin = false; // only tells us whether to show the gate, never the PIN itself
 let reportsUnlocked = false;
 let pendingTab = null;
 
 onSnapshot(doc(db, "companies", companyId), (snap) => {
-  companyReportsPin = snap.exists() ? (snap.data().reportsPin || null) : null;
+  companyHasReportsPin = snap.exists() && !!(snap.data().reportsPin);
 });
 
-window.submitReportsPassword = () => {
+window.submitReportsPassword = async () => {
   const val = document.getElementById('reportsPasswordInput').value.trim();
-  if (val === companyReportsPin) {
-    reportsUnlocked = true;
-    closeAllModals();
-    const target = pendingTab || 'reports';
-    pendingTab = null;
-    switchTab(target);
-  } else {
+  const submitBtn = document.querySelector('[onclick="submitReportsPassword()"]');
+  if (submitBtn) submitBtn.disabled = true;
+  try {
+    const functions = getFunctions();
+    const verifyReportsPin = httpsCallable(functions, 'verifyReportsPin');
+    const { data } = await verifyReportsPin({ pin: val });
+    if (data.success) {
+      await auth.currentUser.getIdToken(true); // refresh token to pick up the new claim
+      reportsUnlocked = true;
+      closeAllModals();
+      const target = pendingTab || 'reports';
+      pendingTab = null;
+      switchTab(target);
+    } else {
+      document.getElementById('pwError').classList.remove('hidden');
+      document.getElementById('reportsPasswordInput').value = '';
+      document.getElementById('reportsPasswordInput').focus();
+    }
+  } catch (err) {
     document.getElementById('pwError').classList.remove('hidden');
-    document.getElementById('reportsPasswordInput').value = '';
-    document.getElementById('reportsPasswordInput').focus();
+    document.getElementById('pwError').innerText = err.message || 'Could not verify PIN. Try again.';
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
   }
 };
 
@@ -1650,7 +1702,15 @@ window.submitDebtPayment = async () => {
       return { nowPaidOff, newRemaining, customerName: d.customerName };
     });
 
-    await addDoc(collection(db, "debtPayments"), {
+    // Fixed: a debt payment is real cash coming in, but previously it was
+    // only logged in "debtPayments" — a collection the Owner dashboard never
+    // reads. That cash silently never appeared in revenue/cash reports.
+    // We now also write it into "sales" (tagged isDebtPayment: true) with
+    // costPrice 0, since the cost of the goods was never recorded as an
+    // expense either — this payment is pure cash-in against money already
+    // owed, so it should count fully toward revenue/profit like any sale.
+    const debtBatch = writeBatch(db);
+    debtBatch.set(doc(collection(db, "debtPayments")), {
       debtId: activePaymentDebtId,
       customerName: outcome.customerName,
       amount: paymentAmount,
@@ -1658,6 +1718,19 @@ window.submitDebtPayment = async () => {
       companyId, branchId, createdBy: currentUid,
       timestamp: serverTimestamp()
     });
+    debtBatch.set(doc(collection(db, "sales")), {
+      itemName: `Debt payment — ${outcome.customerName}`,
+      qty: 1,
+      costPrice: 0,
+      totalPrice: paymentAmount,
+      sellPrice: paymentAmount,
+      isDebtPayment: true,
+      debtId: activePaymentDebtId,
+      soldBy: currentUsername,
+      companyId, branchId, createdBy: currentUid,
+      timestamp: serverTimestamp()
+    });
+    await debtBatch.commit();
 
     closeAllModals();
     activePaymentDebtId = null;
