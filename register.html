@@ -185,7 +185,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import {
-            getFirestore, doc, setDoc, updateDoc, getDoc, collection, serverTimestamp
+            getFirestore, doc, setDoc, updateDoc, getDoc, collection, serverTimestamp, runTransaction
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // Same Firebase project used by index.html / owner-dashboard.html / seller-dashboard.html
@@ -283,64 +283,90 @@
         }
 
         // ---- registration flows -------------------------------------------
-        // Each Firestore write is wrapped individually so a failure tells you
-        // exactly which step broke instead of a single generic error at the end.
+        // Fixed (invite code collisions + orphaned records): previously each
+        // write happened one-by-one with `setDoc`, and the invite code was
+        // written to `inviteCodes/{code}` with no existence check — a second
+        // owner who happened to roll the same 6-character code would silently
+        // overwrite the first owner's mapping, routing their sellers to the
+        // wrong company. On top of that, if any later step failed, earlier
+        // steps had already been committed, leaving orphaned company/branch
+        // documents behind (the calling code deletes the Auth account on
+        // failure, but that doesn't touch Firestore).
+        //
+        // Fix: wrap the invite-code existence check AND all four document
+        // writes in a single runTransaction(). Transactions in Firestore are
+        // all-or-nothing and internally retry on write conflicts, so either
+        // every document is created together, or (on any error, including a
+        // code collision) NOTHING is written — no orphans, and a colliding
+        // code is detected and regenerated before it can ever overwrite
+        // another company's mapping.
         async function registerOwner({ uid, username, email, businessName, planPreference }) {
             const companyRef = doc(collection(db, 'companies'));
             const companyId = companyRef.id;
-            const inviteCode = generateInviteCode();
-            const now = serverTimestamp();
-
-            try {
-                await setDoc(companyRef, {
-                    name: businessName || `${username}'s Business`,
-                    ownerUid: uid,
-                    inviteCode,
-                    plan: 'free',                    // what they actually have access to right now
-                    planPreference: planPreference,  // 'free' or 'premium' — what they'd choose once billing exists
-                    currency: 'ETB',
-                    createdAt: now,
-                    updatedAt: now,
-                    createdBy: uid
-                });
-            } catch (err) { throw Object.assign(err, { step: 'creating your company record' }); }
-
-            try {
-                await setDoc(doc(db, 'inviteCodes', inviteCode), {
-                    companyId,
-                    name: businessName || `${username}'s Business`,
-                    createdAt: now
-                });
-            } catch (err) { throw Object.assign(err, { step: 'creating the invite code' }); }
-
             const branchRef = doc(collection(db, 'branches'));
             const branchId = branchRef.id;
-            try {
-                await setDoc(branchRef, {
-                    companyId,
-                    name: 'Main Branch',
-                    isDefault: true,
-                    createdAt: now,
-                    updatedAt: now,
-                    createdBy: uid
-                });
-            } catch (err) { throw Object.assign(err, { step: 'creating your main branch' }); }
+            const userRef = doc(db, 'users', uid);
+            const now = serverTimestamp();
+            const name = businessName || `${username}'s Business`;
 
-            try {
-                await setDoc(doc(db, 'users', uid), {
-                    companyId,
-                    branchId,
-                    role: 'owner',
-                    username,
-                    email,
-                    status: 'active',
-                    createdAt: now,
-                    updatedAt: now,
-                    createdBy: uid
-                });
-            } catch (err) { throw Object.assign(err, { step: 'creating your owner profile' }); }
+            const MAX_ATTEMPTS = 5;
+            let lastErr = null;
+            for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+                const inviteCode = generateInviteCode();
+                const inviteCodeRef = doc(db, 'inviteCodes', inviteCode);
+                try {
+                    await runTransaction(db, async (tx) => {
+                        // Read first (Firestore transactions require all reads
+                        // before any writes) — this is the collision check.
+                        const existing = await tx.get(inviteCodeRef);
+                        if (existing.exists()) {
+                            throw Object.assign(new Error('Invite code collision, retrying'), { collision: true });
+                        }
 
-            return { companyId, redirect: 'owner-dashboard.html' };
+                        tx.set(companyRef, {
+                            name,
+                            ownerUid: uid,
+                            inviteCode,
+                            plan: 'free',
+                            planPreference: planPreference,
+                            currency: 'ETB',
+                            createdAt: now,
+                            updatedAt: now,
+                            createdBy: uid
+                        });
+                        tx.set(inviteCodeRef, {
+                            companyId,
+                            name,
+                            createdAt: now
+                        });
+                        tx.set(branchRef, {
+                            companyId,
+                            name: 'Main Branch',
+                            isDefault: true,
+                            createdAt: now,
+                            updatedAt: now,
+                            createdBy: uid
+                        });
+                        tx.set(userRef, {
+                            companyId,
+                            branchId,
+                            role: 'owner',
+                            username,
+                            email,
+                            status: 'active',
+                            createdAt: now,
+                            updatedAt: now,
+                            createdBy: uid
+                        });
+                    });
+                    return { companyId, redirect: 'owner-dashboard.html' }; // success
+                } catch (err) {
+                    lastErr = err;
+                    if (err.collision) continue; // try a fresh random code
+                    throw Object.assign(err, { step: 'creating your workspace (company, invite code, branch, and profile)' });
+                }
+            }
+            throw Object.assign(new Error('Could not generate a unique invite code after several attempts. Please try again.'), { step: 'creating the invite code', cause: lastErr });
         }
 
         async function registerSeller({ uid, username, email, inviteCode }) {
