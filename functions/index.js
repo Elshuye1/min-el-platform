@@ -24,7 +24,7 @@ const crypto = require("crypto");
 admin.initializeApp();
 const db = admin.firestore();
 
-const CHAPA_SECRET_KEY = defineSecret("CHAPA_SECRET_KEY");
+const CHAPA_SECRET_KEY = defineSecret("CHASECK_TEST-sqVRKIzaPX5Jyb33IFayh36eqLvZwfdc");
 const REGION = "us-central1"; // matches the URL already hardcoded in owner-dashboard.html
 
 // ---------------------------------------------------------------------------
