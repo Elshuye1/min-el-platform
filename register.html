@@ -110,8 +110,8 @@
                     <p class="text-[10px] text-gray-400 mt-1">Must include 8+ characters and symbols.</p>
                 </div>
 
-                <!-- Error box: shows the failing step + raw Firebase error code so
-                     it's obvious whether this is an Auth problem or a Rules problem. -->
+                <!-- Error box: shows the failing step + raw Supabase error message so
+                     it's obvious whether this is an Auth problem or a database/RLS problem. -->
                 <div id="reg-error" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
                     <p id="reg-error-msg" class="font-semibold"></p>
                     <p id="reg-error-code" class="text-xs text-red-500 mt-1 font-mono"></p>
@@ -130,8 +130,7 @@
             <!-- Shown only to a newly-registered Owner, right before redirecting
                  to the dashboard. Skippable — businessType/currency are optional
                  polish, not required for the account to work. Saves straight to
-                 the companies/{companyId} doc, which the Firestore rules already
-                 let the Owner update. -->
+                 the companies row, which RLS already lets the Owner update. -->
             <div id="onboarding-view" class="hidden">
                 <div class="text-center mb-6">
                     <div class="bg-blue-600 w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-2xl mx-auto mb-4">M</div>
@@ -182,25 +181,14 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import {
-            getFirestore, doc, setDoc, updateDoc, getDoc, collection, serverTimestamp, runTransaction
-        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-        // Same Firebase project used by index.html / owner-dashboard.html / seller-dashboard.html
-        const firebaseConfig = {
-            apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
-            authDomain: "min-eli.firebaseapp.com",
-            projectId: "min-eli",
-            storageBucket: "min-eli.firebasestorage.app",
-            messagingSenderId: "61590314630",
-            appId: "1:61590314630:web:f75dcd8296954d8c107b07"
-        };
+        // Same Supabase project used by index.html / owner-dashboard.html / seller-dashboard.html.
+        // This is the "anon public" key — safe to embed in client code by design.
+        const SUPABASE_URL = 'https://mvmhdesffmxuaqvjexpz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWhkZXNmZm14dWFxdmpleHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDA0NzYsImV4cCI6MjEwMTg3NjQ3Nn0.tMUTqPkPG3HG3e9mNZp3heF6NSSyFtMW9pNqfM9H4gA';
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ---- role-based field toggling ---------------------------------------
         const roleInputs = document.querySelectorAll('input[name="role"]');
@@ -219,18 +207,17 @@
 
         // ---- live invite-code preview ------------------------------------
         // Shows which business a code belongs to AS THE SELLER TYPES, before
-        // they've even created an account. This is what actually prevents the
-        // "registered under the wrong company" problem — the seller sees the
-        // business name and can catch a stale/mistyped code themselves,
-        // instead of it silently going unnoticed until an Owner has to fix it
-        // by hand in Firestore.
+        // they've even created an account. Calls the lookup_invite_code()
+        // Postgres function, which is intentionally the ONLY thing an
+        // anonymous visitor can query here — it returns just the business
+        // name, never the company_id, owner info, or anything else.
         let inviteLookupTimer = null;
-        let verifiedCompanyId = null; // set only when the shown code truly resolved
+        let codeVerified = false; // gate: don't let the form submit until this ran successfully
 
         document.getElementById('reg-invite-code').addEventListener('input', (e) => {
             const raw = e.target.value.trim().toUpperCase();
             const preview = document.getElementById('invite-preview');
-            verifiedCompanyId = null;
+            codeVerified = false;
             clearTimeout(inviteLookupTimer);
 
             if (!raw) {
@@ -240,13 +227,14 @@
 
             inviteLookupTimer = setTimeout(async () => {
                 try {
-                    const codeDoc = await getDoc(doc(db, 'inviteCodes', raw));
+                    const { data, error } = await supabase.rpc('lookup_invite_code', { p_code: raw });
                     preview.classList.remove('hidden');
-                    if (codeDoc.exists()) {
-                        const data = codeDoc.data();
-                        verifiedCompanyId = data.companyId;
+                    if (error) throw error;
+
+                    if (data && data.length > 0 && data[0].company_name) {
+                        codeVerified = true;
                         preview.className = 'text-xs mt-2 font-semibold text-green-600';
-                        preview.textContent = `✓ You'll be joining: ${data.name || 'this business'}`;
+                        preview.textContent = `✓ You'll be joining: ${data[0].company_name}`;
                     } else {
                         preview.className = 'text-xs mt-2 font-semibold text-red-600';
                         preview.textContent = '✗ Code not found — double-check with your Owner.';
@@ -259,16 +247,8 @@
             }, 450); // debounce so it doesn't fire on every keystroke
         });
 
-        // ---- helpers ----------------------------------------------------------
-        function generateInviteCode() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no confusing chars
-            let code = '';
-            for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-            return code;
-        }
-
-        // step = a short label for WHICH write failed, so the on-screen error
-        // tells you "creating company record" vs "creating your profile" etc,
+        // step = a short label for WHICH part failed, so the on-screen error
+        // tells you "creating your login" vs "creating your workspace" etc,
         // instead of one generic "Registration failed" for every possible cause.
         function showError(step, err) {
             console.error(`[register] failed at: ${step}`, err);
@@ -283,122 +263,34 @@
         }
 
         // ---- registration flows -------------------------------------------
-        // Fixed (invite code collisions + orphaned records): previously each
-        // write happened one-by-one with `setDoc`, and the invite code was
-        // written to `inviteCodes/{code}` with no existence check — a second
-        // owner who happened to roll the same 6-character code would silently
-        // overwrite the first owner's mapping, routing their sellers to the
-        // wrong company. On top of that, if any later step failed, earlier
-        // steps had already been committed, leaving orphaned company/branch
-        // documents behind (the calling code deletes the Auth account on
-        // failure, but that doesn't touch Firestore).
-        //
-        // Fix: wrap the invite-code existence check AND all four document
-        // writes in a single runTransaction(). Transactions in Firestore are
-        // all-or-nothing and internally retry on write conflicts, so either
-        // every document is created together, or (on any error, including a
-        // code collision) NOTHING is written — no orphans, and a colliding
-        // code is detected and regenerated before it can ever overwrite
-        // another company's mapping.
-        async function registerOwner({ uid, username, email, businessName, planPreference }) {
-            const companyRef = doc(collection(db, 'companies'));
-            const companyId = companyRef.id;
-            const branchRef = doc(collection(db, 'branches'));
-            const branchId = branchRef.id;
-            const userRef = doc(db, 'users', uid);
-            const now = serverTimestamp();
-            const name = businessName || `${username}'s Business`;
-
-            const MAX_ATTEMPTS = 5;
-            let lastErr = null;
-            for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-                const inviteCode = generateInviteCode();
-                const inviteCodeRef = doc(db, 'inviteCodes', inviteCode);
-                try {
-                    await runTransaction(db, async (tx) => {
-                        // Read first (Firestore transactions require all reads
-                        // before any writes) — this is the collision check.
-                        const existing = await tx.get(inviteCodeRef);
-                        if (existing.exists()) {
-                            throw Object.assign(new Error('Invite code collision, retrying'), { collision: true });
-                        }
-
-                        tx.set(companyRef, {
-                            name,
-                            ownerUid: uid,
-                            inviteCode,
-                            plan: 'free',
-                            planPreference: planPreference,
-                            currency: 'ETB',
-                            createdAt: now,
-                            updatedAt: now,
-                            createdBy: uid
-                        });
-                        tx.set(inviteCodeRef, {
-                            companyId,
-                            name,
-                            createdAt: now
-                        });
-                        tx.set(branchRef, {
-                            companyId,
-                            name: 'Main Branch',
-                            isDefault: true,
-                            createdAt: now,
-                            updatedAt: now,
-                            createdBy: uid
-                        });
-                        tx.set(userRef, {
-                            companyId,
-                            branchId,
-                            role: 'owner',
-                            username,
-                            email,
-                            status: 'active',
-                            createdAt: now,
-                            updatedAt: now,
-                            createdBy: uid
-                        });
-                    });
-                    return { companyId, redirect: 'owner-dashboard.html' }; // success
-                } catch (err) {
-                    lastErr = err;
-                    if (err.collision) continue; // try a fresh random code
-                    throw Object.assign(err, { step: 'creating your workspace (company, invite code, branch, and profile)' });
-                }
-            }
-            throw Object.assign(new Error('Could not generate a unique invite code after several attempts. Please try again.'), { step: 'creating the invite code', cause: lastErr });
+        // The old invite-code-collision / orphaned-records bug from the
+        // Firebase audit is fixed here by the register_owner() Postgres
+        // function (SECURITY DEFINER, runs server-side): it creates the
+        // company + invite code + branch + profile in a single transaction,
+        // retrying automatically on a code collision. From the client, this
+        // is one RPC call — either it all succeeds, or nothing is written.
+        async function registerOwner({ username, businessName }) {
+            const { data, error } = await supabase.rpc('register_owner', {
+                p_username: username,
+                p_business_name: businessName || null
+            });
+            if (error) throw Object.assign(error, { step: 'creating your workspace (company, invite code, branch, and profile)' });
+            return { companyId: data, redirect: 'owner-dashboard.html' };
         }
 
-        async function registerSeller({ uid, username, email, inviteCode }) {
-            let codeDoc;
-            try {
-                codeDoc = await getDoc(doc(db, 'inviteCodes', inviteCode.trim().toUpperCase()));
-            } catch (err) { throw Object.assign(err, { step: 'looking up the invite code' }); }
-
-            if (!codeDoc.exists()) {
-                throw Object.assign(new Error('Invalid invite code. Please check with your Owner and try again.'), { step: 'looking up the invite code' });
-            }
-            const { companyId } = codeDoc.data();
-            const now = serverTimestamp();
-
-            try {
-                await setDoc(doc(db, 'users', uid), {
-                    companyId,
-                    branchId: null,          // Owner assigns a branch on approval
-                    role: 'seller',
-                    username,
-                    email,
-                    status: 'pending',       // Owner must approve before dashboard access
-                    createdAt: now,
-                    updatedAt: now,
-                    createdBy: uid
-                });
-            } catch (err) { throw Object.assign(err, { step: 'creating your seller profile' }); }
-
-            return { companyId, redirect: 'index.html' };
+        // register_seller() looks up the invite code server-side again (never
+        // trusting the client's earlier preview lookup), then creates the
+        // seller's profile — same "no free-form writes from the browser"
+        // principle as the owner path.
+        async function registerSeller({ username, inviteCode }) {
+            const { data, error } = await supabase.rpc('register_seller', {
+                p_username: username,
+                p_invite_code: inviteCode.trim().toUpperCase()
+            });
+            if (error) throw Object.assign(error, { step: 'joining this company (checking your invite code and creating your profile)' });
+            return { companyId: data, redirect: 'index.html' };
         }
 
-        // ---- form submit ----------------------------------------------------
         // ---- onboarding (Owner only) ---------------------------------------
         function showOnboarding({ username, companyId, redirect }) {
             document.getElementById('register-view').classList.add('hidden');
@@ -415,11 +307,12 @@
                 const businessType = document.getElementById('onboarding-business-type').value;
                 const currency = document.getElementById('onboarding-currency').value;
                 try {
-                    // Only write fields that actually changed from the default,
-                    // so skipping business type doesn't overwrite anything.
-                    const updates = { currency, updatedAt: serverTimestamp() };
-                    if (businessType) updates.businessType = businessType;
-                    await updateDoc(doc(db, 'companies', companyId), updates);
+                    // Only send fields that actually have a value, so skipping
+                    // business type doesn't overwrite anything with blank data.
+                    const updates = { currency };
+                    if (businessType) updates.business_type = businessType;
+                    const { error } = await supabase.from('companies').update(updates).eq('id', companyId);
+                    if (error) throw error;
                     window.location.href = redirect;
                 } catch (err) {
                     errEl.textContent = "Couldn't save that just now, but your account is ready — continuing to your dashboard.";
@@ -431,6 +324,7 @@
             skipBtn.onclick = () => { window.location.href = redirect; };
         }
 
+        // ---- form submit ----------------------------------------------------
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             clearError();
@@ -442,8 +336,6 @@
             const password = document.getElementById('reg-password').value;
             const businessName = document.getElementById('reg-business-name').value.trim();
             const inviteCode = document.getElementById('reg-invite-code').value.trim();
-            const planPreferenceEl = document.querySelector('input[name="plan"]:checked');
-            const planPreference = planPreferenceEl ? planPreferenceEl.value : 'free';
 
             if (!username || !email || !password) {
                 showError('validating the form', new Error('Please fill in all required fields.'));
@@ -453,7 +345,7 @@
                 showError('validating the form', new Error('Please enter the invite code from your Owner.'));
                 return;
             }
-            if (role === 'seller' && !verifiedCompanyId) {
+            if (role === 'seller' && !codeVerified) {
                 showError('validating the form', new Error('Please wait for the code to be verified (you should see the business name appear below the field) before registering.'));
                 return;
             }
@@ -461,16 +353,25 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Creating your workspace...';
 
-            let createdUser = null;
+            let createdUserId = null;
             try {
-                const cred = await createUserWithEmailAndPassword(auth, email, password).catch(err => {
-                    throw Object.assign(err, { step: 'creating your login (Firebase Auth)' });
-                });
-                createdUser = cred.user;
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
+                if (signUpError) throw Object.assign(signUpError, { step: 'creating your login (Supabase Auth)' });
+                createdUserId = signUpData.user?.id;
+
+                if (!signUpData.session) {
+                    // Email confirmation is required on this project — the account
+                    // exists, but there's no active session yet to create the
+                    // workspace/profile row (those RPCs run as the logged-in user).
+                    throw Object.assign(
+                        new Error('Account created — please check your email to confirm it, then log in to finish setup.'),
+                        { step: 'confirming your email' }
+                    );
+                }
 
                 const result = role === 'owner'
-                    ? await registerOwner({ uid: createdUser.uid, username, email, businessName, planPreference })
-                    : await registerSeller({ uid: createdUser.uid, username, email, inviteCode });
+                    ? await registerOwner({ username, businessName })
+                    : await registerSeller({ username, inviteCode });
 
                 if (role === 'seller') {
                     alert('Account created! Your Owner needs to approve you before you can log in to the seller dashboard.');
@@ -481,10 +382,13 @@
                     showOnboarding({ username, companyId: result.companyId, redirect: result.redirect });
                 }
             } catch (err) {
-                // Roll back the auth account if workspace/profile creation failed,
-                // so the person isn't stuck with a half-created account they can't reuse.
-                if (createdUser) {
-                    try { await createdUser.delete(); } catch (_) { /* best-effort */ }
+                // Best-effort rollback: if workspace/profile creation failed after
+                // the auth account was created, sign back out so the person isn't
+                // left in a half-registered session. (Deleting the auth user itself
+                // requires the service-role key, which never lives in the browser —
+                // that cleanup happens server-side/manually if it's ever needed.)
+                if (createdUserId) {
+                    try { await supabase.auth.signOut(); } catch (_) { /* best-effort */ }
                 }
                 showError(err.step || 'registering', err);
             } finally {
@@ -495,4 +399,4 @@
     </script>
 
 </body>
-    </html>
+</html>
