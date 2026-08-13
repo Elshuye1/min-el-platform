@@ -159,7 +159,7 @@
                     <a href="register.html" class="btn btn-primary px-6 py-2 text-sm">Get Started Free</a>
                 </div>
 
-                <!-- Logged-in state (desktop), hidden until onAuthStateChanged fills it in -->
+                <!-- Logged-in state (desktop), hidden until auth state resolves -->
                 <div id="nav-user-actions" class="hidden md:flex items-center gap-3" style="display:none">
                     <a id="nav-dashboard-link" href="#" class="btn btn-ghost px-5 py-2 text-sm">
                         <i class="fa fa-gauge-high mr-1"></i> Dashboard
@@ -448,7 +448,7 @@
         <section id="security" class="container mx-auto px-4 mb-16 lg:max-w-5xl scroll-mt-20">
             <div class="text-center mb-10 reveal">
                 <h3 class="text-2xl md:text-3xl font-black mb-2">Built for trust</h3>
-                <p class="text-slate-400 text-sm md:text-base max-w-xl mx-auto">Built with Firebase Authentication and Firestore's role-based access rules, so each business only sees its own data.</p>
+                <p class="text-slate-400 text-sm md:text-base max-w-xl mx-auto">Built with Supabase Authentication and Postgres Row Level Security policies, so each business only sees its own data.</p>
             </div>
             <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
                 <div class="glass rounded-2xl p-5 reveal"><i class="fa fa-lock text-blue-400 text-lg mb-2"></i><p class="text-xs font-bold">Secure Auth</p></div>
@@ -489,7 +489,7 @@
                         <li><i class="fa fa-check text-green-400 mr-2"></i>Debt &amp; expense tracking</li>
                         <li><i class="fa fa-check text-green-400 mr-2"></i>Owner ↔ Seller chat</li>
                     </ul>
-                    <button onclick="startTrial('pro', 499)" data-plan-btn="pro" class="btn btn-primary text-center py-3 text-sm">Start 12-Day Trial</button>
+                    <button onclick="startTrial('pro')" data-plan-btn="pro" class="btn btn-primary text-center py-3 text-sm">Start 12-Day Trial</button>
                 </div>
 
                 <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col">
@@ -502,7 +502,7 @@
                         <li><i class="fa fa-check text-green-400 mr-2"></i>Video meetings</li>
                         <li><i class="fa fa-check text-green-400 mr-2"></i>Priority support</li>
                     </ul>
-                    <button onclick="startTrial('business', 1499)" data-plan-btn="business" class="btn btn-primary text-center py-3 text-sm">Start 12-Day Trial</button>
+                    <button onclick="startTrial('business')" data-plan-btn="business" class="btn btn-primary text-center py-3 text-sm">Start 12-Day Trial</button>
                 </div>
 
                 <div class="feature-card glass rounded-[1.5rem] p-6 reveal flex flex-col opacity-90">
@@ -631,7 +631,7 @@
                 <section>
                     <h3 class="text-white font-bold text-base mb-2">2. Information we collect</h3>
                     <ul class="list-disc list-inside space-y-1.5 ml-1">
-                        <li><span class="font-semibold text-white">Account information:</span> name, email address, and password (stored securely by Firebase Authentication — we never see or store your raw password).</li>
+                        <li><span class="font-semibold text-white">Account information:</span> name, email address, and password (stored securely by Supabase Authentication — we never see or store your raw password).</li>
                         <li><span class="font-semibold text-white">Business data:</span> inventory, sales, expenses, debts, wastage records, and anything else you or your team enter into your workspace.</li>
                         <li><span class="font-semibold text-white">Team &amp; company data:</span> business name, branch details, invite codes, and the role/status of each team member.</li>
                         <li><span class="font-semibold text-white">Usage data:</span> basic technical information such as browser type and general activity within the platform, used only to keep the service reliable.</li>
@@ -644,12 +644,12 @@
                 </section>
                 <section>
                     <h3 class="text-white font-bold text-base mb-2">4. Company isolation &amp; data separation</h3>
-                    <p>Every business on Min-el operates in its own isolated workspace. This isolation is enforced by Firestore security rules at the database level — meaning access control isn't just a matter of what the interface shows you, it's checked on every single read and write. One company's data is never readable by another company's account, by design.</p>
+                    <p>Every business on Min-el operates in its own isolated workspace. This isolation is enforced by Postgres Row Level Security (RLS) policies at the database level — meaning access control isn't just a matter of what the interface shows you, it's checked on every single read and write. One company's data is never readable by another company's account, by design.</p>
                 </section>
                 <section>
                     <h3 class="text-white font-bold text-base mb-2">5. Third-party services we rely on</h3>
                     <ul class="list-disc list-inside space-y-1.5 ml-1">
-                        <li><span class="font-semibold text-white">Firebase (Google Cloud):</span> authentication, database (Firestore), and file storage.</li>
+                        <li><span class="font-semibold text-white">Supabase:</span> authentication, database (Postgres), and file storage.</li>
                         <li><span class="font-semibold text-white">Google Translate:</span> optional, on-demand page translation. If you use it, the visible page text is sent to Google's translation service to be translated; this is unrelated to your account or business data.</li>
                         <li><span class="font-semibold text-white">Chapa:</span> payment processing for paid plans. Chapa handles your card or mobile-money details directly under its own privacy and security practices.</li>
                     </ul>
@@ -661,7 +661,7 @@
                 </section>
                 <section>
                     <h3 class="text-white font-bold text-base mb-2">7. Security</h3>
-                    <p>Access to the platform requires authentication through Firebase Authentication. Data in transit is encrypted (HTTPS). Company data is scoped and access-controlled through database-level security rules, and every sensitive action (sales, approvals, payments) is recorded with who made it and when.</p>
+                    <p>Access to the platform requires authentication through Supabase Authentication. Data in transit is encrypted (HTTPS). Company data is scoped and access-controlled through Postgres Row Level Security (RLS) policies, and every sensitive action (sales, approvals, payments) is recorded with who made it and when.</p>
                 </section>
                 <section>
                     <h3 class="text-white font-bold text-base mb-2">8. Your rights and choices</h3>
@@ -707,8 +707,9 @@
 
     <!-- ============ AUTH MODAL — LOGIN ONLY ============ -->
     <!-- Registration now happens exclusively on register.html, which already
-         builds companies/branches/users correctly. This modal no longer
-         duplicates that logic (it used to, incompatibly — see chat notes). -->
+         builds companies/branches/profiles correctly via the register_owner /
+         register_seller database functions. This modal no longer duplicates
+         that logic. -->
     <div id="auth-modal" class="hidden fixed inset-0 z-[200] flex items-end md:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" onclick="closeModal()"></div>
         <div class="glass w-full md:max-w-md rounded-t-[3rem] md:rounded-[3rem] p-8 relative animate-slide-up h-auto max-h-[90vh] overflow-y-auto">
@@ -740,44 +741,32 @@
             <div class="mt-8">
                 <p class="text-center text-xs font-bold text-slate-500 uppercase mb-4">Or continue with</p>
                 <div class="flex justify-center gap-4">
-                    <button onclick="socialLogin('Google')" class="w-14 h-14 rounded-2xl glass flex items-center justify-center text-xl hover:text-red-500" aria-label="Continue with Google"><i class="fa-brands fa-google"></i></button>
-                    <button onclick="socialLogin('Facebook')" class="w-14 h-14 rounded-2xl glass flex items-center justify-center text-xl hover:text-blue-500" aria-label="Continue with Facebook"><i class="fa-brands fa-facebook"></i></button>
+                    <button onclick="socialLogin('google')" class="w-14 h-14 rounded-2xl glass flex items-center justify-center text-xl hover:text-red-500" aria-label="Continue with Google"><i class="fa-brands fa-google"></i></button>
+                    <button onclick="socialLogin('facebook')" class="w-14 h-14 rounded-2xl glass flex items-center justify-center text-xl hover:text-blue-500" aria-label="Continue with Facebook"><i class="fa-brands fa-facebook"></i></button>
                 </div>
             </div>
         </div>
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import {
-            getAuth, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider,
-            signInWithEmailAndPassword, onAuthStateChanged, signOut
-        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
-            authDomain: "min-eli.firebaseapp.com",
-            projectId: "min-eli",
-            storageBucket: "min-eli.firebasestorage.app",
-            messagingSenderId: "61590314630",
-            appId: "1:61590314630:web:f75dcd8296954d8c107b07",
-            measurementId: "G-Q8QSR94W7L"
-        };
+        // Same Supabase project used by register.html / owner-dashboard.html / seller-dashboard.html.
+        // This is the "anon public" key — safe to embed in client code by design.
+        const SUPABASE_URL = 'https://mvmhdesffmxuaqvjexpz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWhkZXNmZm14dWFxdmpleHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDA0NzYsImV4cCI6MjEwMTg3NjQ3Nn0.tMUTqPkPG3HG3e9mNZp3heF6NSSyFtMW9pNqfM9H4gA';
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Kept from the original file (not currently used for UI, preserved per
-        // "do not remove a function just because it looks unused").
+        // "do not remove a function just because it looks unused"). Subscribes
+        // to live inventory changes via Supabase Realtime instead of Firestore's
+        // onSnapshot.
         function loadInventory() {
-            const colRef = collection(db, "inventory");
-            onSnapshot(colRef, (snapshot) => {
-                let items = [];
-                snapshot.docs.forEach((d) => items.push({ ...d.data(), id: d.id }));
-            });
+            supabase
+                .channel('inventory-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => { /* no UI consumer yet */ })
+                .subscribe();
         }
 
         // ---- Toast system -----------------------------------------------
@@ -790,17 +779,14 @@
             setTimeout(() => el.remove(), 4500);
         };
 
-        // Turns raw Firebase error codes into human-readable messages.
+        // Turns raw Supabase Auth error messages into human-readable text.
         function friendlyAuthError(err) {
-            const map = {
-                'auth/invalid-credential': 'Incorrect email or password.',
-                'auth/wrong-password': 'Incorrect email or password.',
-                'auth/user-not-found': 'No account found with that email.',
-                'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
-                'auth/network-request-failed': 'Network error — please check your connection.',
-                'auth/popup-closed-by-user': 'Sign-in was cancelled.'
-            };
-            return map[err.code] || err.message || 'Something went wrong. Please try again.';
+            const msg = (err && err.message || '').toLowerCase();
+            if (msg.includes('invalid login credentials')) return 'Incorrect email or password.';
+            if (msg.includes('email not confirmed')) return 'Please confirm your email before logging in.';
+            if (msg.includes('rate limit') || msg.includes('too many')) return 'Too many attempts. Please wait a moment and try again.';
+            if (msg.includes('network')) return 'Network error — please check your connection.';
+            return (err && err.message) || 'Something went wrong. Please try again.';
         }
 
         // ---- Modal (login only) ------------------------------------------
@@ -827,7 +813,8 @@
             btn.disabled = true;
             btn.innerText = "Signing in...";
             try {
-                await signInWithEmailAndPassword(auth, email, password);
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
                 toast('Welcome back.', 'success');
                 closeModal();
             } catch (err) {
@@ -839,31 +826,27 @@
         };
 
         // ---- Social login --------------------------------------------------
-        // Only completes sign-in for users who already have a /users profile
-        // (created via register.html). First-time social sign-ins can't safely
-        // create a company/profile from a popup alone, so we send them to
-        // register.html instead of writing incomplete data.
-        window.socialLogin = async function(providerName) {
-            const provider = providerName === 'Google' ? new GoogleAuthProvider() : new FacebookAuthProvider();
+        // NOTE: Supabase's OAuth flow redirects the whole page to the provider
+        // and back (unlike Firebase's popup-based signInWithPopup), and each
+        // provider (Google/Facebook) needs its Client ID/Secret configured in
+        // the Supabase dashboard under Authentication → Providers before this
+        // works. After the redirect back, onAuthStateChange below picks up the
+        // new session and checks for an existing profile the same way as before.
+        window.socialLogin = async function(provider) {
             try {
-                const result = await signInWithPopup(auth, provider);
-                const user = result.user;
-                const profileSnap = await getDoc(doc(db, "users", user.uid));
-                if (!profileSnap.exists()) {
-                    toast("Almost there — finish setting up your business to continue.", 'info');
-                    await signOut(auth);
-                    window.location.href = 'register.html';
-                    return;
-                }
-                toast('Welcome back.', 'success');
-                closeModal();
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider,
+                    options: { redirectTo: window.location.href }
+                });
+                if (error) throw error;
+                // Browser navigates away here; nothing more happens on this page load.
             } catch (err) {
                 toast(friendlyAuthError(err), 'error');
             }
         };
 
         window.logoutUser = async function() {
-            await signOut(auth);
+            await supabase.auth.signOut();
             toast('Logged out.', 'info');
         };
 
@@ -872,6 +855,7 @@
         let currentDashboardHref = null;
         let currentCompanyId = null;
         let currentRole = null;
+        let planChannel = null;
 
         window.handleAvatarTap = function() {
             if (currentDashboardHref) {
@@ -916,7 +900,7 @@
             if (!subscription) { setPlanBanner('', null); return; }
 
             const now = new Date();
-            const trialEnds = subscription.trialEndsAt && subscription.trialEndsAt.toDate ? subscription.trialEndsAt.toDate() : null;
+            const trialEnds = subscription.trial_ends_at ? new Date(subscription.trial_ends_at) : null;
 
             if (subscription.status === 'trialing' && trialEnds && trialEnds > now) {
                 const daysLeft = Math.max(1, Math.ceil((trialEnds - now) / 86400000));
@@ -932,22 +916,40 @@
             }
         }
 
-        function loadPlanStatus(companyId) {
-            onSnapshot(doc(db, "subscriptions", companyId), (snap) => {
-                updateTrialButtons(snap.exists() ? snap.data() : null);
-            }, () => { /* no subscription doc yet, or rules not deployed — fail quietly */ });
+        // Initial fetch (Realtime only pushes *future* changes, so we need one
+        // read up front to reflect the current state immediately), then a
+        // Realtime subscription for anything that changes afterward — e.g. when
+        // the Chapa webhook flips status to "active" server-side.
+        async function loadPlanStatus(companyId) {
+            const { data } = await supabase
+                .from('subscriptions')
+                .select('*')
+                .eq('company_id', companyId)
+                .maybeSingle();
+            updateTrialButtons(data || null);
+
+            if (planChannel) supabase.removeChannel(planChannel);
+            planChannel = supabase
+                .channel(`subscription-${companyId}`)
+                .on('postgres_changes', {
+                    event: '*', schema: 'public', table: 'subscriptions', filter: `company_id=eq.${companyId}`
+                }, (payload) => {
+                    updateTrialButtons(payload.new || null);
+                })
+                .subscribe();
         }
 
-        // Fixed: this used to write trialEndsAt/plan/status straight to
-        // Firestore from the browser via setDoc — anyone could open DevTools
-        // and grant themselves any plan for free, forever, with no trial
-        // limit. Trial/plan creation now happens entirely inside the
-        // startTrial Cloud Function, which checks the caller is really the
-        // owner of currentCompanyId and computes trialEndsAt itself; the
-        // browser only tells it *which* plan was picked, never the dates or
-        // status.
-        window.startTrial = async function(planId, priceEtb) {
-            if (!auth.currentUser) {
+        // Fixed: this used to write trial_ends_at/plan/status straight to the
+        // database from the browser — anyone could open DevTools and grant
+        // themselves any plan for free, forever, with no trial limit. Trial/plan
+        // creation now happens entirely inside the start-trial Edge Function,
+        // which checks the caller is really the owner of their company (looked
+        // up server-side from their own session, never trusted from the
+        // browser) and computes trial_ends_at itself; the browser only tells it
+        // *which* plan was picked.
+        window.startTrial = async function(planId) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
                 sessionStorage.setItem('minel_pending_plan', planId);
                 toast('Log in or create a free account first — we\'ll pick this plan right back up.', 'info');
                 openModal('login');
@@ -957,18 +959,15 @@
                 toast('Only the business Owner can change the plan.', 'error');
                 return;
             }
-            if (!currentCompanyId) {
-                toast('Could not find your company. Please refresh and try again.', 'error');
-                return;
-            }
             const btn = document.querySelector(`[data-plan-btn="${planId}"]`);
             if (btn) { btn.disabled = true; btn.textContent = 'Starting trial...'; }
             try {
-                const functions = getFunctions();
-                const startTrialFn = httpsCallable(functions, 'startTrial');
-                await startTrialFn({ companyId: currentCompanyId, planId });
+                const { data, error } = await supabase.functions.invoke('start-trial', { body: { planId } });
+                if (error) throw error;
+                if (data && data.error) throw new Error(data.error);
                 toast(`${PLAN_LABELS[planId]} trial started — 12 days, no payment needed.`, 'success');
                 sessionStorage.removeItem('minel_pending_plan');
+                if (currentCompanyId) loadPlanStatus(currentCompanyId);
             } catch (err) {
                 toast(err.message || 'Could not start your trial. Please try again.', 'error');
                 if (btn) { btn.disabled = false; btn.textContent = 'Start 12-Day Trial'; }
@@ -979,31 +978,21 @@
             toast('Reach out from your dashboard\'s Billing section, or email us directly — we\'ll set up Enterprise pricing with you.', 'info');
         };
 
-        onAuthStateChanged(auth, async (user) => {
-            const authActions = document.getElementById('nav-auth-actions');
-            const userActions = document.getElementById('nav-user-actions');
-
-            if (!user) {
-                currentDashboardHref = null;
-                currentCompanyId = null;
-                currentRole = null;
-                showAuthActions();
-                document.querySelectorAll('.dashboard-item').forEach(i => i.classList.add('locked-card'));
-                updateTrialButtons(null);
-                return;
-            }
-
+        async function handleAuthedUser(user) {
             loadInventory();
 
             try {
-                const profileSnap = await getDoc(doc(db, "users", user.uid));
-                if (!profileSnap.exists()) return; // mid-registration or orphaned auth account
+                const { data: profile, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .maybeSingle();
+                if (error || !profile) return; // mid-registration or orphaned auth account
 
-                const profile = profileSnap.data();
-                const role = (profile.role || '').toLowerCase();     // matches register.html's lowercase roles
+                const role = (profile.role || '').toLowerCase();
                 const isActive = profile.status === 'active';
                 currentRole = role;
-                currentCompanyId = profile.companyId || null;
+                currentCompanyId = profile.company_id || null;
 
                 if (currentCompanyId && role === 'owner') {
                     loadPlanStatus(currentCompanyId);
@@ -1012,8 +1001,7 @@
                 // Resume a plan selection made before the person logged in.
                 const pendingPlan = sessionStorage.getItem('minel_pending_plan');
                 if (pendingPlan && role === 'owner') {
-                    const priceMap = { pro: 499, business: 1499 };
-                    if (priceMap[pendingPlan]) window.startTrial(pendingPlan, priceMap[pendingPlan]);
+                    window.startTrial(pendingPlan);
                 }
 
                 document.querySelectorAll('.dashboard-item').forEach(i => i.classList.add('locked-card'));
@@ -1037,6 +1025,26 @@
             } catch (err) {
                 console.error('Could not load profile:', err);
             }
+        }
+
+        function handleSignedOut() {
+            currentDashboardHref = null;
+            currentCompanyId = null;
+            currentRole = null;
+            if (planChannel) { supabase.removeChannel(planChannel); planChannel = null; }
+            showAuthActions();
+            document.querySelectorAll('.dashboard-item').forEach(i => i.classList.add('locked-card'));
+            updateTrialButtons(null);
+        }
+
+        // Resolve whatever session already exists on page load (covers a
+        // returning user, and the redirect back from an OAuth sign-in)...
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) handleAuthedUser(session.user); else handleSignedOut();
+        });
+        // ...then keep listening for sign-in / sign-out from this point on.
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session) handleAuthedUser(session.user); else handleSignedOut();
         });
     </script>
 
