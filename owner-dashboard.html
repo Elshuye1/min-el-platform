@@ -90,7 +90,6 @@
                 </div>
             </div>
 
-            <!-- Secondary stats: additive, does not alter original four -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="glass p-5 rounded-3xl">
                     <p class="text-[10px] text-slate-500 font-bold uppercase">Products Listed</p>
@@ -125,7 +124,6 @@
             </div>
         </section>
 
-        <!-- ===================== LIVE SALES (new) ===================== -->
         <section id="sec-livefeed" class="hidden space-y-6">
             <div class="glass p-6 md:p-8 rounded-[2.5rem]">
                 <div class="flex items-center justify-between mb-6">
@@ -184,7 +182,6 @@
             <div id="invList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </section>
 
-        <!-- ===================== SELLER CHAT (new) ===================== -->
         <section id="sec-chat" class="hidden">
             <div class="glass rounded-[2.5rem] overflow-hidden max-w-2xl mx-auto">
                 <div class="p-5 border-b border-white/5">
@@ -199,7 +196,6 @@
             </div>
         </section>
 
-        <!-- ===================== INSPIRATION (new) ===================== -->
         <section id="sec-inspire" class="hidden space-y-6">
             <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
                 <h3 class="text-xl font-black mb-1 font-display"><i class="fa fa-seedling text-green-400 mr-2"></i>Post daily inspiration</h3>
@@ -232,7 +228,6 @@
             </div>
         </section>
 
-        <!-- ===================== CHARITY (was missing / now completed) ===================== -->
         <section id="sec-charity" class="hidden space-y-6">
             <div class="glass p-6 md:p-8 rounded-[2.5rem] max-w-2xl mx-auto">
                 <p class="text-[10px] text-slate-500 font-bold uppercase">Available Tithe (10% of profit)</p>
@@ -318,91 +313,94 @@
     </nav>
 
     <script type="module">
-        // --- SECURITY: real Firebase Auth + company/role check (replaces the old hardcoded PIN) ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
+        // =====================================================================
+        // SUPABASE VERSION — replaces the old Firebase SDK entirely.
+        // Same UI, same element IDs, same onclick handlers — only the data
+        // layer underneath changed (Firebase Auth/Firestore -> Supabase
+        // Auth/Postgres + Realtime + Edge Functions).
+        // =====================================================================
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
-            authDomain: "min-eli.firebaseapp.com",
-            projectId: "min-eli",
-            storageBucket: "min-eli.firebasestorage.app",
-            messagingSenderId: "61590314630",
-            appId: "1:61590314630:web:f75dcd8296954d8c107b07"
-        };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        const SUPABASE_URL = 'https://mvmhdesffmxuaqvjexpz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWhkZXNmZm14dWFxdmpleHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDA0NzYsImV4cCI6MjEwMTg3NjQ3Nn0.tMUTqPkPG3HG3e9mNZp3heF6NSSyFtMW9pNqfM9H4gA';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Every query/write below is scoped to this companyId once auth resolves.
         let companyId = null;
         let currentUid = null;
         let defaultBranchId = null;
 
-        window.logout = () => { signOut(auth).then(() => window.location.href = "index.html"); };
+        window.logout = async () => { await supabase.auth.signOut(); window.location.href = "index.html"; };
 
         window.showSec = (id) => {
             document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
             document.getElementById('sec-'+id).classList.remove('hidden');
             document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-            if(event) event.currentTarget.classList.add('active');
+            if (event) event.currentTarget.classList.add('active');
         };
 
-        onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = "index.html";
-                return;
-            }
+        // --- AUTH GATE: mirrors the old onAuthStateChanged flow -----------------
+        async function boot() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = "index.html"; return; }
+            const user = session.user;
             try {
-                const profileSnap = await getDoc(doc(db, "users", user.uid));
-                if (!profileSnap.exists()) {
+                const { data: profile, error } = await supabase
+                    .from('profiles').select('*').eq('id', user.id).single();
+                if (error || !profile) {
                     alert("No workspace profile found for this account.");
-                    await signOut(auth);
+                    await supabase.auth.signOut();
                     window.location.href = "index.html";
                     return;
                 }
-                const profile = profileSnap.data();
                 if (profile.role !== 'owner') {
                     alert("This dashboard is restricted to company Owners.");
-                    await signOut(auth);
+                    await supabase.auth.signOut();
                     window.location.href = "index.html";
                     return;
                 }
                 if (profile.status !== 'active') {
                     alert("Your account is not active yet.");
-                    await signOut(auth);
+                    await supabase.auth.signOut();
                     window.location.href = "index.html";
                     return;
                 }
-                companyId = profile.companyId;
-                currentUid = user.uid;
-                defaultBranchId = profile.branchId || null;
+                companyId = profile.company_id;
+                currentUid = user.id;
+                defaultBranchId = profile.branch_id || null;
                 initDashboard();
             } catch (err) {
                 alert("Could not verify your account: " + err.message);
                 window.location.href = "index.html";
             }
+        }
+        boot();
+        supabase.auth.onAuthStateChange((event) => {
+            if (event === 'SIGNED_OUT') window.location.href = "index.html";
         });
 
         // Everything below only runs once we've confirmed an active Owner and have a companyId.
         function initDashboard() {
 
-        // --- INVENTORY SYNC (unchanged logic, additive stats appended) ---
-        onSnapshot(query(collection(db, "inventory"), where("companyId", "==", companyId)), (snap) => {
+        /* ---------------------------------------------------------------
+           INVENTORY — load + realtime resubscribe on any change
+        --------------------------------------------------------------- */
+        async function loadInventory() {
+            const { data, error } = await supabase.from('inventory').select('*').eq('company_id', companyId).order('name');
+            if (error) { console.error('inventory load failed', error); return; }
+            renderInventory(data || []);
+        }
+        function renderInventory(items) {
             const list = document.getElementById('invList');
             let low = 0; list.innerHTML = '';
             let totalUnits = 0; let totalProducts = 0; const lowItems = [];
-            snap.forEach(d => {
-                const i = d.data();
-                if(i.stock < 5) low++;
+            items.forEach(i => {
+                if (i.stock < 5) low++;
                 list.innerHTML += `
                     <div class="glass p-5 rounded-2xl flex justify-between items-center border border-white/5">
                         <div><p class="font-black">${i.name}</p><p class="text-[10px] text-slate-500 uppercase tracking-tighter">Cost: $${i.cost} | Sell: $${i.sell}</p></div>
                         <div class="flex items-center gap-4">
                             <span class="text-xs font-bold ${i.stock < 5 ? 'text-red-500' : 'text-blue-400'}">${i.stock} Qty</span>
-                            <button onclick="deleteProduct('${d.id}')" class="text-slate-600 hover:text-red-500 transition"><i class="fa fa-trash-alt"></i></button>
+                            <button onclick="deleteProduct('${i.id}')" class="text-slate-600 hover:text-red-500 transition"><i class="fa fa-trash-alt"></i></button>
                         </div>
                     </div>`;
                 totalUnits += Number(i.stock) || 0;
@@ -410,36 +408,36 @@
                 if (i.stock < 5) lowItems.push(i.name);
             });
             document.getElementById('stat-low').innerText = low;
-
-            // additive: secondary stats + alert message
             document.getElementById('stat-products').innerText = totalProducts;
             document.getElementById('stat-units').innerText = totalUnits;
             updateAlerts(lowItems);
-        });
+        }
+        loadInventory();
+        supabase.channel('inv-' + companyId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory', filter: `company_id=eq.${companyId}` }, loadInventory)
+            .subscribe();
 
-        // --- SALES & PROFIT SYNC ---
-        // Fixed: this used to be `where("companyId","==",companyId)` with NO
-        // date bound and NO limit — it downloaded every sale ever recorded,
-        // every single time this page loaded. At 20,000+ sales that's 20,000+
-        // reads per page open (real Firebase billing cost) and can freeze the
-        // browser tab entirely. We now scope it to the last 30 days and cap
-        // it at 3000 docs as a hard safety ceiling. For true all-time
-        // lifetime totals, keep a running aggregate (e.g. a Cloud Function
-        // that increments companies/{id}.lifetimeRevenue on every sale write)
-        // instead of ever re-summing the full collection client-side.
-        const THIRTY_DAYS_AGO = Timestamp.fromDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-        onSnapshot(query(
-            collection(db, "sales"),
-            where("companyId", "==", companyId),
-            where("timestamp", ">=", THIRTY_DAYS_AGO),
-            orderBy("timestamp", "desc"),
-            limit(3000)
-        ), (snap) => {
+        /* ---------------------------------------------------------------
+           SALES — scoped to last 30 days, capped at 3000 rows (same
+           safety limit as before, now enforced with .gte()/.limit()).
+        --------------------------------------------------------------- */
+        async function loadSales() {
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+            const { data, error } = await supabase
+                .from('sales').select('*').eq('company_id', companyId)
+                .gte('created_at', thirtyDaysAgo)
+                .order('created_at', { ascending: false })
+                .limit(3000);
+            if (error) { console.error('sales load failed', error); return; }
+            renderSales(data || []);
+        }
+        function renderSales(sales) {
             let rev = 0; let cost = 0;
             const feed = document.getElementById('miniSales'); feed.innerHTML = '';
-            snap.forEach(d => {
-                const s = d.data(); rev += s.totalPrice; cost += (s.costPrice * s.qty);
-                feed.innerHTML += `<div class="flex justify-between text-[11px] p-2 bg-white/5 rounded-lg border border-white/5"><span>${s.itemName}</span><span class="text-green-500 font-bold">+$${s.totalPrice}</span></div>`;
+            sales.forEach(s => {
+                rev += Number(s.total_price) || 0;
+                cost += (Number(s.cost_price) || 0) * (Number(s.qty) || 0);
+                feed.innerHTML += `<div class="flex justify-between text-[11px] p-2 bg-white/5 rounded-lg border border-white/5"><span>${s.item_name || ''}</span><span class="text-green-500 font-bold">+$${s.total_price}</span></div>`;
             });
             const profit = rev - cost;
             document.getElementById('stat-rev').innerText = `$${rev.toLocaleString()}`;
@@ -448,97 +446,149 @@
             document.getElementById('r-gross').innerText = `$${rev.toLocaleString()}`;
             document.getElementById('r-cost').innerText = `$${cost.toLocaleString()}`;
             document.getElementById('r-profit').innerText = `$${profit.toLocaleString()}`;
-
-            // additive: feeds the Charity tab's "available tithe" figure
             const charityEl = document.getElementById('charity-available');
             if (charityEl) charityEl.innerText = `$${(profit * 0.1).toLocaleString()}`;
-        });
 
-        // --- WASTAGE SYNC (unchanged logic, additive totals) ---
-        onSnapshot(query(collection(db, "wastage"), where("companyId", "==", companyId)), (snap) => {
+            // Live Sales tab — most recent 50
+            const el = document.getElementById('liveFeedList');
+            const rows = [];
+            sales.slice(0, 50).forEach(s => {
+                const t = s.created_at ? new Date(s.created_at).toLocaleTimeString() : '';
+                const hasDiscount = Number(s.discount) > 0;
+                rows.push(`
+                    <div class="feed-row flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div>
+                            <p class="font-bold text-sm">${s.item_name || ''}</p>
+                            <p class="text-[10px] text-slate-500">${s.qty} units · ${t}${hasDiscount ? ` · <span class="text-red-400">discount $${Number(s.discount).toFixed(2)}</span>` : ''}</p>
+                        </div>
+                        <span class="text-green-400 font-black">+$${Number(s.total_price).toLocaleString()}</span>
+                    </div>`);
+            });
+            el.innerHTML = rows.length ? rows.join('') : '<p class="text-slate-500 text-sm italic">Waiting for the first sale...</p>';
+        }
+        loadSales();
+        supabase.channel('sales-' + companyId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'sales', filter: `company_id=eq.${companyId}` }, loadSales)
+            .subscribe();
+
+        /* ---------------------------------------------------------------
+           WASTAGE
+        --------------------------------------------------------------- */
+        async function loadWastage() {
+            const { data, error } = await supabase.from('wastage').select('*').eq('company_id', companyId).order('created_at', { ascending: false });
+            if (error) { console.error('wastage load failed', error); return; }
+            renderWastage(data || []);
+        }
+        function renderWastage(rows) {
             const container = document.getElementById('wastageList');
             container.innerHTML = '';
-            let wasteCount = 0;
-            snap.forEach(d => {
-                const w = d.data();
+            rows.forEach(w => {
                 container.innerHTML += `<div class="flex justify-between items-center p-3 bg-orange-500/5 border border-orange-500/10 rounded-xl text-xs">
-                    <span><b class="text-orange-500">${w.qty}x</b> ${w.itemName}${w.reason ? ` <span class="text-slate-500">(${w.reason})</span>` : ''}${w.note ? `<br><span class="text-slate-600 text-[10px]">${w.note}</span>` : ''}</span>
-                    <button onclick="clearRecord('wastage', '${d.id}')" class="text-slate-600">Delete</button>
+                    <span><b class="text-orange-500">${w.qty}x</b> ${w.item_name}${w.reason ? ` <span class="text-slate-500">(${w.reason})</span>` : ''}${w.note ? `<br><span class="text-slate-600 text-[10px]">${w.note}</span>` : ''}</span>
+                    <button onclick="clearRecord('wastage', '${w.id}')" class="text-slate-600">Delete</button>
                 </div>`;
-                wasteCount++;
             });
-            if (wasteCount === 0) container.innerHTML = '<p class="text-slate-500 text-sm italic">No wastage reported today.</p>';
+            if (rows.length === 0) container.innerHTML = '<p class="text-slate-500 text-sm italic">No wastage reported today.</p>';
+            document.getElementById('stat-wastage').innerText = rows.length;
+            document.getElementById('wastageTotalHeader').innerText = rows.length;
+        }
+        loadWastage();
+        supabase.channel('wastage-' + companyId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'wastage', filter: `company_id=eq.${companyId}` }, loadWastage)
+            .subscribe();
 
-            // additive
-            document.getElementById('stat-wastage').innerText = wasteCount;
-            document.getElementById('wastageTotalHeader').innerText = wasteCount;
-        });
-
-        // --- DEBT SYNC (unchanged logic, additive total) ---
-        onSnapshot(query(collection(db, "debts"), where("companyId", "==", companyId)), (snap) => {
+        /* ---------------------------------------------------------------
+           DEBTS
+        --------------------------------------------------------------- */
+        async function loadDebts() {
+            const { data, error } = await supabase.from('debts').select('*').eq('company_id', companyId).order('created_at', { ascending: false });
+            if (error) { console.error('debts load failed', error); return; }
+            renderDebts(data || []);
+        }
+        function renderDebts(rows) {
             const container = document.getElementById('debtList');
             container.innerHTML = '';
             let totalDebt = 0; let debtCount = 0;
-            snap.forEach(d => {
-                const b = d.data();
+            rows.forEach(b => {
                 container.innerHTML += `<div class="flex justify-between items-start p-3 bg-red-500/5 border border-red-500/10 rounded-xl text-xs">
                     <div>
-                        <p><b>${b.customerName}</b> owes <b class="text-red-500">$${b.amount}</b></p>
+                        <p><b>${b.customer_name}</b> owes <b class="text-red-500">$${b.amount}</b></p>
                         <p class="text-slate-500 text-[10px] mt-1">${b.phone ? '<i class="fa fa-phone mr-1"></i>' + b.phone + ' ' : ''}${b.address ? '<i class="fa fa-location-dot ml-2 mr-1"></i>' + b.address : ''}</p>
-                        <p class="text-slate-600 text-[10px] mt-1">${b.service ? 'Via: ' + b.service + ' ' : ''}${b.borrowDate ? '· Borrowed: ' + b.borrowDate : ''}</p>
+                        <p class="text-slate-600 text-[10px] mt-1">${b.service ? 'Via: ' + b.service + ' ' : ''}${b.borrow_date ? '· Borrowed: ' + b.borrow_date : ''}</p>
                     </div>
-                    <button onclick="clearRecord('debts', '${d.id}')" class="bg-red-500/20 text-red-500 px-2 py-1 rounded shrink-0">Paid</button>
+                    <button onclick="clearRecord('debts', '${b.id}')" class="bg-red-500/20 text-red-500 px-2 py-1 rounded shrink-0">Paid</button>
                 </div>`;
                 if (b.status !== 'paid') { totalDebt += Number(b.amount) || 0; debtCount++; }
             });
-            if (debtCount === 0 && snap.size === 0) container.innerHTML = '<p class="text-slate-500 text-sm italic">No active debts found.</p>';
-
-            // additive
+            if (rows.length === 0) container.innerHTML = '<p class="text-slate-500 text-sm italic">No active debts found.</p>';
             document.getElementById('stat-debt').innerText = `$${totalDebt.toLocaleString()}`;
             document.getElementById('debtTotalHeader').innerText = `$${totalDebt.toLocaleString()}`;
             updateAlerts(null, debtCount, totalDebt);
-        });
+        }
+        loadDebts();
+        supabase.channel('debts-' + companyId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'debts', filter: `company_id=eq.${companyId}` }, loadDebts)
+            .subscribe();
 
-        // --- CUSTOMER REQUESTS SYNC (additive: items sellers logged as wanted-but-not-stocked) ---
-        onSnapshot(query(collection(db, "customerRequests"), where("companyId", "==", companyId), orderBy("timestamp", "desc")), (snap) => {
+        /* ---------------------------------------------------------------
+           CUSTOMER REQUESTS
+        --------------------------------------------------------------- */
+        async function loadRequests() {
+            const { data, error } = await supabase.from('customer_requests').select('*').eq('company_id', companyId).order('created_at', { ascending: false });
+            if (error) { console.error('customer_requests load failed', error); return; }
             const container = document.getElementById('requestList');
             container.innerHTML = '';
-            snap.forEach(d => {
-                const r = d.data();
-                const t = r.timestamp && r.timestamp.toDate ? r.timestamp.toDate().toLocaleDateString() : '';
+            (data || []).forEach(r => {
+                const t = r.created_at ? new Date(r.created_at).toLocaleDateString() : '';
                 container.innerHTML += `<div class="flex justify-between items-start p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl text-xs">
                     <div>
-                        <p class="font-bold">${r.itemName}</p>
+                        <p class="font-bold">${r.item_name}</p>
                         ${r.note ? `<p class="text-slate-500 text-[10px] mt-1">${r.note}</p>` : ''}
                         <p class="text-slate-600 text-[9px] mt-1">${t}</p>
                     </div>
-                    <button onclick="clearRecord('customerRequests', '${d.id}')" class="text-slate-600 hover:text-red-500 transition"><i class="fa fa-trash-alt"></i></button>
+                    <button onclick="clearRecord('customer_requests', '${r.id}')" class="text-slate-600 hover:text-red-500 transition"><i class="fa fa-trash-alt"></i></button>
                 </div>`;
             });
-            if (snap.size === 0) container.innerHTML = '<p class="text-slate-500 text-sm italic">No customer requests yet.</p>';
-        });
+            if (!data || data.length === 0) container.innerHTML = '<p class="text-slate-500 text-sm italic">No customer requests yet.</p>';
+        }
+        loadRequests();
+        supabase.channel('requests-' + companyId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_requests', filter: `company_id=eq.${companyId}` }, loadRequests)
+            .subscribe();
 
-        // --- ACTIONS (unchanged) ---
+        /* ---------------------------------------------------------------
+           INVENTORY ACTIONS
+        --------------------------------------------------------------- */
         document.getElementById('addForm').onsubmit = async (e) => {
             e.preventDefault();
-            await addDoc(collection(db, "inventory"), {
+            const { error } = await supabase.from('inventory').insert({
                 name: document.getElementById('n').value,
                 cost: Number(document.getElementById('c').value),
                 stock: Number(document.getElementById('s').value),
                 sell: Number(document.getElementById('p').value),
-                companyId, createdBy: currentUid, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+                company_id: companyId,
+                branch_id: defaultBranchId
             });
+            if (error) { alert('Could not add product: ' + error.message); return; }
             e.target.reset(); alert("Product Added!");
         };
 
-        window.deleteProduct = async (id) => { if(confirm("Remove product permanently?")) await deleteDoc(doc(db, "inventory", id)); };
-        window.clearRecord = async (col, id) => { if(confirm("Clear this record?")) await deleteDoc(doc(db, col, id)); };
+        window.deleteProduct = async (id) => {
+            if (!confirm("Remove product permanently?")) return;
+            const { error } = await supabase.from('inventory').delete().eq('id', id);
+            if (error) alert('Delete failed: ' + error.message);
+        };
+        window.clearRecord = async (table, id) => {
+            if (!confirm("Clear this record?")) return;
+            const { error } = await supabase.from(table).delete().eq('id', id);
+            if (error) alert('Delete failed: ' + error.message);
+        };
 
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleString(); }, 1000);
 
-        /* =========================================================
-           ADDITIVE: Critical Alerts (fills in the previously static message)
-        ========================================================= */
+        /* ---------------------------------------------------------------
+           CRITICAL ALERTS
+        --------------------------------------------------------------- */
         let lastLowItems = [];
         let lastDebtCount = 0, lastDebtTotal = 0;
         function updateAlerts(lowItems, debtCount, debtTotal) {
@@ -553,37 +603,15 @@
                 : msgs.map(m => `<p class="mb-2">${m}</p>`).join('');
         }
 
-        /* =========================================================
-           ADDITIVE: Live Sales Feed (dedicated tab, ordered, shows discounts)
-        ========================================================= */
-        onSnapshot(query(collection(db, "sales"), where("companyId", "==", companyId), orderBy("timestamp", "desc"), limit(50)), (snap) => {
-            const el = document.getElementById('liveFeedList');
-            const rows = [];
-            snap.forEach(d => {
-                const s = d.data();
-                const t = s.timestamp && s.timestamp.toDate ? s.timestamp.toDate().toLocaleTimeString() : '';
-                const hasDiscount = Number(s.discount) > 0;
-                rows.push(`
-                    <div class="feed-row flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <div>
-                            <p class="font-bold text-sm">${s.itemName}</p>
-                            <p class="text-[10px] text-slate-500">${s.qty} units · ${t}${hasDiscount ? ` · <span class="text-red-400">discount $${Number(s.discount).toFixed(2)}</span>` : ''}</p>
-                        </div>
-                        <span class="text-green-400 font-black">+$${Number(s.totalPrice).toLocaleString()}</span>
-                    </div>`);
-            });
-            el.innerHTML = rows.length ? rows.join('') : '<p class="text-slate-500 text-sm italic">Waiting for the first sale...</p>';
-        });
-
-        /* =========================================================
-           ADDITIVE: Seller Chat (shares the "ownerMessages" collection
-           used by the seller terminal, so both sides sync live)
-        ========================================================= */
-        onSnapshot(query(collection(db, "ownerMessages"), where("companyId", "==", companyId), orderBy("timestamp", "asc")), (snap) => {
+        /* ---------------------------------------------------------------
+           SELLER CHAT (owner_messages table, shared with seller terminal)
+        --------------------------------------------------------------- */
+        async function loadHqChat() {
+            const { data, error } = await supabase.from('owner_messages').select('*').eq('company_id', companyId).order('created_at', { ascending: true });
+            if (error) { console.error('owner_messages load failed', error); return; }
             const win = document.getElementById('hqChatWindow');
             win.innerHTML = '';
-            snap.forEach(d => {
-                const m = d.data();
+            (data || []).forEach(m => {
                 const isOwner = m.sender === 'owner';
                 win.innerHTML += `<div class="flex ${isOwner ? 'justify-end' : 'justify-start'}">
                     <div class="${isOwner ? 'bg-blue-600' : 'bg-white/10'} px-4 py-3 rounded-2xl text-sm max-w-[75%]">
@@ -591,24 +619,33 @@
                     </div></div>`;
             });
             win.scrollTop = win.scrollHeight;
-        });
+        }
+        loadHqChat();
+        supabase.channel('ownermsg-' + companyId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'owner_messages', filter: `company_id=eq.${companyId}` }, loadHqChat)
+            .subscribe();
+
         window.sendHqMessage = async () => {
             const input = document.getElementById('hqChatInput');
             const text = input.value.trim();
             if (!text) return;
             input.value = '';
-            await addDoc(collection(db, "ownerMessages"), { sender: 'owner', text, companyId, createdBy: currentUid, timestamp: serverTimestamp() });
+            const { error } = await supabase.from('owner_messages').insert({
+                sender: 'owner', text, company_id: companyId, created_by: currentUid
+            });
+            if (error) alert('Message failed: ' + error.message);
         };
 
-        /* =========================================================
-           ADDITIVE: Inspiration posts (owner publishes, sellers can display)
-        ========================================================= */
-        onSnapshot(query(collection(db, "inspirationPosts"), where("companyId", "==", companyId), orderBy("timestamp", "desc"), limit(30)), (snap) => {
+        /* ---------------------------------------------------------------
+           INSPIRATION POSTS
+        --------------------------------------------------------------- */
+        async function loadInspiration() {
+            const { data, error } = await supabase.from('inspiration_posts').select('*').eq('company_id', companyId).order('created_at', { ascending: false }).limit(30);
+            if (error) { console.error('inspiration_posts load failed', error); return; }
             const el = document.getElementById('inspireList');
             const rows = [];
-            snap.forEach(d => {
-                const p = d.data();
-                const t = p.timestamp && p.timestamp.toDate ? p.timestamp.toDate().toLocaleString() : '';
+            (data || []).forEach(p => {
+                const t = p.created_at ? new Date(p.created_at).toLocaleString() : '';
                 rows.push(`
                     <div class="flex justify-between items-start p-3 bg-white/5 rounded-xl border border-white/5">
                         <div>
@@ -617,31 +654,40 @@
                             ${p.ref ? `<p class="text-[10px] text-slate-500 mt-1 amh">${p.ref}</p>` : ''}
                             <p class="text-[9px] text-slate-600 mt-1">${t}</p>
                         </div>
-                        <button onclick="clearRecord('inspirationPosts','${d.id}')" class="text-slate-600 hover:text-red-500 transition"><i class="fa fa-trash-alt"></i></button>
+                        <button onclick="clearRecord('inspiration_posts','${p.id}')" class="text-slate-600 hover:text-red-500 transition"><i class="fa fa-trash-alt"></i></button>
                     </div>`);
             });
             el.innerHTML = rows.length ? rows.join('') : '<p class="text-slate-500 text-sm italic">Nothing posted yet.</p>';
-        });
+        }
+        loadInspiration();
+        supabase.channel('inspire-' + companyId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'inspiration_posts', filter: `company_id=eq.${companyId}` }, loadInspiration)
+            .subscribe();
+
         window.postInspiration = async () => {
             const category = document.getElementById('inspireType').value;
             const text = document.getElementById('inspireText').value.trim();
             const ref = document.getElementById('inspireRef').value.trim();
             if (!text) return alert("Write a message first");
-            await addDoc(collection(db, "inspirationPosts"), { category, text, ref, companyId, createdBy: currentUid, timestamp: serverTimestamp() });
+            const { error } = await supabase.from('inspiration_posts').insert({
+                category, text, ref, company_id: companyId, created_by: currentUid
+            });
+            if (error) return alert('Could not post: ' + error.message);
             document.getElementById('inspireText').value = '';
             document.getElementById('inspireRef').value = '';
         };
 
-        /* =========================================================
-           ADDITIVE: Charity — completes the previously empty tab
-        ========================================================= */
-        onSnapshot(query(collection(db, "charity"), where("companyId", "==", companyId), orderBy("timestamp", "desc")), (snap) => {
+        /* ---------------------------------------------------------------
+           CHARITY
+        --------------------------------------------------------------- */
+        async function loadCharity() {
+            const { data, error } = await supabase.from('charity').select('*').eq('company_id', companyId).order('created_at', { ascending: false });
+            if (error) { console.error('charity load failed', error); return; }
             const el = document.getElementById('charityList');
             const rows = []; let total = 0;
-            snap.forEach(d => {
-                const c = d.data();
+            (data || []).forEach(c => {
                 total += Number(c.amount) || 0;
-                const t = c.timestamp && c.timestamp.toDate ? c.timestamp.toDate().toLocaleDateString() : '';
+                const t = c.created_at ? new Date(c.created_at).toLocaleDateString() : '';
                 rows.push(`
                     <div class="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5 text-xs">
                         <div>
@@ -649,31 +695,40 @@
                             ${c.note ? `<p class="text-slate-500 text-[10px] mt-1">${c.note}</p>` : ''}
                             <p class="text-slate-600 text-[9px] mt-1">${t}</p>
                         </div>
-                        <button onclick="clearRecord('charity','${d.id}')" class="text-slate-600 hover:text-red-500 transition"><i class="fa fa-trash-alt"></i></button>
+                        <button onclick="clearRecord('charity','${c.id}')" class="text-slate-600 hover:text-red-500 transition"><i class="fa fa-trash-alt"></i></button>
                     </div>`);
             });
             el.innerHTML = rows.length ? rows.join('') : '<p class="text-slate-500 text-sm italic">No contributions logged yet.</p>';
             document.getElementById('charity-given').innerText = `$${total.toLocaleString()}`;
-        });
+        }
+        loadCharity();
+        supabase.channel('charity-' + companyId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'charity', filter: `company_id=eq.${companyId}` }, loadCharity)
+            .subscribe();
+
         document.getElementById('charityForm').onsubmit = async (e) => {
             e.preventDefault();
-            await addDoc(collection(db, "charity"), {
+            const { error } = await supabase.from('charity').insert({
                 recipient: document.getElementById('charity-recipient').value,
                 amount: Number(document.getElementById('charity-amount').value),
                 note: document.getElementById('charity-note').value,
-                companyId, createdBy: currentUid, timestamp: serverTimestamp()
+                company_id: companyId, created_by: currentUid
             });
+            if (error) return alert('Could not log contribution: ' + error.message);
             e.target.reset(); alert("Contribution logged!");
         };
 
-        // --- TEAM: company info, invite code, seller approval ---
-        getDoc(doc(db, "companies", companyId)).then(snap => {
-            if (!snap.exists()) return;
-            const c = snap.data();
+        /* ---------------------------------------------------------------
+           TEAM: company info + invite code
+        --------------------------------------------------------------- */
+        async function loadCompanyInfo() {
+            const { data: c, error } = await supabase.from('companies').select('*').eq('id', companyId).single();
+            if (error || !c) return;
             document.getElementById('team-company-name').innerText = c.name || 'Your Business';
-            document.getElementById('team-invite-code').innerText = c.inviteCode || '------';
-            window._inviteCode = c.inviteCode || '';
-        });
+            document.getElementById('team-invite-code').innerText = c.invite_code || '------';
+            window._inviteCode = c.invite_code || '';
+        }
+        loadCompanyInfo();
 
         window.copyInviteCode = () => {
             if (!window._inviteCode) return;
@@ -682,22 +737,24 @@
                 .catch(() => alert('Code: ' + window._inviteCode));
         };
 
-        // --- BILLING: current plan + trial countdown ---
+        /* ---------------------------------------------------------------
+           BILLING: subscription status + trial countdown
+        --------------------------------------------------------------- */
         const PLAN_LABELS = { free: 'FREE', pro: 'PRO', business: 'BUSINESS', enterprise: 'ENTERPRISE' };
 
-        onSnapshot(doc(db, "subscriptions", companyId), (snap) => {
+        async function loadBilling() {
             const badge = document.getElementById('billing-plan-badge');
             const text = document.getElementById('billing-status-text');
-            if (!snap.exists()) {
+            const { data: sub, error } = await supabase.from('subscriptions').select('*').eq('company_id', companyId).maybeSingle();
+            if (error || !sub) {
                 badge.innerText = 'FREE';
                 text.innerText = "You're on the Free plan.";
                 return;
             }
-            const sub = snap.data();
-            const label = PLAN_LABELS[sub.plan] || sub.plan.toUpperCase();
+            const label = PLAN_LABELS[sub.plan] || (sub.plan || '').toUpperCase();
             badge.innerText = label;
 
-            const trialEnds = sub.trialEndsAt && sub.trialEndsAt.toDate ? sub.trialEndsAt.toDate() : null;
+            const trialEnds = sub.trial_ends_at ? new Date(sub.trial_ends_at) : null;
             const now = new Date();
 
             if (sub.status === 'trialing' && trialEnds && trialEnds > now) {
@@ -710,42 +767,38 @@
             } else {
                 text.innerText = `Plan: ${label}`;
             }
-        }, () => { /* subscriptions doc/rules not set up yet — stay on Free display */ });
+        }
+        loadBilling();
+        supabase.channel('sub-' + companyId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions', filter: `company_id=eq.${companyId}` }, loadBilling)
+            .subscribe();
 
-        // Calls a Firebase Cloud Function that initializes a Chapa transaction
-        // and returns a checkout URL. Requires the `initializeChapaPayment`
-        // function to be deployed with a real Chapa SECRET key stored via
-        // Firebase Secret Manager — see functions/README.md.
+        // Calls the Supabase Edge Function that initializes a Chapa
+        // transaction and returns a checkout URL. supabase.functions.invoke()
+        // automatically attaches the caller's auth token — the function
+        // itself verifies it and confirms the caller owns companyId before
+        // ever calling Chapa (see supabase/functions/initialize-chapa-payment).
         window.payWithChapa = async () => {
             const btn = event.currentTarget;
             const original = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> Connecting...';
             try {
-                const subSnap = await getDoc(doc(db, "subscriptions", companyId));
-                const plan = subSnap.exists() ? subSnap.data().plan : null;
+                const { data: sub } = await supabase.from('subscriptions').select('plan').eq('company_id', companyId).maybeSingle();
+                const plan = sub ? sub.plan : null;
                 if (!plan || plan === 'free') {
                     alert('Choose a plan first from the Pricing page, then come back here to pay.');
                     return;
                 }
-                // Fixed: this used to be a raw fetch() with NO auth header at
-                // all — anyone could POST directly to the URL and trigger a
-                // payment link under any companyId they typed in, with no
-                // server-side check whatsoever. httpsCallable() (the Firebase
-                // SDK's callable-function wrapper) automatically attaches and
-                // verifies the caller's ID token; the Cloud Function itself
-                // additionally confirms the token's uid actually owns
-                // companyId before calling Chapa (see functions/index.js).
-                const functions = getFunctions();
-                const initPayment = httpsCallable(functions, 'initializeChapaPayment');
-                const { data } = await initPayment({ planId: plan });
-                if (data.checkout_url) {
+                const { data, error } = await supabase.functions.invoke('initialize-chapa-payment', { body: { planId: plan } });
+                if (error) throw error;
+                if (data && data.checkout_url) {
                     window.location.href = data.checkout_url;
                 } else {
-                    throw new Error(data.message || 'Could not start checkout.');
+                    throw new Error((data && data.error) || 'Could not start checkout.');
                 }
             } catch (err) {
-                alert("Online payment isn't fully set up yet, so you can't pay directly here. Your trial still works normally — see functions/README.md for enabling live payments, or contact support.");
+                alert("Online payment isn't fully set up yet, so you can't pay directly here. Your trial still works normally. Contact support if this persists.");
                 console.error('Chapa init failed:', err);
             } finally {
                 btn.disabled = false;
@@ -753,82 +806,87 @@
             }
         };
 
-        // Pending sellers (status == "pending") — owner approves or rejects here,
-        // no more manual Firestore Console editing.
-        onSnapshot(query(collection(db, "users"), where("companyId", "==", companyId), where("role", "==", "seller"), where("status", "==", "pending")), (snap) => {
+        /* ---------------------------------------------------------------
+           PENDING / ACTIVE SELLERS
+        --------------------------------------------------------------- */
+        async function loadPendingSellers() {
+            const { data, error } = await supabase.from('profiles').select('*')
+                .eq('company_id', companyId).eq('role', 'seller').eq('status', 'pending');
+            if (error) { console.error('pending sellers load failed', error); return; }
             const list = document.getElementById('pendingSellersList');
             const badge = document.getElementById('pendingBadge');
             const count = document.getElementById('pendingCount');
-            count.innerText = `${snap.size} waiting`;
-            if (snap.empty) {
+            const rows = data || [];
+            count.innerText = `${rows.length} waiting`;
+            if (rows.length === 0) {
                 list.innerHTML = '<p class="text-slate-500 text-sm italic">No sellers waiting for approval.</p>';
                 badge.classList.add('hidden');
                 return;
             }
             badge.classList.remove('hidden');
-            badge.innerText = snap.size;
-            list.innerHTML = snap.docs.map(d => {
-                const u = d.data();
-                return `
+            badge.innerText = rows.length;
+            list.innerHTML = rows.map(u => `
                 <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4">
                     <div>
                         <p class="font-bold text-sm">${u.username || u.email}</p>
                         <p class="text-[10px] text-slate-500">${u.email}</p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="approveSeller('${d.id}')" class="bg-green-600 hover:bg-green-700 text-white text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-check mr-1"></i>Approve</button>
-                        <button onclick="rejectSeller('${d.id}')" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-xmark mr-1"></i>Reject</button>
+                        <button onclick="approveSeller('${u.id}')" class="bg-green-600 hover:bg-green-700 text-white text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-check mr-1"></i>Approve</button>
+                        <button onclick="rejectSeller('${u.id}')" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-xmark mr-1"></i>Reject</button>
                     </div>
-                </div>`;
-            }).join('');
-        });
+                </div>`).join('');
+        }
+        loadPendingSellers();
 
-        window.approveSeller = async (uid) => {
-            if (!confirm("Approve this seller and assign them to your Main Branch?")) return;
-            await updateDoc(doc(db, "users", uid), {
-                status: "active",
-                branchId: defaultBranchId,
-                approvedBy: currentUid,
-                approvedAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
-            });
-            alert("Seller approved! They can now log in to the seller dashboard.");
-        };
-
-        window.rejectSeller = async (uid) => {
-            if (!confirm("Reject this seller? They will not be able to access your workspace. This does not delete their login account.")) return;
-            await updateDoc(doc(db, "users", uid), {
-                status: "rejected",
-                updatedAt: serverTimestamp()
-            });
-        };
-
-        // Active sellers (status == "active")
-        onSnapshot(query(collection(db, "users"), where("companyId", "==", companyId), where("role", "==", "seller"), where("status", "==", "active")), (snap) => {
+        async function loadActiveSellers() {
+            const { data, error } = await supabase.from('profiles').select('*')
+                .eq('company_id', companyId).eq('role', 'seller').eq('status', 'active');
+            if (error) { console.error('active sellers load failed', error); return; }
             const list = document.getElementById('activeSellersList');
-            if (snap.empty) {
+            const rows = data || [];
+            if (rows.length === 0) {
                 list.innerHTML = '<p class="text-slate-500 text-sm italic">No active sellers yet.</p>';
                 return;
             }
-            list.innerHTML = snap.docs.map(d => {
-                const u = d.data();
-                return `
+            list.innerHTML = rows.map(u => `
                 <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3">
                     <div>
                         <p class="font-bold text-sm">${u.username || u.email}</p>
                         <p class="text-[10px] text-slate-500">${u.email}</p>
                     </div>
-                    <button onclick="suspendSeller('${d.id}')" class="bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-pause mr-1"></i>Suspend</button>
-                </div>`;
-            }).join('');
-        });
+                    <button onclick="suspendSeller('${u.id}')" class="bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 text-[10px] font-black px-3 py-2 rounded-lg uppercase tracking-wide"><i class="fa fa-pause mr-1"></i>Suspend</button>
+                </div>`).join('');
+        }
+        loadActiveSellers();
+
+        supabase.channel('profiles-' + companyId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `company_id=eq.${companyId}` }, () => {
+                loadPendingSellers();
+                loadActiveSellers();
+            })
+            .subscribe();
+
+        window.approveSeller = async (uid) => {
+            if (!confirm("Approve this seller and assign them to your Main Branch?")) return;
+            const { error } = await supabase.from('profiles').update({
+                status: 'active',
+                branch_id: defaultBranchId
+            }).eq('id', uid);
+            if (error) return alert('Approve failed: ' + error.message);
+            alert("Seller approved! They can now log in to the seller dashboard.");
+        };
+
+        window.rejectSeller = async (uid) => {
+            if (!confirm("Reject this seller? They will not be able to access your workspace. This does not delete their login account.")) return;
+            const { error } = await supabase.from('profiles').update({ status: 'rejected' }).eq('id', uid);
+            if (error) alert('Reject failed: ' + error.message);
+        };
 
         window.suspendSeller = async (uid) => {
             if (!confirm("Suspend this seller? They will lose dashboard access immediately.")) return;
-            await updateDoc(doc(db, "users", uid), {
-                status: "suspended",
-                updatedAt: serverTimestamp()
-            });
+            const { error } = await supabase.from('profiles').update({ status: 'suspended' }).eq('id', uid);
+            if (error) alert('Suspend failed: ' + error.message);
         };
 
         } // end initDashboard()
