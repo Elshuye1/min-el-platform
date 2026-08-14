@@ -626,32 +626,18 @@ video{ background:#111; border-radius:1.25rem; width:100%; aspect-ratio:4/3; obj
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import {
-  getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, setDoc, getDoc,
-  serverTimestamp, query, orderBy, limit, where, increment, runTransaction, writeBatch
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Firebase Config (Using your provided IDs)
-const firebaseConfig = {
-  apiKey: "AIzaSyDJ4AChRbBukS8kkygY6mF76kxUC3HyNiI",
-  authDomain: "min-eli.firebaseapp.com",
-  projectId: "min-eli",
-  storageBucket: "min-eli.firebasestorage.app",
-  messagingSenderId: "61590314630",
-  appId: "1:61590314630:web:f75dcd8296954d8c107b07"
-};
+const SUPABASE_URL = "https://mvmhdesffmxuaqvjexpz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWhkZXNmZm14dWFxdmpleHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDA0NzYsImV4cCI6MjEwMTg3NjQ3Nn0.tMUTqPkPG3HG3e9mNZp3heF6NSSyFtMW9pNqfM9H4gA"; // safe to be public
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-const functions = getFunctions(app);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// --- SECURITY: real Firebase Auth + company/role check (replaces the old
+// Helper: turn a Postgres ISO timestamp string into a real JS Date, or null.
+// Replaces every old `.timestamp.toDate()` (Firestore) call in this file.
+function toDate(iso) { return iso ? new Date(iso) : null; }
+
+// --- SECURITY: real Supabase Auth + company/role check (replaces the old
 // "pick your name from a list" session, which was not authentication at all).
 // The name-picker further below is kept, but now only decides which staff
 // member on this branch's terminal is attributed to a sale — it no longer
@@ -661,44 +647,51 @@ let branchId = null;
 let currentUid = null;
 let currentUsername = null;
 
-window.logout = () => { signOut(auth).then(() => window.location.href = "index.html"); };
+window.logout = () => { supabase.auth.signOut().then(() => window.location.href = "index.html"); };
 
-onAuthStateChanged(auth, async (user) => {
+async function checkAuthAndInit() {
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   if (!user) {
     window.location.href = "index.html";
     return;
   }
   try {
-    const profileSnap = await getDoc(doc(db, "users", user.uid));
-    if (!profileSnap.exists()) {
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("company_id, branch_id, role, username, email, status")
+      .eq("id", user.id)
+      .single();
+
+    if (error || !profile) {
       alert("No workspace profile found for this account.");
-      await signOut(auth);
+      await supabase.auth.signOut();
       window.location.href = "index.html";
       return;
     }
-    const profile = profileSnap.data();
     if (profile.role !== 'seller' && profile.role !== 'owner') {
       alert("This terminal is restricted to Sellers.");
-      await signOut(auth);
+      await supabase.auth.signOut();
       window.location.href = "index.html";
       return;
     }
     if (profile.status !== 'active') {
       alert("Your account is pending approval from your Owner.");
-      await signOut(auth);
+      await supabase.auth.signOut();
       window.location.href = "index.html";
       return;
     }
-    companyId = profile.companyId;
-    branchId = profile.branchId || null;
-    currentUid = user.uid;
+    companyId = profile.company_id;
+    branchId = profile.branch_id || null;
+    currentUid = user.id;
     currentUsername = profile.username || profile.email || 'Seller';
     initDashboard();
   } catch (err) {
     alert("Could not verify your account: " + err.message);
     window.location.href = "index.html";
   }
-});
+}
+checkAuthAndInit();
 
 // Everything below only runs once we've confirmed an active, signed-in
 // Seller/Owner and have their companyId.
@@ -709,10 +702,21 @@ let cart = [];
 let selectedItem = null;
 
 // 1. LIVE INVENTORY SYNC
-onSnapshot(query(collection(db, "inventory"), where("companyId", "==", companyId)), (snapshot) => {
+// Fixed: replaces Firestore's onSnapshot. loadInventory() re-fetches the
+// full list; the Realtime subscription below just calls it again whenever
+// any row in this company's inventory changes (insert/update/delete) —
+// same "live sync" feel as before, one round-trip per change instead of a
+// persistent document-level stream.
+async function loadInventory() {
+  const { data, error } = await supabase
+    .from("inventory")
+    .select("id, name, stock, cost, sell")
+    .eq("company_id", companyId);
+  if (error) { console.error('[loadInventory] failed:', error); return; }
+
   const datalist = document.getElementById('inventory-datalist');
   datalist.innerHTML = '';
-  inventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  inventory = data || [];
 
   inventory.forEach(item => {
     const option = document.createElement('option');
@@ -722,7 +726,12 @@ onSnapshot(query(collection(db, "inventory"), where("companyId", "==", companyId
 
   renderStockOverview();
   renderStoreList();
-});
+}
+loadInventory();
+supabase
+  .channel('inventory-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory', filter: `company_id=eq.${companyId}` }, loadInventory)
+  .subscribe();
 
 // 2. SEARCH LOGIC
 document.getElementById('goodsSearch').addEventListener('input', (e) => {
@@ -862,38 +871,28 @@ window.removeItem = (i) => { cart.splice(i, 1); renderCart(); };
 window.clearCart = () => { cart = []; renderCart(); };
 
 // 4. COMPLETE SALE
-// Fixed: previously looped one item at a time with separate awaits. If the
-// network dropped mid-loop, items already processed stayed decremented AND
-// billed, and clicking retry re-decremented/re-billed them again. A
-// writeBatch() makes the whole sale one atomic unit — either every item's
-// stock decrement + sale record is written, or (on any failure) NONE of
-// them are, so a retry after a failure is always safe.
+// Fixed: previously used a Firestore writeBatch() for atomicity. Supabase
+// doesn't have a client-side atomic multi-write, so this now calls the
+// complete_sale() Postgres function (see the SQL we ran) — the ENTIRE sale
+// runs as one database transaction server-side: every item's stock decrement
+// + sale record commits together, or (on any failure, e.g. insufficient
+// stock) NONE of them do. Stock is also row-locked server-side, so two
+// simultaneous checkouts on the same product can never both oversell it.
 window.completeSale = async () => {
   if (cart.length === 0) return;
   const saveButton = document.querySelector('[onclick="completeSale()"]');
   if (saveButton) { saveButton.disabled = true; saveButton.classList.add('opacity-50'); }
   try {
-    const batch = writeBatch(db);
-    for (const item of cart) {
-      const invRef = doc(db, "inventory", item.id);
-      batch.update(invRef, { stock: increment(-item.buyQty) });
-
-      const saleRef = doc(collection(db, "sales")); // pre-generate ID for the batch
-      batch.set(saleRef, {
-        itemName: item.name,
-        qty: item.buyQty,
-        costPrice: item.cost, // Crucial for owner profit calculations
-        totalPrice: item.subtotal,
-        sellPrice: item.sellPrice != null ? item.sellPrice : item.sell,
-        originalPrice: item.originalPrice != null ? item.originalPrice : item.sell,
-        discount: item.discountTotal || 0,
-        discountReason: item.discountReason || "",
-        soldBy: currentUsername,
-        companyId, branchId, createdBy: currentUid,
-        timestamp: serverTimestamp()
-      });
-    }
-    await batch.commit(); // all-or-nothing
+    const items = cart.map(item => ({
+      id: item.id,
+      qty: item.buyQty,
+      sell_price: item.sellPrice != null ? item.sellPrice : item.sell,
+      original_price: item.originalPrice != null ? item.originalPrice : item.sell,
+      discount: item.discountTotal || 0,
+      discount_reason: item.discountReason || "",
+    }));
+    const { error } = await supabase.rpc('complete_sale', { p_items: items, p_branch_id: branchId });
+    if (error) throw error;
     alert("Success: Inventory Synced!");
     clearCart();
   } catch (e) {
@@ -903,7 +902,7 @@ window.completeSale = async () => {
   }
 };
 
-// 5. WASTAGE
+// 5. WASTAGE (legacy quick-prompt path kept for compatibility)
 window.handleWastage = async () => {
   const name = prompt("Enter product name for wastage:");
   const item = inventory.find(i => i.name === name);
@@ -912,14 +911,10 @@ window.handleWastage = async () => {
   const qty = parseInt(prompt(`How many ${name} are wasted/broken?`));
   if (qty > 0 && qty <= item.stock) {
     if (confirm(`Report ${qty} ${name} as wastage? This reduces stock.`)) {
-      await updateDoc(doc(db, "inventory", item.id), { stock: increment(-qty) });
-      await addDoc(collection(db, "wastage"), {
-        itemName: name,
-        qty: qty,
-        reason: "Reported by Seller",
-        companyId, branchId, createdBy: currentUid,
-        timestamp: serverTimestamp()
+      const { error } = await supabase.rpc('submit_wastage', {
+        p_item_name: name, p_qty: qty, p_reason: "Reported by Seller", p_note: null, p_branch_id: branchId
       });
+      if (error) { alert("Error: " + error.message); return; }
       alert("Wastage logged.");
     }
   } else { alert("Invalid quantity"); }
@@ -930,14 +925,14 @@ window.handleDebt = async () => {
   const customer = prompt("Customer Name:");
   const amount = prompt("Total Debt Amount ($):");
   if (customer && amount) {
-    await addDoc(collection(db, "debts"), {
-      customerName: customer,
+    const { error } = await supabase.from("debts").insert({
+      customer_name: customer,
       amount: Number(amount),
-      amountPaid: 0,
+      amount_paid: 0,
       status: "unpaid",
-      companyId, branchId, createdBy: currentUid,
-      timestamp: serverTimestamp()
+      company_id: companyId, branch_id: branchId, created_by: currentUid,
     });
+    if (error) { alert("Error: " + error.message); return; }
     alert(`Debt of $${amount} recorded for ${customer}`);
   }
 };
@@ -986,22 +981,14 @@ window.submitWastage = async () => {
   if (!purpose) return alert("Please choose a purpose / reason");
 
   // Fixed: was `item.stock - qty` — a stale client-side subtraction that
-  // overwrites whatever the real stock is at write time. If a sale happens
-  // on another device between this page loading and this write, that sale's
-  // decrement gets erased. increment(-qty) is atomic on Firestore's side —
-  // it always applies against the current value, never a cached one.
-  const batch = writeBatch(db);
-  batch.update(doc(db, "inventory", item.id), { stock: increment(-qty) });
-  const wastageRef = doc(collection(db, "wastage"));
-  batch.set(wastageRef, {
-    itemName: name,
-    qty: qty,
-    reason: purpose,
-    note: note,
-    companyId, branchId, createdBy: currentUid,
-    timestamp: serverTimestamp()
+  // overwrites whatever the real stock is at write time. submit_wastage()
+  // uses an atomic, row-locked update inside a single database transaction
+  // (see the SQL we ran) — it always applies against the current value,
+  // never a cached one, and can't collide with a simultaneous sale.
+  const { error } = await supabase.rpc('submit_wastage', {
+    p_item_name: name, p_qty: qty, p_reason: purpose, p_note: note, p_branch_id: branchId
   });
-  await batch.commit();
+  if (error) { alert("Error: " + error.message); return; }
   closeAllModals();
   alert("Wastage logged.");
 };
@@ -1015,18 +1002,17 @@ window.submitDebt = async () => {
   const borrowDate = document.getElementById('dm-date').value;
   if (!customerName || !amount) return alert("Customer name and amount are required");
 
-  await addDoc(collection(db, "debts"), {
-    customerName,
-    phone,
-    address,
+  const { error } = await supabase.from("debts").insert({
+    customer_name: customerName,
+    phone, address,
     amount: Number(amount),
-    amountPaid: 0,
+    amount_paid: 0,
     service,
-    borrowDate,
+    borrow_date: borrowDate,
     status: "unpaid",
-    companyId, branchId, createdBy: currentUid,
-    timestamp: serverTimestamp()
+    company_id: companyId, branch_id: branchId, created_by: currentUid,
   });
+  if (error) { alert("Error: " + error.message); return; }
   closeAllModals();
   alert(`Debt of $${amount} recorded for ${customerName}`);
 };
@@ -1036,12 +1022,11 @@ window.submitRequest = async () => {
   const note = document.getElementById('rm-note').value.trim();
   if (!itemName) return alert("Enter what the customer asked for");
 
-  await addDoc(collection(db, "customerRequests"), {
-    itemName,
-    note,
-    companyId, branchId, createdBy: currentUid,
-    timestamp: serverTimestamp()
+  const { error } = await supabase.from("customer_requests").insert({
+    item_name: itemName, note,
+    company_id: companyId, branch_id: branchId, created_by: currentUid,
   });
+  if (error) { alert("Error: " + error.message); return; }
   closeAllModals();
   alert("Customer request logged for the manager to review.");
 };
@@ -1060,13 +1045,11 @@ window.submitExpense = async () => {
   if (!category) return alert("Please choose a category");
   if (!amount || Number(amount) <= 0) return alert("Enter a valid amount");
 
-  await addDoc(collection(db, "expenses"), {
-    category,
-    amount: Number(amount),
-    note,
-    companyId, branchId, createdBy: currentUid,
-    timestamp: serverTimestamp()
+  const { error } = await supabase.from("expenses").insert({
+    category, amount: Number(amount), note,
+    company_id: companyId, created_by: currentUid,
   });
+  if (error) { alert("Error: " + error.message); return; }
   closeAllModals();
   alert("Expense logged.");
 };
@@ -1090,18 +1073,20 @@ window.submitDeposit = async () => {
   const btn = document.getElementById('dep-submit-btn');
   btn.innerText = "Uploading...";
   try {
-    const path = `receipts/${Date.now()}-${file.name}`;
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    const receiptUrl = await getDownloadURL(storageRef);
+    const path = `${companyId}/${Date.now()}-${file.name}`;
+    const { error: uploadErr } = await supabase.storage.from('receipts').upload(path, file);
+    if (uploadErr) throw uploadErr;
+    // "receipts" bucket is private (see storage policies in the SQL we ran),
+    // so we store the path and generate a fresh signed URL each time it's
+    // viewed, rather than a permanent public link.
+    const { data: signed } = await supabase.storage.from('receipts').createSignedUrl(path, 60 * 60 * 24 * 7); // 7 days
 
-    await addDoc(collection(db, "bankDeposits"), {
-      amount: Number(amount),
-      note,
-      receiptUrl,
-      companyId, branchId, createdBy: currentUid,
-      timestamp: serverTimestamp()
+    const { error } = await supabase.from("bank_deposits").insert({
+      amount: Number(amount), note,
+      receipt_url: signed?.signedUrl || path,
+      company_id: companyId, created_by: currentUid,
     });
+    if (error) throw error;
     closeAllModals();
     alert("Deposit confirmed — receipt attached.");
   } catch (e) {
@@ -1134,15 +1119,26 @@ document.getElementById('storeListSearch')?.addEventListener('input', (e) => ren
 /* =========================================================
    OWNER'S LATEST INSPIRATION POST (bridges the HQ dashboard)
 ========================================================= */
-onSnapshot(query(collection(db, "inspirationPosts"), where("companyId", "==", companyId), orderBy("timestamp", "desc"), limit(1)), (snap) => {
+async function loadOwnerPost() {
+  const { data } = await supabase
+    .from("inspiration_posts")
+    .select("category, text, ref")
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: false })
+    .limit(1);
   const card = document.getElementById('ownerPostCard');
-  if (snap.empty) { card.classList.add('hidden'); return; }
-  const p = snap.docs[0].data();
+  if (!data || data.length === 0) { card.classList.add('hidden'); return; }
+  const p = data[0];
   card.classList.remove('hidden');
   document.getElementById('ownerPostCategory').innerText = p.category === 'verse' ? (currentLang === 'am' ? 'መንፈሳዊ ጥቅስ' : 'Biblical Verse') : (currentLang === 'am' ? 'የንግድ ምክር' : 'Business Tip');
   document.getElementById('ownerPostText').innerText = p.text || '';
   document.getElementById('ownerPostRef').innerText = p.ref || '';
-});
+}
+loadOwnerPost();
+supabase
+  .channel('inspiration-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'inspiration_posts', filter: `company_id=eq.${companyId}` }, loadOwnerPost)
+  .subscribe();
 
 /* =========================================================
    TABS  (Reports tab is optionally PIN-protected — see REPORTS SECURITY below)
@@ -1171,33 +1167,41 @@ window.switchOwnerTab = (t) => {
    Fixed: the PIN used to be fetched into companyReportsPin and
    compared in this file — anyone could read it or flip
    reportsUnlocked=true from DevTools. The PIN check now happens
-   inside the verifyReportsPin Cloud Function; the real PIN value
-   never reaches this file at all. See functions/index.js.
-   NOTE: this still only gates the Reports TAB. The report data
-   underneath (sales/wastage/debts) is fetched by onSnapshot
-   listeners elsewhere in this file that load unconditionally —
-   for the PIN to protect the actual DATA, not just the UI, your
-   Firestore security rules must also require the reportsUnlocked
-   custom claim this function sets. See functions/README.md.
+   inside the verify-reports-pin Edge Function; the real PIN value
+   never reaches this file at all. See supabase/functions/verify-reports-pin.
+   The sales/wastage/debt_payments/expenses/bank_deposits tables are
+   ALSO gated at the database level by RLS's can_read_reports() policy
+   (see the RLS SQL we ran) — so even if this UI gate were bypassed,
+   the underlying data itself still can't be read without the PIN
+   claim actually being set server-side. This protects the DATA, not
+   just the tab, unlike the original Firebase version's gap.
 ========================================================= */
 let companyHasReportsPin = false; // only tells us whether to show the gate, never the PIN itself
 let reportsUnlocked = false;
 let pendingTab = null;
 
-onSnapshot(doc(db, "companies", companyId), (snap) => {
-  companyHasReportsPin = snap.exists() && !!(snap.data().reportsPin);
-});
+// Owners always see reports without a gate — only sellers get the PIN check.
+// (RLS also allows owners through automatically via can_read_reports(), so
+// this is a UX shortcut, not a security boundary by itself.)
+if (currentUsername && companyId) {
+  supabase.from("profiles").select("role").eq("id", currentUid).single().then(({ data }) => {
+    if (data?.role === 'owner') { reportsUnlocked = true; return; }
+    // Sellers: just check whether a PIN even exists on the company, so we
+    // know whether to show the gate at all (never reads the actual PIN).
+    supabase.from("companies").select("reports_pin").eq("id", companyId).single().then(({ data: c }) => {
+      companyHasReportsPin = !!(c && c.reports_pin);
+    });
+  });
+}
 
 window.submitReportsPassword = async () => {
   const val = document.getElementById('reportsPasswordInput').value.trim();
   const submitBtn = document.querySelector('[onclick="submitReportsPassword()"]');
   if (submitBtn) submitBtn.disabled = true;
   try {
-    const functions = getFunctions();
-    const verifyReportsPin = httpsCallable(functions, 'verifyReportsPin');
-    const { data } = await verifyReportsPin({ pin: val });
+    const { data, error } = await supabase.functions.invoke('verify-reports-pin', { body: { pin: val } });
+    if (error) throw error;
     if (data.success) {
-      await auth.currentUser.getIdToken(true); // refresh token to pick up the new claim
       reportsUnlocked = true;
       closeAllModals();
       const target = pendingTab || 'reports';
@@ -1368,10 +1372,29 @@ function renderStockOverview() {
 }
 
 let salesRecords = [];
-onSnapshot(query(collection(db, "sales"), where("companyId", "==", companyId), orderBy("timestamp", "desc")), (snapshot) => {
-  salesRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+async function loadSales() {
+  const { data, error } = await supabase
+    .from("sales")
+    .select("id, item_name, qty, cost_price, total_price, sell_price, original_price, discount, discount_reason, sold_by, created_at")
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: false });
+  if (error) { console.error('[loadSales] failed:', error); return; }
+  // Mapped to the same camelCase shape the rest of this file already expects,
+  // with `timestamp` as a real JS Date (see toDate() calls below) instead of
+  // a Firestore Timestamp object.
+  salesRecords = (data || []).map(s => ({
+    id: s.id, itemName: s.item_name, qty: s.qty, costPrice: s.cost_price,
+    totalPrice: s.total_price, sellPrice: s.sell_price, originalPrice: s.original_price,
+    discount: s.discount, discountReason: s.discount_reason, soldBy: s.sold_by,
+    timestamp: toDate(s.created_at),
+  }));
   renderReports();
-});
+}
+loadSales();
+supabase
+  .channel('sales-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'sales', filter: `company_id=eq.${companyId}` }, loadSales)
+  .subscribe();
 
 function renderReports() {
   const now = new Date();
@@ -1382,7 +1405,7 @@ function renderReports() {
   function sumSince(since) {
     let revenue = 0, profit = 0, count = 0, discount = 0;
     salesRecords.forEach(s => {
-      const t = s.timestamp && s.timestamp.toDate ? s.timestamp.toDate() : null;
+      const t = s.timestamp || null;
       if (t && t >= since) {
         revenue += Number(s.totalPrice) || 0;
         profit += (Number(s.totalPrice) || 0) - ((Number(s.costPrice) || 0) * (Number(s.qty) || 0));
@@ -1424,7 +1447,7 @@ function renderReports() {
   document.getElementById('titheVerseRef').innerText = titheVerses[titheIdx].ref;
 
   const todaysSales = salesRecords.filter(s => {
-    const t = s.timestamp && s.timestamp.toDate ? s.timestamp.toDate() : null;
+    const t = s.timestamp || null;
     return t && t >= startOfDay;
   });
   const listEl = document.getElementById('dailyReportList');
@@ -1447,7 +1470,7 @@ function renderReports() {
 
   // Top-selling products leaderboard for the current month
   const monthsSales = salesRecords.filter(s => {
-    const t = s.timestamp && s.timestamp.toDate ? s.timestamp.toDate() : null;
+    const t = s.timestamp || null;
     return t && t >= startOfMonth;
   });
   const tally = {};
@@ -1486,25 +1509,40 @@ let expenseRecords = [];
 let debtRecords = [];
 let depositRecords = [];
 
-onSnapshot(query(collection(db, "expenses"), where("companyId", "==", companyId), orderBy("timestamp", "desc")), (snapshot) => {
-  expenseRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+async function loadExpenses() {
+  const { data } = await supabase.from("expenses")
+    .select("id, category, amount, note, created_at")
+    .eq("company_id", companyId).order("created_at", { ascending: false });
+  expenseRecords = (data || []).map(e => ({ ...e, timestamp: toDate(e.created_at) }));
   renderCashFlow();
-});
-
-onSnapshot(query(collection(db, "debts"), where("companyId", "==", companyId), orderBy("timestamp", "desc")), (snapshot) => {
-  debtRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+async function loadDebts() {
+  const { data } = await supabase.from("debts")
+    .select("id, customer_name, phone, address, service, borrow_date, amount, amount_paid, status, created_at")
+    .eq("company_id", companyId).order("created_at", { ascending: false });
+  debtRecords = (data || []).map(d => ({
+    id: d.id, customerName: d.customer_name, phone: d.phone, address: d.address,
+    service: d.service, borrowDate: d.borrow_date, amount: d.amount, amountPaid: d.amount_paid,
+    status: d.status, timestamp: toDate(d.created_at),
+  }));
   renderCashFlow();
   renderDebtsPage();
-});
-
-onSnapshot(query(collection(db, "bankDeposits"), where("companyId", "==", companyId), orderBy("timestamp", "desc")), (snapshot) => {
-  depositRecords = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+async function loadDeposits() {
+  const { data } = await supabase.from("bank_deposits")
+    .select("id, amount, note, receipt_url, created_at")
+    .eq("company_id", companyId).order("created_at", { ascending: false });
+  depositRecords = (data || []).map(d => ({ ...d, receiptUrl: d.receipt_url, timestamp: toDate(d.created_at) }));
   renderCashFlow();
-});
+}
+loadExpenses(); loadDebts(); loadDeposits();
+supabase.channel('expenses-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `company_id=eq.${companyId}` }, loadExpenses).subscribe();
+supabase.channel('debts-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'debts', filter: `company_id=eq.${companyId}` }, loadDebts).subscribe();
+supabase.channel('deposits-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'bank_deposits', filter: `company_id=eq.${companyId}` }, loadDeposits).subscribe();
 
 function isToday(ts) {
-  if (!ts || !ts.toDate) return false;
-  const t = ts.toDate();
+  if (!ts) return false;
+  const t = ts;
   const now = new Date();
   return t.getFullYear() === now.getFullYear() && t.getMonth() === now.getMonth() && t.getDate() === now.getDate();
 }
@@ -1553,7 +1591,7 @@ function renderCashFlow() {
 
   const depEl = document.getElementById('depositList');
   depEl.innerHTML = depositRecords.length ? depositRecords.slice(0, 15).map(d => {
-    const t = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : '';
+    const t = d.timestamp ? d.timestamp.toLocaleString() : '';
     return `
     <div class="flex justify-between items-center bg-[var(--bg)] p-3 rounded-xl">
       <div>
@@ -1602,7 +1640,7 @@ function renderDebtsPage() {
   } else {
     activeEl.innerHTML = active.map(d => {
       const pct = d.total > 0 ? Math.min((d.paid / d.total) * 100, 100) : 0;
-      const dateStr = d.borrowDate || (d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleDateString() : '');
+      const dateStr = d.borrowDate || (d.timestamp ? d.timestamp.toLocaleDateString() : '');
       return `
       <div class="bg-[var(--bg)] p-4 rounded-2xl border border-black/5">
         <div class="flex justify-between items-start mb-2 gap-2">
@@ -1669,74 +1707,22 @@ window.submitDebtPayment = async () => {
 
   if (!paymentAmount || paymentAmount <= 0) return alert(currentLang === 'am' ? "ትክክለኛ የክፍያ መጠን ያስገቡ" : "Enter a valid payment amount");
 
-  const debtRef = doc(db, "debts", activePaymentDebtId);
-
   try {
-    // A real transaction: reads the TRUE current amountPaid straight from the
-    // server at the moment we write, not from a local cache that might be a
-    // few seconds stale. If two payments come in close together (e.g. the
-    // Owner and Seller both recording one at the same time), Firestore
-    // automatically retries this block so neither payment gets lost.
-    const outcome = await runTransaction(db, async (tx) => {
-      const snap = await tx.get(debtRef);
-      if (!snap.exists()) throw new Error('This debt record no longer exists.');
-      const d = snap.data();
-      const total = Number(d.amount) || 0;
-      const paidSoFar = Number(d.amountPaid) || 0;
-      const remaining = Math.max(total - paidSoFar, 0);
-
-      if (paymentAmount > remaining + 0.009) {
-        throw new Error(currentLang === 'am' ? "የክፍያ መጠኑ ከቀረው ዕዳ መብለጥ አይችልም" : "Payment cannot exceed the remaining debt");
-      }
-
-      const newPaid = paidSoFar + paymentAmount;
-      const newRemaining = Math.max(total - newPaid, 0);
-      const nowPaidOff = newRemaining <= 0.009;
-
-      tx.update(debtRef, {
-        amountPaid: newPaid,
-        status: nowPaidOff ? "paid" : "partial",
-        lastPaymentAt: serverTimestamp()
-      });
-
-      return { nowPaidOff, newRemaining, customerName: d.customerName };
+    // record_debt_payment() runs as a single database transaction (see the
+    // SQL we ran): it row-locks the debt, updates amount_paid/status, logs
+    // the payment, AND logs it into sales (so it counts toward revenue/cash
+    // reports) — all together, or none of it, exactly like the old Firestore
+    // transaction + batch did, just server-side now instead of client-side.
+    const { data: outcome, error } = await supabase.rpc('record_debt_payment', {
+      p_debt_id: activePaymentDebtId, p_amount: paymentAmount, p_note: note, p_branch_id: branchId
     });
-
-    // Fixed: a debt payment is real cash coming in, but previously it was
-    // only logged in "debtPayments" — a collection the Owner dashboard never
-    // reads. That cash silently never appeared in revenue/cash reports.
-    // We now also write it into "sales" (tagged isDebtPayment: true) with
-    // costPrice 0, since the cost of the goods was never recorded as an
-    // expense either — this payment is pure cash-in against money already
-    // owed, so it should count fully toward revenue/profit like any sale.
-    const debtBatch = writeBatch(db);
-    debtBatch.set(doc(collection(db, "debtPayments")), {
-      debtId: activePaymentDebtId,
-      customerName: outcome.customerName,
-      amount: paymentAmount,
-      note,
-      companyId, branchId, createdBy: currentUid,
-      timestamp: serverTimestamp()
-    });
-    debtBatch.set(doc(collection(db, "sales")), {
-      itemName: `Debt payment — ${outcome.customerName}`,
-      qty: 1,
-      costPrice: 0,
-      totalPrice: paymentAmount,
-      sellPrice: paymentAmount,
-      isDebtPayment: true,
-      debtId: activePaymentDebtId,
-      soldBy: currentUsername,
-      companyId, branchId, createdBy: currentUid,
-      timestamp: serverTimestamp()
-    });
-    await debtBatch.commit();
+    if (error) throw error;
 
     closeAllModals();
     activePaymentDebtId = null;
-    alert(outcome.nowPaidOff
-      ? (currentLang === 'am' ? `${outcome.customerName} ዕዳቸውን ሙሉ በሙሉ ከፍለዋል! ከዝርዝሩ ተነስተዋል።` : `${outcome.customerName} has fully paid their debt! Removed from the active list.`)
-      : (currentLang === 'am' ? `የ$${paymentAmount.toFixed(2)} ክፍያ ተመዝግቧል። የቀረ፦ $${outcome.newRemaining.toFixed(2)}` : `Payment of $${paymentAmount.toFixed(2)} recorded. Remaining: $${outcome.newRemaining.toFixed(2)}`));
+    alert(outcome.paid_off
+      ? (currentLang === 'am' ? `${outcome.customer_name} ዕዳቸውን ሙሉ በሙሉ ከፍለዋል! ከዝርዝሩ ተነስተዋል።` : `${outcome.customer_name} has fully paid their debt! Removed from the active list.`)
+      : (currentLang === 'am' ? `የ$${paymentAmount.toFixed(2)} ክፍያ ተመዝግቧል። የቀረ፦ $${Number(outcome.remaining).toFixed(2)}` : `Payment of $${paymentAmount.toFixed(2)} recorded. Remaining: $${Number(outcome.remaining).toFixed(2)}`));
   } catch (err) {
     console.error('[submitDebtPayment] failed:', err);
     alert((currentLang === 'am' ? "ስህተት፦ " : "Error: ") + (err.message || err));
@@ -1824,11 +1810,13 @@ window.startNewAIChat = () => {
   renderAISuggestions();
 };
 
-// Miny calls the "aiAdvisor" Cloud Function via httpsCallable, which
-// automatically attaches your Firebase Auth token — the function verifies
-// who you are and looks up YOUR company's real data server-side. A browser
-// can never safely call api.anthropic.com directly (no way to keep an API
-// key secret in client code), so this Cloud Function is the only path.
+// Miny calls the "ai-advisor" Edge Function via supabase.functions.invoke(),
+// which automatically attaches your Supabase Auth token — the function
+// verifies who you are and looks up YOUR company's real data server-side.
+// A browser can never safely call api.anthropic.com directly (no way to
+// keep an API key secret in client code), so this Edge Function is the
+// only path. Currently shows "not set up yet" until an Anthropic key is
+// added as a secret (see functions/README.md).
 window.sendAIMessage = async () => {
   const input = document.getElementById('aiInput');
   const sendBtn = document.getElementById('aiSendBtn');
@@ -1846,9 +1834,11 @@ window.sendAIMessage = async () => {
   appendAIMessage('ai', '<span class="dot-typing"><span>.</span><span>.</span><span>.</span></span>', loadingId);
 
   try {
-    const askAdvisor = httpsCallable(functions, 'aiAdvisor');
-    const result = await askAdvisor({ message: text, history: aiHistory, lang: currentLang });
-    const reply = result.data.reply || (currentLang === 'am' ? "ይቅርታ፣ መልስ ማምጣት አልቻልኩም።" : "Sorry, I couldn't get a response.");
+    const { data: result, error } = await supabase.functions.invoke('ai-advisor', {
+      body: { message: text, history: aiHistory, lang: currentLang }
+    });
+    if (error) throw error;
+    const reply = result.reply || (currentLang === 'am' ? "ይቅርታ፣ መልስ ማምጣት አልቻልኩም።" : "Sorry, I couldn't get a response.");
     document.getElementById(loadingId)?.remove();
     appendAIMessage('ai', reply, null, true);
     aiHistory.push({ role: "user", content: text });
@@ -1857,13 +1847,13 @@ window.sendAIMessage = async () => {
   } catch (e) {
     console.error('[sendAIMessage] failed:', e);
     document.getElementById(loadingId)?.remove();
-    // 'not-found'/'internal' here usually means the aiAdvisor function isn't
-    // deployed yet, not a real connectivity problem — be honest about that
-    // instead of implying the user's internet is at fault.
-    const notDeployed = e.code === 'functions/not-found' || e.code === 'not-found';
-    appendAIMessage('ai', notDeployed
-      ? (currentLang === 'am' ? "የAI ረዳት ገና አልተዘጋጀም። ባለቤትዎ ይህን ባህሪ እያዘጋጀ ነው።" : "AI Advisor isn't set up yet — the business owner is still getting this feature ready.")
-      : (currentLang === 'am' ? "ይቅርታ፣ ከረዳቱ ጋር መገናኘት አልተቻለም። እባክዎ ትንሽ ቆይተው ይሞክሩ።" : "Sorry, something went wrong reaching the advisor. Please try again shortly."));
+    // A missing/undeployed function or missing ANTHROPIC_API_KEY secret
+    // usually shows up as a generic non-2xx error here — be honest that
+    // it's likely just "not set up yet" rather than implying a connectivity
+    // problem on the seller's end.
+    appendAIMessage('ai', (currentLang === 'am'
+      ? "የAI ረዳት ገና አልተዘጋጀም ወይም ጊዜያዊ ችግር አለ። ባለቤትዎ ይህን ባህሪ እያዘጋጀ ይሆናል።"
+      : "AI Advisor isn't set up yet or hit a temporary problem — the business owner may still be getting this feature ready."));
   } finally {
     input.disabled = false;
     sendBtn.disabled = false;
@@ -1875,20 +1865,29 @@ window.sendAIMessage = async () => {
 /* =========================================================
    OWNER TEXT CHAT
 ========================================================= */
-onSnapshot(query(collection(db, "ownerMessages"), where("companyId", "==", companyId), orderBy("timestamp", "asc")), (snapshot) => {
+async function loadOwnerChat() {
+  const { data } = await supabase
+    .from("owner_messages")
+    .select("sender, sender_name, text")
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: true });
   const win = document.getElementById('ownerChatWindow');
   win.innerHTML = '';
-  snapshot.docs.forEach(d => {
-    const m = d.data();
+  (data || []).forEach(m => {
     const isOwner = m.sender === 'owner';
-    const senderLabel = isOwner ? 'Manager' : (m.senderName || 'Seller');
+    const senderLabel = isOwner ? 'Manager' : (m.sender_name || 'Seller');
     win.innerHTML += `<div class="flex ${isOwner ? 'justify-start' : 'justify-end'}">
       <div class="${isOwner ? 'bubble-owner' : 'bubble-seller'} px-4 py-3 text-sm max-w-[80%]">
         <p class="text-[9px] font-black uppercase mb-1 opacity-60">${senderLabel}</p>${m.text || ''}
       </div></div>`;
   });
   win.scrollTop = win.scrollHeight;
-});
+}
+loadOwnerChat();
+supabase
+  .channel('owner-chat-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'owner_messages', filter: `company_id=eq.${companyId}` }, loadOwnerChat)
+  .subscribe();
 
 window.sendOwnerMessage = async () => {
   const input = document.getElementById('ownerInput');
@@ -1898,27 +1897,32 @@ window.sendOwnerMessage = async () => {
   errBox.classList.add('hidden');
 
   // Always sent as 'seller' — a seller can never impersonate the Manager in
-  // chat. senderName carries the real logged-in username for display.
+  // chat. sender_name carries the real logged-in username for display.
   try {
-    await addDoc(collection(db, "ownerMessages"), {
+    const { error } = await supabase.from("owner_messages").insert({
       sender: 'seller',
-      senderName: currentUsername,
-      text, companyId, branchId, createdBy: currentUid,
-      timestamp: serverTimestamp()
+      sender_name: currentUsername,
+      text, company_id: companyId, branch_id: branchId, created_by: currentUid,
     });
+    if (error) throw error;
     input.value = ''; // only clear once we KNOW it actually sent
   } catch (err) {
     console.error('[sendOwnerMessage] failed:', err);
-    errBox.textContent = `Message not sent: ${err.message || err} (code: ${err.code || 'unknown'})`;
+    errBox.textContent = `Message not sent: ${err.message || err}`;
     errBox.classList.remove('hidden');
     // text stays in the input — nothing is lost on failure
   }
 };
 
 /* =========================================================
-   VIDEO CALL (WebRTC signaled through Firestore)
+   VIDEO CALL (WebRTC signaled through Supabase Realtime broadcast)
+   Fixed: Firestore's signaling used a persistent document + subcollections
+   for ICE candidates. Supabase Realtime's broadcast feature is a much
+   better fit for this — it's ephemeral, in-memory message-passing between
+   whoever is currently subscribed to a channel, with nothing left behind
+   in the database once the call ends.
 ========================================================= */
-let pc, localStream, remoteStream;
+let pc, localStream, remoteStream, callChannel;
 const rtcServers = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
 async function setupMedia() {
@@ -1934,33 +1938,29 @@ async function setupMedia() {
 window.startCall = async () => {
   try {
     await setupMedia();
-    const callDoc = doc(collection(db, 'calls'));
-    const offerCandidates = collection(callDoc, 'offerCandidates');
-    const answerCandidates = collection(callDoc, 'answerCandidates');
-    document.getElementById('callIdDisplay').innerText = callDoc.id;
+    const callId = crypto.randomUUID().slice(0, 8); // short, easy to read aloud/type
+    document.getElementById('callIdDisplay').innerText = callId;
 
-    pc.onicecandidate = (event) => { event.candidate && addDoc(offerCandidates, event.candidate.toJSON()); };
+    callChannel = supabase.channel(`call-${callId}`, { config: { broadcast: { self: false } } });
 
-    const offerDescription = await pc.createOffer();
-    await pc.setLocalDescription(offerDescription);
-    await setDoc(callDoc, {
-      companyId, branchId, createdBy: currentUid,
-      offer: { sdp: offerDescription.sdp, type: offerDescription.type },
-      createdAt: serverTimestamp()
-    });
+    pc.onicecandidate = (event) => {
+      if (event.candidate) callChannel.send({ type: 'broadcast', event: 'ice-offerer', payload: event.candidate.toJSON() });
+    };
 
-    onSnapshot(callDoc, (snap) => {
-      const data = snap.data();
-      if (!pc.currentRemoteDescription && data && data.answer) {
-        pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-      }
-    });
-
-    onSnapshot(answerCandidates, (snap) => {
-      snap.docChanges().forEach((change) => {
-        if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
-      });
-    });
+    callChannel
+      .on('broadcast', { event: 'ready' }, async () => {
+        // The other side just joined and is listening — safe to send the offer now.
+        const offerDescription = await pc.createOffer();
+        await pc.setLocalDescription(offerDescription);
+        callChannel.send({ type: 'broadcast', event: 'offer', payload: { sdp: offerDescription.sdp, type: offerDescription.type } });
+      })
+      .on('broadcast', { event: 'answer' }, ({ payload }) => {
+        if (!pc.currentRemoteDescription) pc.setRemoteDescription(new RTCSessionDescription(payload));
+      })
+      .on('broadcast', { event: 'ice-answerer' }, ({ payload }) => {
+        pc.addIceCandidate(new RTCIceCandidate(payload)).catch(() => {});
+      })
+      .subscribe();
   } catch (e) { alert("Camera/mic error: " + e.message); }
 };
 
@@ -1969,35 +1969,34 @@ window.joinCall = async () => {
   if (!callId) return alert("Enter a Call ID first");
   try {
     await setupMedia();
-    const callDoc = doc(db, 'calls', callId);
-    const answerCandidates = collection(callDoc, 'answerCandidates');
-    const offerCandidates = collection(callDoc, 'offerCandidates');
+    callChannel = supabase.channel(`call-${callId}`, { config: { broadcast: { self: false } } });
 
-    pc.onicecandidate = (event) => { event.candidate && addDoc(answerCandidates, event.candidate.toJSON()); };
+    pc.onicecandidate = (event) => {
+      if (event.candidate) callChannel.send({ type: 'broadcast', event: 'ice-answerer', payload: event.candidate.toJSON() });
+    };
 
-    const callSnap = await getDoc(callDoc);
-    const callData = callSnap.data();
-    if (!callData || !callData.offer) return alert("Call not found");
-    await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
-
-    const answerDescription = await pc.createAnswer();
-    await pc.setLocalDescription(answerDescription);
-    await updateDoc(callDoc, {
-      answer: { type: answerDescription.type, sdp: answerDescription.sdp },
-      answeredAt: serverTimestamp()
-    });
-
-    onSnapshot(offerCandidates, (snap) => {
-      snap.docChanges().forEach((change) => {
-        if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+    callChannel
+      .on('broadcast', { event: 'offer' }, async ({ payload }) => {
+        await pc.setRemoteDescription(new RTCSessionDescription(payload));
+        const answerDescription = await pc.createAnswer();
+        await pc.setLocalDescription(answerDescription);
+        callChannel.send({ type: 'broadcast', event: 'answer', payload: { type: answerDescription.type, sdp: answerDescription.sdp } });
+      })
+      .on('broadcast', { event: 'ice-offerer' }, ({ payload }) => {
+        pc.addIceCandidate(new RTCIceCandidate(payload)).catch(() => {});
+      })
+      .subscribe((status) => {
+        // Once actually subscribed, announce we're ready so the caller
+        // (who may have started the call before we joined) sends the offer.
+        if (status === 'SUBSCRIBED') callChannel.send({ type: 'broadcast', event: 'ready', payload: {} });
       });
-    });
   } catch (e) { alert("Camera/mic error: " + e.message); }
 };
 
 window.hangUp = () => {
   if (pc) pc.close();
   if (localStream) localStream.getTracks().forEach(t => t.stop());
+  if (callChannel) supabase.removeChannel(callChannel);
   document.getElementById('localVideo').srcObject = null;
   document.getElementById('remoteVideo').srcObject = null;
   document.getElementById('callIdDisplay').innerText = '—';
